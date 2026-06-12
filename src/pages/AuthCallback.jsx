@@ -9,16 +9,29 @@ export default function AuthCallback() {
   useEffect(() => {
     async function handleCallback() {
       try {
-        const params = new URLSearchParams(window.location.search)
-        const code = params.get('code')
+        const search = new URLSearchParams(window.location.search)
+        const hash   = new URLSearchParams(window.location.hash.slice(1))
 
-        if (!code) throw new Error('인증 코드 없음 — URL: ' + window.location.href)
+        // 에러 먼저 확인
+        const errCode = search.get('error') || hash.get('error')
+        const errDesc = search.get('error_description') || hash.get('error_description')
+        if (errCode) throw new Error(errDesc || errCode)
 
-        const { error: exchErr } = await supabase.auth.exchangeCodeForSession(code)
-        if (exchErr) throw exchErr
+        const code         = search.get('code')
+        const accessToken  = hash.get('access_token')
+        const refreshToken = hash.get('refresh_token') || ''
 
-        const { data } = await supabase.auth.getSession()
-        if (!data.session) throw new Error('세션 생성 실패 (exchange 후 getSession null)')
+        if (code) {
+          // PKCE flow: query string에 code
+          const { error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) throw error
+        } else if (accessToken) {
+          // Implicit flow: hash에 access_token
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          if (error) throw error
+        } else {
+          throw new Error('인증 정보를 찾을 수 없습니다 — URL: ' + window.location.href)
+        }
 
         navigate('/', { replace: true })
       } catch (err) {
