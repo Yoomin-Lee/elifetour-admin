@@ -8,8 +8,8 @@
     // (경로+쿼리+해시를 sessionStorage에 저장 후 복원)
     var base = '/elifetour-admin';
     var l = window.location;
-    var path = l.pathname.slice(base.length) || '/';
-    sessionStorage.setItem('__spa_path', path + l.search + l.hash);
+    // full path (including /elifetour-admin) must be preserved for replaceState
+    sessionStorage.setItem('__spa_path', l.pathname + l.search + l.hash);
     l.replace(l.origin + base + '/');
   </script>
 </head>

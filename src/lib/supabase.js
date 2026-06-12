@@ -7,7 +7,7 @@ export const isSupabaseReady = Boolean(url && anon)
 export const supabase = isSupabaseReady
   ? createClient(url, anon, {
       auth: {
-        detectSessionInUrl: true,
+        detectSessionInUrl: false,  // AuthCallback이 직접 교환, 자동감지 충돌 방지
         persistSession: true,
       },
     })

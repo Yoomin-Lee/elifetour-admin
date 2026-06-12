@@ -12,14 +12,13 @@ export default function AuthCallback() {
         const params = new URLSearchParams(window.location.search)
         const code = params.get('code')
 
-        if (code) {
-          const { error: exchErr } = await supabase.auth.exchangeCodeForSession(code)
-          if (exchErr) throw exchErr
-        }
+        if (!code) throw new Error('인증 코드 없음 — URL: ' + window.location.href)
 
-        // 세션이 없으면 getSession으로 재확인
+        const { error: exchErr } = await supabase.auth.exchangeCodeForSession(code)
+        if (exchErr) throw exchErr
+
         const { data } = await supabase.auth.getSession()
-        if (!data.session) throw new Error('세션 생성 실패')
+        if (!data.session) throw new Error('세션 생성 실패 (exchange 후 getSession null)')
 
         navigate('/', { replace: true })
       } catch (err) {
