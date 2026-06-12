@@ -7,7 +7,6 @@ export const isSupabaseReady = Boolean(url && anon)
 export const supabase = isSupabaseReady
   ? createClient(url, anon, {
       auth: {
-        flowType: 'implicit',
         detectSessionInUrl: true,
         persistSession: true,
       },
