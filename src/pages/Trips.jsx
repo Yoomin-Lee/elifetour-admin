@@ -19,7 +19,7 @@ function nights(depart, ret) {
 }
 
 export default function Trips() {
-  const { user } = useAuth()
+  const { user, canWrite } = useAuth()
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -62,12 +62,14 @@ export default function Trips() {
           <h1 className="text-xl font-bold text-slate-800">여행 일정</h1>
           <p className="text-sm text-slate-500 mt-0.5">전체 {trips.length}건</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(true)}>
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          여행 등록
-        </button>
+        {canWrite && (
+          <button className="btn-primary" onClick={() => setShowForm(true)}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            여행 등록
+          </button>
+        )}
       </div>
 
       {/* 필터 */}
@@ -93,7 +95,7 @@ export default function Trips() {
         <div className="card flex flex-col items-center gap-3 py-16 text-slate-400">
           <span className="text-4xl">🗺️</span>
           <p>등록된 여행이 없습니다</p>
-          <button className="btn-primary" onClick={() => setShowForm(true)}>첫 여행 등록하기</button>
+          {canWrite && <button className="btn-primary" onClick={() => setShowForm(true)}>첫 여행 등록하기</button>}
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -121,12 +123,14 @@ export default function Trips() {
               {trip.max_pax > 0 && (
                 <p className="mt-1 text-xs text-slate-400">최대 {trip.max_pax}명</p>
               )}
-              <button
-                className="mt-3 text-xs text-red-400 hover:text-red-600 hidden group-hover:block"
-                onClick={(e) => handleDelete(trip.id, e)}
-              >
-                삭제
-              </button>
+              {canWrite && (
+                <button
+                  className="mt-3 text-xs text-red-400 hover:text-red-600 hidden group-hover:block"
+                  onClick={(e) => handleDelete(trip.id, e)}
+                >
+                  삭제
+                </button>
+              )}
             </Link>
           ))}
         </div>

@@ -7,6 +7,7 @@ import Modal from '../components/Modal'
 import TripForm from '../components/TripForm'
 import PassengerForm from '../components/PassengerForm'
 import { statusOptions } from '../config/site'
+import { useAuth } from '../context/AuthContext'
 
 function formatDate(d) {
   if (!d) return '-'
@@ -25,6 +26,7 @@ function nights(a, b) {
 }
 
 export default function TripDetail() {
+  const { canWrite } = useAuth()
   const { id } = useParams()
   const navigate = useNavigate()
   const [trip, setTrip] = useState(null)
@@ -132,10 +134,12 @@ export default function TripDetail() {
             </div>
             <p className="text-slate-500">{trip?.destination}</p>
           </div>
-          <div className="flex gap-2">
-            <button className="btn-secondary text-sm" onClick={() => setShowEditTrip(true)}>수정</button>
-            <button className="btn-danger text-sm" onClick={handleDeleteTrip}>삭제</button>
-          </div>
+          {canWrite && (
+            <div className="flex gap-2">
+              <button className="btn-secondary text-sm" onClick={() => setShowEditTrip(true)}>수정</button>
+              <button className="btn-danger text-sm" onClick={handleDeleteTrip}>삭제</button>
+            </div>
+          )}
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
@@ -181,7 +185,9 @@ export default function TripDetail() {
           </div>
           <div className="flex gap-2">
             <button className="btn-secondary text-sm" onClick={exportCSV}>CSV 내보내기</button>
-            <button className="btn-primary text-sm" onClick={() => setShowAddPax(true)}>+ 여행자 추가</button>
+            {canWrite && (
+              <button className="btn-primary text-sm" onClick={() => setShowAddPax(true)}>+ 여행자 추가</button>
+            )}
           </div>
         </div>
 
@@ -239,10 +245,12 @@ export default function TripDetail() {
                   <td className="px-4 py-2.5 text-slate-600">{p.payment_amount ? formatMoney(p.payment_amount) : '-'}</td>
                   <td className="px-4 py-2.5 text-slate-500 max-w-[120px] truncate">{p.special_request || '-'}</td>
                   <td className="px-4 py-2.5 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button className="text-xs text-brand hover:underline" onClick={() => setEditingPax(p)}>수정</button>
-                      <button className="text-xs text-red-400 hover:text-red-600" onClick={() => handleDeletePax(p.id)}>삭제</button>
-                    </div>
+                    {canWrite && (
+                      <div className="flex justify-end gap-2">
+                        <button className="text-xs text-brand hover:underline" onClick={() => setEditingPax(p)}>수정</button>
+                        <button className="text-xs text-red-400 hover:text-red-600" onClick={() => handleDeletePax(p.id)}>삭제</button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -273,10 +281,12 @@ export default function TripDetail() {
                 <span>💰 {p.payment_amount ? formatMoney(p.payment_amount) : '미입금'}</span>
                 {p.special_request && <span className="col-span-2 text-amber-600">⚠ {p.special_request}</span>}
               </div>
-              <div className="flex gap-3 mt-3">
-                <button className="text-xs text-brand font-medium" onClick={() => setEditingPax(p)}>수정</button>
-                <button className="text-xs text-red-400 font-medium" onClick={() => handleDeletePax(p.id)}>삭제</button>
-              </div>
+              {canWrite && (
+                <div className="flex gap-3 mt-3">
+                  <button className="text-xs text-brand font-medium" onClick={() => setEditingPax(p)}>수정</button>
+                  <button className="text-xs text-red-400 font-medium" onClick={() => handleDeletePax(p.id)}>삭제</button>
+                </div>
+              )}
             </div>
           ))}
         </div>

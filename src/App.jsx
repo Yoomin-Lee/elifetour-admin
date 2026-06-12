@@ -7,15 +7,27 @@ import Dashboard from './pages/Dashboard'
 import Trips from './pages/Trips'
 import TripDetail from './pages/TripDetail'
 import Passengers from './pages/Passengers'
+import Users from './pages/Users'
 
-function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth()
-  if (loading) return (
+function Spinner() {
+  return (
     <div className="flex h-screen items-center justify-center bg-slate-50">
       <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
     </div>
   )
+}
+
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
+  return children
+}
+
+function RoleRoute({ allow, children }) {
+  const { role, loading } = useAuth()
+  if (loading) return <Spinner />
+  if (!allow.includes(role)) return <Navigate to="/" replace />
   return children
 }
 
@@ -30,6 +42,9 @@ export default function App() {
           <Route path="trips" element={<Trips />} />
           <Route path="trips/:id" element={<TripDetail />} />
           <Route path="passengers" element={<Passengers />} />
+          <Route path="users" element={
+            <RoleRoute allow={['admin']}><Users /></RoleRoute>
+          } />
         </Route>
       </Routes>
     </AuthProvider>
