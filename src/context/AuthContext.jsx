@@ -19,15 +19,14 @@ export function AuthProvider({ children }) {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  // 구글 / 카카오 OAuth — Supabase Auth Provider 사용
   const signInWith = (provider) => {
     if (!isSupabaseReady) {
       alert('Supabase가 설정되지 않았습니다. .env.local 을 확인하세요.')
       return
     }
     return supabase.auth.signInWithOAuth({
-      provider, // 'google' | 'kakao'
-      options: { redirectTo: window.location.origin },
+      provider,
+      options: { redirectTo: `${window.location.origin}/elifetour-admin` },
     })
   }
 

@@ -1,9 +1,9 @@
 {
-  "name": "templete03",
+  "name": "elifetour-admin",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
-  "description": "학습사이트 아트디렉션 템플릿 (React 19 + Vite 7 + Supabase)",
+  "description": "이라이프투어 직원용 여행일정·명단 관리 시스템",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -17,6 +17,9 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
     "vite": "^7.0.0"
   }
 }

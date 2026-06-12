@@ -1,32 +1,35 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
-import { ProgressProvider } from './context/ProgressContext'
-import Header from './components/Header'
-import Footer from './components/Footer'
-import Home from './pages/Home'
-import Curriculum from './pages/Curriculum'
-import Lesson from './pages/Lesson'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import Layout from './components/Layout'
 import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+import Trips from './pages/Trips'
+import TripDetail from './pages/TripDetail'
+import Passengers from './pages/Passengers'
+
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand border-t-transparent" />
+    </div>
+  )
+  if (!user) return <Navigate to="/login" replace />
+  return children
+}
 
 export default function App() {
   return (
     <AuthProvider>
-      <ProgressProvider>
-      <BrowserRouter>
-        <div className="app grain">
-          <Header />
-          <main>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/curriculum" element={<Curriculum />} />
-              <Route path="/lesson/:id" element={<Lesson />} />
-              <Route path="/login" element={<Login />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </BrowserRouter>
-      </ProgressProvider>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route index element={<Dashboard />} />
+          <Route path="trips" element={<Trips />} />
+          <Route path="trips/:id" element={<TripDetail />} />
+          <Route path="passengers" element={<Passengers />} />
+        </Route>
+      </Routes>
     </AuthProvider>
   )
 }

@@ -30,13 +30,9 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SITE_URL: ${{ secrets.VITE_SITE_URL }}
-          VITE_TABLE_PREFIX: ${{ secrets.VITE_TABLE_PREFIX }}
-          VITE_IMP_CODE: ${{ secrets.VITE_IMP_CODE }}
-          VITE_PG_PROVIDER: ${{ secrets.VITE_PG_PROVIDER }}
-      - name: SPA fallback + CNAME
-        run: |
-          cp dist/index.html dist/404.html
-          echo "templete03.dreamitbiz.com" > dist/CNAME
+          VITE_TABLE_PREFIX: eli_
+      - name: SPA fallback
+        run: cp dist/index.html dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
