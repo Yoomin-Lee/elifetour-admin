@@ -5,7 +5,13 @@ const anon = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const isSupabaseReady = Boolean(url && anon)
 export const supabase = isSupabaseReady
-  ? createClient(url, anon, { auth: { flowType: 'implicit' } })
+  ? createClient(url, anon, {
+      auth: {
+        flowType: 'implicit',
+        detectSessionInUrl: true,
+        persistSession: true,
+      },
+    })
   : null
 
 export const TABLE_PREFIX = import.meta.env.VITE_TABLE_PREFIX || 'eli_'

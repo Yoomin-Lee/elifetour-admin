@@ -9,14 +9,29 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!isSupabaseReady) { setLoading(false); return }
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null)
-      setLoading(false)
-    })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+
+    let settled = false
+
+    function settle(session) {
+      if (settled) return
+      settled = true
       setUser(session?.user ?? null)
+      setLoading(false)
+    }
+
+    // onAuthStateChange를 먼저 등록 — URL hash의 implicit 토큰도 여기서 처리됨
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!settled) {
+        settle(session)
+      } else {
+        setUser(session?.user ?? null)
+      }
     })
-    return () => sub.subscription.unsubscribe()
+
+    // fallback: onAuthStateChange가 이벤트를 발생시키지 않을 경우
+    supabase.auth.getSession().then(({ data }) => settle(data.session))
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const signInWith = (provider) => {
