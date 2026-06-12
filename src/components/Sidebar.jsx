@@ -58,9 +58,12 @@ export default function Sidebar({ open, onClose }) {
     >
       {/* 로고 */}
       <div className="flex h-16 items-center justify-between px-5">
-        <div>
-          <p className="text-xs font-medium tracking-widest text-blue-300 uppercase">eLifeTour</p>
-          <p className="text-lg font-bold text-white leading-none">직원 관리 시스템</p>
+        <div className="flex items-center gap-2.5">
+          <img src="/elifetour-admin/logo.png" alt="이라이프투어 로고" className="h-8 w-8 object-contain" />
+          <div>
+            <p className="text-xs font-medium tracking-widest text-blue-300 uppercase">eLifeTour</p>
+            <p className="text-lg font-bold text-white leading-none">직원 관리 시스템</p>
+          </div>
         </div>
         <button
           type="button"
