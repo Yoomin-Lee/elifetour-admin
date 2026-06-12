@@ -14,6 +14,13 @@
     <meta name="theme-color" content="#0F2849" />
     <!-- 폰트 -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <script>
+    // 404.html에서 저장한 경로 복원 (GitHub Pages SPA 지원)
+    (function () {
+      var p = sessionStorage.getItem('__spa_path');
+      if (p) { sessionStorage.removeItem('__spa_path'); window.history.replaceState(null, null, p); }
+    })();
+  </script>
   </head>
   <body>
     <div id="root"></div>

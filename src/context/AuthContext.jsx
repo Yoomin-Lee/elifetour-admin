@@ -41,7 +41,7 @@ export function AuthProvider({ children }) {
     }
     return supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/elifetour-admin` },
+      options: { redirectTo: `${window.location.origin}/elifetour-admin/auth/callback` },
     })
   }
 
