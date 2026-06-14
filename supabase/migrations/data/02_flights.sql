@@ -3,7 +3,7 @@
 -- 패턴: (SELECT id FROM voyages WHERE departure_date='...' AND region='...')
 -- =========================================================================
 INSERT INTO flights (voyage_id, flight_no, origin, destination, departure_date, arrival_date, departure_time, arrival_time, duration, fare, sort_order)
-SELECT (SELECT id FROM voyages WHERE departure_date='2025-02-13' AND region='동북아'),'OZ363','ICN','PVG','2025-02-13','2025-02-13','10:50','11:55','2시간 05분',381500,1 UNION ALL
+SELECT (SELECT id FROM voyages WHERE departure_date='2025-02-13' AND region='동북아'),'OZ363'::text,'ICN','PVG','2025-02-13'::date,'2025-02-13'::date,'10:50'::time,'11:55'::time,'2시간 05분'::text,381500::numeric,1::int UNION ALL
 SELECT (SELECT id FROM voyages WHERE departure_date='2025-02-13' AND region='동북아'),'OZ364','PVG','ICN','2025-02-19','2025-02-19','13:10','16:00','1시간 50분',NULL,2 UNION ALL
 SELECT (SELECT id FROM voyages WHERE departure_date='2025-02-14' AND region='싱가포르'),'SQ607','ICN','SIN','2025-02-14','2025-02-14','08:50','14:25','6시간 35분',751700,1 UNION ALL
 SELECT (SELECT id FROM voyages WHERE departure_date='2025-02-14' AND region='싱가포르'),'SQ608','SIN','ICN','2025-02-20','2025-02-20','00:10','07:25','6시간 15분',NULL,2 UNION ALL
