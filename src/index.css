@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── shadcn/ui CSS 변수 (신규 페이지 전용) ───────────────────────────── */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 213 30% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 213 30% 15%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 213 30% 15%;
+  --primary: 213 80% 29%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 213 30% 95%;
+  --secondary-foreground: 213 30% 15%;
+  --muted: 213 20% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 213 30% 95%;
+  --accent-foreground: 213 30% 15%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 213 80% 29%;
+  --radius: 0.5rem;
+}
+
 @layer base {
   html { scroll-behavior: smooth; }
   body { @apply font-sans text-slate-800 antialiased bg-slate-50; }
