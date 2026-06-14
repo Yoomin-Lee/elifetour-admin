@@ -36,16 +36,7 @@ const navItems = [
 const voyageNavItems = [
   {
     to: '/voyages',
-    label: '행사 목록',
-    icon: (
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-      </svg>
-    ),
-  },
-  {
-    to: '/voyages/search',
-    label: '항차 조회',
+    label: '항차 마스터',
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 10l4-6h10l4 6M3 10l1 8h16l1-8M9 14h6" />

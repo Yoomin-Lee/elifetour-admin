@@ -1,6 +1,13 @@
 import { supabase } from '../supabase'
-import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog } from '../../types/database'
+import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, Hotel } from '../../types/database'
 import type { VoyageFormValues } from '../schemas/voyage'
+
+type VoyageRef = Pick<Voyage, 'region' | 'departure_date'>
+export type FlightRow = Flight & { voyages: VoyageRef }
+export type ItineraryRow = ItineraryDay & { voyages: VoyageRef }
+export type CancellationRow = CancellationPolicy & { voyages: VoyageRef }
+export type HistoryRow = HistoryLog & { voyages: VoyageRef }
+export type HotelRow = Hotel & { voyages: VoyageRef }
 
 function sb() {
   if (!supabase) throw new Error('Supabase 클라이언트 미초기화')
@@ -120,6 +127,73 @@ export async function createVoyageWithChildren(values: VoyageFormValues): Promis
   }
 
   return voyage as Voyage
+}
+
+// ── All-data queries (master tabs) ───────────────────────────────────────
+
+export async function fetchAllFlights(): Promise<FlightRow[]> {
+  const { data, error } = await sb()
+    .from('flights')
+    .select('*, voyages(region, departure_date)')
+    .order('sort_order')
+  if (error) throw error
+  return data as FlightRow[]
+}
+
+export async function fetchAllItinerary(): Promise<ItineraryRow[]> {
+  const { data, error } = await sb()
+    .from('itinerary_days')
+    .select('*, voyages(region, departure_date)')
+    .order('sort_order')
+  if (error) throw error
+  return data as ItineraryRow[]
+}
+
+export async function fetchAllCancellationPolicies(): Promise<CancellationRow[]> {
+  const { data, error } = await sb()
+    .from('cancellation_policies')
+    .select('*, voyages(region, departure_date)')
+    .order('sort_order')
+  if (error) throw error
+  return data as CancellationRow[]
+}
+
+export async function fetchAllHistoryLogs(): Promise<HistoryRow[]> {
+  const { data, error } = await sb()
+    .from('history_logs')
+    .select('*, voyages(region, departure_date)')
+    .order('logged_at', { ascending: false })
+  if (error) throw error
+  return data as HistoryRow[]
+}
+
+export async function fetchAllHotels(): Promise<HotelRow[]> {
+  const { data, error } = await sb()
+    .from('hotels')
+    .select('*, voyages(region, departure_date)')
+    .order('sort_order')
+  if (error) throw error
+  return data as HotelRow[]
+}
+
+// ── Hotel CRUD ─────────────────────────────────────────────────────────────
+
+export async function addHotel(
+  voyageId: string,
+  hotel: Omit<Hotel, 'id' | 'voyage_id' | 'created_at'>
+): Promise<Hotel> {
+  const { data, error } = await sb()
+    .from('hotels')
+    .insert({ ...hotel, voyage_id: voyageId })
+    .select()
+    .single()
+  if (error) throw error
+  return data as Hotel
+}
+
+export async function deleteHotel(id: string): Promise<void> {
+  const { error } = await sb().from('hotels').delete().eq('id', id)
+  if (error) throw error
 }
 
 // ── Duplicate ─────────────────────────────────────────────────────────────

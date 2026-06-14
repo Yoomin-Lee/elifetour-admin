@@ -78,7 +78,7 @@ function VoyageSearchInner() {
         <VoyageCombobox
           voyages={voyagesQuery.data ?? []}
           selectedId={voyageId}
-          onSelect={id => setSearchParams({ voyage: id })}
+          onSelect={id => setSearchParams(prev => { const next = new URLSearchParams(prev); next.set('voyage', id); return next })}
           loading={voyagesQuery.isLoading}
         />
       </div>

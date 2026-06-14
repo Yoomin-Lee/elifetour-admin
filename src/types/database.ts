@@ -44,6 +44,7 @@ export interface ItineraryDay {
   departure_time: string | null
   category: string | null
   cost: number | null
+  cost_currency: string | null
   summary: string | null
   sort_order: number
 }
@@ -70,6 +71,17 @@ export interface HistoryLog {
   logged_at: string
   author: string | null
   content: string
+}
+
+export interface Hotel {
+  id: string
+  voyage_id: string
+  stay_date: string
+  hotel_name: string
+  room_rate: number | null
+  currency: string
+  sort_order: number
+  created_at: string
 }
 
 export interface AuditLog {
