@@ -88,7 +88,7 @@ export default function Sidebar({ open, onClose }) {
           <div className="flex items-center gap-2">
             <div className="h-px w-3 bg-white/30 rounded-full" />
             <span className="text-[9px] font-light tracking-[0.22em] text-white/40 leading-none whitespace-nowrap">
-              직원 관리 시스템
+              통합 정보 시스템
             </span>
             <div className="h-px flex-1 bg-white/10 rounded-full" />
           </div>
