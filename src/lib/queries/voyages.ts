@@ -1,5 +1,6 @@
 import { supabase } from '../supabase'
 import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog } from '../../types/database'
+import type { VoyageFormValues } from '../schemas/voyage'
 
 function sb() {
   if (!supabase) throw new Error('Supabase 클라이언트 미초기화')
@@ -81,4 +82,81 @@ export async function addHistoryLog(
     .single()
   if (error) throw error
   return data as HistoryLog
+}
+
+// ── Create ────────────────────────────────────────────────────────────────
+
+export async function createVoyageWithChildren(values: VoyageFormValues): Promise<Voyage> {
+  const { flights, itinerary, policies, ...voyageData } = values
+
+  const { data: voyage, error: ve } = await sb()
+    .from('voyages')
+    .insert(voyageData)
+    .select()
+    .single()
+  if (ve) throw ve
+
+  const id = (voyage as Voyage).id
+
+  if (flights.length > 0) {
+    const { error } = await sb()
+      .from('flights')
+      .insert(flights.map((f, i) => ({ ...f, voyage_id: id, sort_order: f.sort_order || i + 1 })))
+    if (error) throw error
+  }
+
+  if (itinerary.length > 0) {
+    const { error } = await sb()
+      .from('itinerary_days')
+      .insert(itinerary.map((d, i) => ({ ...d, voyage_id: id, sort_order: d.sort_order || i + 1 })))
+    if (error) throw error
+  }
+
+  if (policies.length > 0) {
+    const { error } = await sb()
+      .from('cancellation_policies')
+      .insert(policies.map((p, i) => ({ ...p, voyage_id: id, sort_order: p.sort_order || i + 1 })))
+    if (error) throw error
+  }
+
+  return voyage as Voyage
+}
+
+// ── Duplicate ─────────────────────────────────────────────────────────────
+
+export async function duplicateVoyage(voyageId: string): Promise<Voyage> {
+  const [voyage, flights, itinerary, policies] = await Promise.all([
+    fetchVoyage(voyageId),
+    fetchFlights(voyageId),
+    fetchItinerary(voyageId),
+    fetchCancellationPolicies(voyageId),
+  ])
+
+  const { id, created_at, updated_at, ...base } = voyage
+  const { data: newVoyage, error } = await sb()
+    .from('voyages')
+    .insert({ ...base, customer_count: 0, status: '미오픈' })
+    .select()
+    .single()
+  if (error) throw error
+
+  const newId = (newVoyage as Voyage).id
+
+  if (flights.length > 0) {
+    await sb().from('flights').insert(
+      flights.map(({ id: _id, voyage_id: _vid, created_at: _ca, ...f }) => ({ ...f, voyage_id: newId }))
+    )
+  }
+  if (itinerary.length > 0) {
+    await sb().from('itinerary_days').insert(
+      itinerary.map(({ id: _id, voyage_id: _vid, ...d }) => ({ ...d, voyage_id: newId }))
+    )
+  }
+  if (policies.length > 0) {
+    await sb().from('cancellation_policies').insert(
+      policies.map(({ id: _id, voyage_id: _vid, ...p }) => ({ ...p, voyage_id: newId }))
+    )
+  }
+
+  return newVoyage as Voyage
 }

@@ -31,6 +31,18 @@ const navItems = [
       </svg>
     ),
   },
+]
+
+const voyageNavItems = [
+  {
+    to: '/voyages',
+    label: '행사 목록',
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+      </svg>
+    ),
+  },
   {
     to: '/voyages/search',
     label: '항차 조회',
@@ -102,6 +114,31 @@ export default function Sidebar({ open, onClose }) {
             key={item.to}
             to={item.to}
             end={item.end}
+            onClick={onClose}
+            className={({ isActive }) =>
+              [
+                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition',
+                isActive
+                  ? 'bg-white/15 text-white'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white',
+              ].join(' ')
+            }
+          >
+            {item.icon}
+            {item.label}
+          </NavLink>
+        ))}
+
+        {/* 항차 관리 */}
+        <div className="mx-1 my-3 border-t border-white/10" />
+        <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">
+          항차 관리
+        </p>
+        {voyageNavItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end
             onClick={onClose}
             className={({ isActive }) =>
               [
