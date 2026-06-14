@@ -20,8 +20,12 @@ function Spinner() {
   )
 }
 
+// TODO: 개발 완료 후 DEV_MODE = false 로 되돌릴 것
+const DEV_MODE = true
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
+  if (DEV_MODE) return children
   if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
   return children
@@ -29,6 +33,7 @@ function ProtectedRoute({ children }) {
 
 function RoleRoute({ allow, children }) {
   const { role, loading } = useAuth()
+  if (DEV_MODE) return children
   if (loading) return <Spinner />
   if (!allow.includes(role)) return <Navigate to="/" replace />
   return children
