@@ -31,6 +31,15 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    to: '/voyages/search',
+    label: '항차 조회',
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 10l4-6h10l4 6M3 10l1 8h16l1-8M9 14h6" />
+      </svg>
+    ),
+  },
 ]
 
 const adminNavItems = [

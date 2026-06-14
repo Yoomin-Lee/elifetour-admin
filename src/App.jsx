@@ -8,6 +8,7 @@ import Trips from './pages/Trips'
 import TripDetail from './pages/TripDetail'
 import Passengers from './pages/Passengers'
 import Users from './pages/Users'
+import VoyageSearch from './pages/VoyageSearch'
 
 function Spinner() {
   return (
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="trips" element={<Trips />} />
           <Route path="trips/:id" element={<TripDetail />} />
           <Route path="passengers" element={<Passengers />} />
+          <Route path="voyages/search" element={<VoyageSearch />} />
           <Route path="users" element={
             <RoleRoute allow={['admin']}><Users /></RoleRoute>
           } />
