@@ -61,7 +61,8 @@ const adminNavItems = [
 export default function Sidebar({ open, onClose }) {
   const { isAdmin } = useAuth()
   const location = useLocation()
-  const isCalendarActive = location.pathname === '/voyages' && location.search.includes('tab=달력')
+  const isCalendarActive = location.pathname === '/voyages' &&
+    new URLSearchParams(location.search).get('tab') === '달력'
 
   return (
     <aside
@@ -148,7 +149,7 @@ export default function Sidebar({ open, onClose }) {
         ))}
         {/* 달력 서브 항목 */}
         <NavLink
-          to="/voyages?tab=달력"
+          to="/voyages?tab=%EB%8B%AC%EB%A0%A5"
           onClick={onClose}
           className={[
             'flex items-center gap-3 rounded-lg pl-9 pr-3 py-2 text-sm font-medium transition',
