@@ -1,21 +1,22 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Pencil, Check, X } from 'lucide-react'
+import { Search, Pencil, Check, X, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { fetchVoyages, updateVoyage } from '@/lib/queries/voyages'
+import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
-import type { Voyage } from '@/types/database'
+import type { Voyage, CabinGrade } from '@/types/database'
 
-type EditForm = {
+// ── 선실 편집 폼 (cruise_line / ship_name / cabin totals) ─────────────────
+
+type CruiseForm = {
   cruise_line: string
   ship_name: string
   cabin_total: string
   cabin_remaining: string
 }
-
-function toForm(v: Voyage): EditForm {
+function toForm(v: Voyage): CruiseForm {
   return {
     cruise_line: v.cruise_line ?? '',
     ship_name: v.ship_name ?? '',
@@ -24,10 +25,300 @@ function toForm(v: Voyage): EditForm {
   }
 }
 
+// ── 등급 드래프트 ─────────────────────────────────────────────────────────
+
+type DraftGrade = {
+  _key: string
+  _isNew: boolean
+  _deleted: boolean
+  id: string
+  grade: string
+  total: number
+  reserved: number
+  price_per_person: number | null
+  currency: string
+  sort_order: number
+}
+
+const DEFAULT_GRADES = ['내측', '오션뷰', '발코니', '스위트']
+
+function gradesToDraft(grades: CabinGrade[]): DraftGrade[] {
+  return grades.map(g => ({
+    _key: g.id,
+    _isNew: false,
+    _deleted: false,
+    id: g.id,
+    grade: g.grade,
+    total: g.total,
+    reserved: g.reserved,
+    price_per_person: g.price_per_person,
+    currency: g.currency,
+    sort_order: g.sort_order,
+  }))
+}
+
+function formatPrice(price: number | null, currency: string): string {
+  if (price == null) return '—'
+  if (currency === 'KRW') return price.toLocaleString('ko-KR') + '원'
+  if (currency === 'USD') return '$' + price.toLocaleString('en-US')
+  return price.toLocaleString() + ' ' + currency
+}
+
+// ── 등급 현황 서브 패널 ───────────────────────────────────────────────────
+
+function GradesPanel({
+  voyageId,
+  canWrite,
+}: {
+  voyageId: string
+  canWrite: boolean
+}) {
+  const qc = useQueryClient()
+  const [isEditing, setIsEditing] = useState(false)
+  const [draft, setDraft] = useState<DraftGrade[]>([])
+
+  const { data: grades = [], isLoading } = useQuery({
+    queryKey: ['cabin-grades', voyageId],
+    queryFn: () => fetchCabinGrades(voyageId),
+  })
+
+  const saveMut = useMutation({
+    mutationFn: () => {
+      const toSave = draft
+        .filter(d => !d._deleted)
+        .map(({ _key, _isNew, _deleted, id, ...rest }) => ({ id: _isNew ? undefined : id, ...rest }))
+      const deletedIds = draft.filter(d => d._deleted && !d._isNew).map(d => d.id)
+      return saveCabinGrades(voyageId, toSave, deletedIds)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['cabin-grades', voyageId] })
+      qc.invalidateQueries({ queryKey: ['voyages'] })
+      setIsEditing(false)
+    },
+  })
+
+  function startEdit() {
+    setDraft(gradesToDraft(grades))
+    setIsEditing(true)
+    saveMut.reset()
+  }
+
+  function addGrade() {
+    const nextOrder = draft.filter(d => !d._deleted).length
+    setDraft(prev => [
+      ...prev,
+      {
+        _key: `new-${Date.now()}`,
+        _isNew: true,
+        _deleted: false,
+        id: '',
+        grade: '',
+        total: 0,
+        reserved: 0,
+        price_per_person: null,
+        currency: 'KRW',
+        sort_order: nextOrder,
+      },
+    ])
+  }
+
+  function updateDraft(key: string, field: keyof DraftGrade, value: unknown) {
+    setDraft(prev => prev.map(d => d._key === key ? { ...d, [field]: value } : d))
+  }
+
+  function removeDraft(key: string, isNew: boolean) {
+    if (isNew) setDraft(prev => prev.filter(d => d._key !== key))
+    else setDraft(prev => prev.map(d => d._key === key ? { ...d, _deleted: true } : d))
+  }
+
+  const visible = isEditing
+    ? draft.filter(d => !d._deleted)
+    : grades
+
+  const totalCabins   = visible.reduce((s, g) => s + (isEditing ? (g as DraftGrade).total : (g as CabinGrade).total), 0)
+  const totalReserved = visible.reduce((s, g) => s + (isEditing ? (g as DraftGrade).reserved : (g as CabinGrade).reserved), 0)
+  const totalRemaining = totalCabins - totalReserved
+
+  if (isLoading) {
+    return <div className="px-6 py-4 text-xs text-slate-400">불러오는 중…</div>
+  }
+
+  return (
+    <div className="bg-slate-50/70 border-t border-slate-200 px-4 py-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">선실 등급별 현황</span>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <>
+              <button
+                onClick={addGrade}
+                className="flex items-center gap-1 text-xs text-brand hover:text-brand-dark font-medium"
+              >
+                <Plus className="h-3 w-3" />등급 추가
+              </button>
+              <button
+                onClick={() => saveMut.mutate()}
+                disabled={saveMut.isPending}
+                className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-100 rounded px-2 py-1 transition disabled:opacity-40"
+              >
+                <Check className="h-3 w-3" />{saveMut.isPending ? '저장 중…' : '저장'}
+              </button>
+              <button
+                onClick={() => setIsEditing(false)}
+                disabled={saveMut.isPending}
+                className="flex items-center gap-1 text-xs text-slate-400 hover:bg-slate-200 rounded px-2 py-1 transition"
+              >
+                <X className="h-3 w-3" />취소
+              </button>
+            </>
+          ) : canWrite && (
+            <button
+              onClick={startEdit}
+              className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition"
+            >
+              <Pencil className="h-3 w-3" />편집
+            </button>
+          )}
+        </div>
+      </div>
+
+      {saveMut.isError && (
+        <p className="mb-2 text-xs text-red-500">저장에 실패했습니다.</p>
+      )}
+
+      {visible.length === 0 && !isEditing ? (
+        <p className="text-xs text-slate-400 py-2">
+          등록된 등급이 없습니다.{canWrite && (
+            <button onClick={startEdit} className="ml-2 text-brand hover:underline">추가하기</button>
+          )}
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-[520px] w-full text-xs">
+            <thead>
+              <tr className="text-slate-400 border-b border-slate-200">
+                <th className="py-1.5 text-left font-medium w-28">등급</th>
+                <th className="py-1.5 text-right font-medium w-14">보유</th>
+                <th className="py-1.5 text-right font-medium w-14">예약</th>
+                <th className="py-1.5 text-right font-medium w-14">잔여</th>
+                <th className="py-1.5 text-right font-medium w-28">1인 요금</th>
+                <th className="py-1.5 text-right font-medium w-16">통화</th>
+                {isEditing && <th className="w-8" />}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {isEditing
+                ? visible.map(d => {
+                    const g = d as DraftGrade
+                    return (
+                      <tr key={g._key}>
+                        <td className="py-1">
+                          <input
+                            value={g.grade}
+                            onChange={e => updateDraft(g._key, 'grade', e.target.value)}
+                            placeholder="내측, 오션뷰…"
+                            list="grade-suggestions"
+                            className="input h-6 text-xs w-full"
+                          />
+                          <datalist id="grade-suggestions">
+                            {DEFAULT_GRADES.map(s => <option key={s} value={s} />)}
+                          </datalist>
+                        </td>
+                        <td className="py-1 pr-1">
+                          <input
+                            type="number" min={0}
+                            value={g.total}
+                            onChange={e => updateDraft(g._key, 'total', Number(e.target.value))}
+                            className="input h-6 text-xs text-right w-full"
+                          />
+                        </td>
+                        <td className="py-1 pr-1">
+                          <input
+                            type="number" min={0}
+                            value={g.reserved}
+                            onChange={e => updateDraft(g._key, 'reserved', Number(e.target.value))}
+                            className="input h-6 text-xs text-right w-full"
+                          />
+                        </td>
+                        <td className="py-1 text-right text-slate-500">
+                          {g.total - g.reserved}
+                        </td>
+                        <td className="py-1 pr-1">
+                          <input
+                            type="number" min={0}
+                            value={g.price_per_person ?? ''}
+                            onChange={e => updateDraft(g._key, 'price_per_person', e.target.value ? Number(e.target.value) : null)}
+                            placeholder="—"
+                            className="input h-6 text-xs text-right w-full"
+                          />
+                        </td>
+                        <td className="py-1 pr-1">
+                          <select
+                            value={g.currency}
+                            onChange={e => updateDraft(g._key, 'currency', e.target.value)}
+                            className="select h-6 text-xs w-full"
+                          >
+                            <option value="KRW">KRW</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                          </select>
+                        </td>
+                        <td className="py-1 text-right">
+                          <button
+                            onClick={() => removeDraft(g._key, g._isNew)}
+                            className="p-1 text-slate-300 hover:text-red-400 transition"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })
+                : grades.map(g => (
+                    <tr key={g.id}>
+                      <td className="py-1.5 font-medium text-slate-700">{g.grade}</td>
+                      <td className="py-1.5 text-right text-slate-600">{g.total}</td>
+                      <td className="py-1.5 text-right text-slate-600">{g.reserved}</td>
+                      <td className="py-1.5 text-right">
+                        <span className={g.total - g.reserved === 0 ? 'text-red-500 font-medium' : 'text-slate-600'}>
+                          {g.total - g.reserved}
+                        </span>
+                      </td>
+                      <td className="py-1.5 text-right text-slate-600">
+                        {formatPrice(g.price_per_person, g.currency)}
+                      </td>
+                      <td className="py-1.5 text-right text-slate-400">{g.currency}</td>
+                    </tr>
+                  ))
+              }
+            </tbody>
+            {visible.length > 0 && (
+              <tfoot>
+                <tr className="border-t border-slate-200 font-semibold text-slate-700">
+                  <td className="py-1.5 text-slate-500">합계</td>
+                  <td className="py-1.5 text-right">{totalCabins}</td>
+                  <td className="py-1.5 text-right">{totalReserved}</td>
+                  <td className="py-1.5 text-right">
+                    <span className={totalRemaining === 0 ? 'text-red-500' : ''}>{totalRemaining}</span>
+                  </td>
+                  <td colSpan={isEditing ? 3 : 2} />
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── 메인 CruiseTab ────────────────────────────────────────────────────────
+
 export default function CruiseTab() {
   const [filter, setFilter] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<EditForm>({ cruise_line: '', ship_name: '', cabin_total: '', cabin_remaining: '' })
+  const [editForm, setEditForm] = useState<CruiseForm>({ cruise_line: '', ship_name: '', cabin_total: '', cabin_remaining: '' })
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const qc = useQueryClient()
   const { canWrite } = useAuth() as { canWrite: boolean }
 
@@ -55,9 +346,13 @@ export default function CruiseTab() {
     saveMut.reset()
   }
 
-  function set(field: keyof EditForm) {
+  function set(field: keyof CruiseForm) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>
       setEditForm(prev => ({ ...prev, [field]: e.target.value }))
+  }
+
+  function toggleExpand(id: string) {
+    setExpandedId(prev => prev === id ? null : id)
   }
 
   const filtered = voyages.filter(v =>
@@ -66,17 +361,16 @@ export default function CruiseTab() {
     (v.cruise_line ?? '').toLowerCase().includes(filter.toLowerCase()) ||
     (v.ship_name ?? '').toLowerCase().includes(filter.toLowerCase())
   )
-
-  const active = filtered.filter(v => v.status !== '취소')
+  const active    = filtered.filter(v => v.status !== '취소')
   const cancelled = filtered.filter(v => v.status === '취소')
-  const ordered = [...active, ...cancelled]
+  const ordered   = [...active, ...cancelled]
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-bold text-slate-800">크루즈</h1>
-          <p className="text-sm text-slate-400">캐빈 현황 · ✏️ 클릭으로 편집</p>
+          <p className="text-sm text-slate-400">캐빈 현황 · ▶ 클릭으로 등급별 현황 확인</p>
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -90,9 +384,10 @@ export default function CruiseTab() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[900px] w-full text-xs">
+        <table className="min-w-[940px] w-full text-xs">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
+              <th className="px-3 py-2.5 w-8" />
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">승선일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">하선일</th>
@@ -104,23 +399,41 @@ export default function CruiseTab() {
               <th className="px-3 py-2.5 w-14" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {isLoading && (
-              <tr><td colSpan={9} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
+              <tr><td colSpan={10} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
             )}
             {!isLoading && ordered.length === 0 && (
-              <tr><td colSpan={9} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
+              <tr><td colSpan={10} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
             {ordered.map(v => {
-              const reserved = v.cabin_total - v.cabin_remaining
+              const reserved   = v.cabin_total - v.cabin_remaining
               const isCancelled = v.status === '취소'
-              const isEdit = editingId === v.id
+              const isEdit     = editingId === v.id
+              const isExpanded = expandedId === v.id
+
               return (
                 <>
                   <tr
                     key={v.id}
-                    className={['hover:bg-slate-50 transition-colors', isCancelled ? 'opacity-50' : ''].join(' ')}
+                    className={[
+                      'border-b border-slate-100 hover:bg-slate-50 transition-colors',
+                      isCancelled ? 'opacity-50' : '',
+                      isExpanded ? 'bg-slate-50' : '',
+                    ].join(' ')}
                   >
+                    {/* 펼치기 버튼 */}
+                    <td className="px-2 py-2 text-center">
+                      <button
+                        onClick={() => toggleExpand(v.id)}
+                        className="p-1 rounded text-slate-400 hover:text-brand hover:bg-slate-100 transition"
+                        title="등급별 현황"
+                      >
+                        {isExpanded
+                          ? <ChevronDown className="h-3.5 w-3.5" />
+                          : <ChevronRight className="h-3.5 w-3.5" />}
+                      </button>
+                    </td>
                     <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
                       {isCancelled
                         ? <span className="line-through text-slate-400">{voyageTitle(v)}</span>
@@ -150,9 +463,10 @@ export default function CruiseTab() {
                     </td>
                   </tr>
 
+                  {/* 인라인 편집 행 */}
                   {isEdit && (
-                    <tr key={`${v.id}-edit`}>
-                      <td colSpan={9} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
+                    <tr key={`${v.id}-edit`} className="border-b border-slate-100">
+                      <td colSpan={10} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
                         {saveMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
@@ -190,6 +504,15 @@ export default function CruiseTab() {
                             <X className="h-3.5 w-3.5" />취소
                           </button>
                         </div>
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* 등급별 현황 패널 */}
+                  {isExpanded && !isEdit && (
+                    <tr key={`${v.id}-grades`} className="border-b border-slate-200">
+                      <td colSpan={10} className="p-0">
+                        <GradesPanel voyageId={v.id} canWrite={canWrite} />
                       </td>
                     </tr>
                   )}

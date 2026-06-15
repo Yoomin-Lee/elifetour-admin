@@ -13,6 +13,7 @@ import ShoreTab       from '@/components/voyages/tabs/ShoreTab'
 import HistoryTab     from '@/components/voyages/tabs/HistoryTab'
 import MNTab          from '@/components/voyages/tabs/MNTab'
 import CalendarTab    from '@/components/voyages/tabs/CalendarTab'
+import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
@@ -53,6 +54,7 @@ function VoyageMasterInner() {
   const navigate = useNavigate()
   const { canWrite } = useAuth() as { canWrite: boolean }
   const activeTab = (searchParams.get('tab') as TabKey) ?? '항차검색'
+  const { connected } = useRealtimeSync()
 
   function switchTab(key: TabKey) {
     setSearchParams(prev => {
@@ -84,6 +86,12 @@ function VoyageMasterInner() {
               </button>
             ))}
           </nav>
+          {/* 실시간 연결 상태 */}
+          <div className="shrink-0 flex items-center gap-1.5 px-3" title={connected ? '실시간 연결됨' : '연결 끊김'}>
+            <span className={`w-1.5 h-1.5 rounded-full transition-colors ${connected ? 'bg-green-400 animate-pulse' : 'bg-slate-300'}`} />
+            <span className="hidden sm:block text-[11px] text-slate-400">{connected ? '실시간' : '오프라인'}</span>
+          </div>
+
           {canWrite && (
             <div className="shrink-0 px-3">
               <button

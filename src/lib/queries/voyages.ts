@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, Hotel } from '../../types/database'
+import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, Hotel, CabinGrade } from '../../types/database'
 import type { VoyageFormValues } from '../schemas/voyage'
 
 type VoyageRef = Pick<Voyage, 'region' | 'departure_date'>
@@ -323,6 +323,52 @@ export async function saveCancellationPolicy(
 export async function deleteCancellationPolicy(id: string): Promise<void> {
   const { error } = await sb().from('cancellation_policies').delete().eq('id', id)
   if (error) throw error
+}
+
+// ── CabinGrade CRUD ───────────────────────────────────────────────────────
+
+export async function fetchCabinGrades(voyageId: string): Promise<CabinGrade[]> {
+  const { data, error } = await sb()
+    .from('cabin_grades')
+    .select('*')
+    .eq('voyage_id', voyageId)
+    .order('sort_order')
+  if (error) throw error
+  return data as CabinGrade[]
+}
+
+export async function saveCabinGrades(
+  voyageId: string,
+  grades: Array<{ id?: string; grade: string; total: number; reserved: number; price_per_person: number | null; currency: string; sort_order: number }>,
+  deletedIds: string[],
+): Promise<void> {
+  if (deletedIds.length > 0) {
+    const { error } = await sb().from('cabin_grades').delete().in('id', deletedIds)
+    if (error) throw error
+  }
+
+  for (const g of grades) {
+    if (g.id) {
+      const { id, ...patch } = g
+      const { error } = await sb().from('cabin_grades').update(patch).eq('id', id)
+      if (error) throw error
+    } else {
+      const { error } = await sb()
+        .from('cabin_grades')
+        .insert({ ...g, voyage_id: voyageId })
+      if (error) throw error
+    }
+  }
+
+  // voyage 합계 동기화
+  const cabinTotal = grades.reduce((s, g) => s + g.total, 0)
+  const cabinReserved = grades.reduce((s, g) => s + g.reserved, 0)
+  if (grades.length > 0) {
+    await updateVoyage(voyageId, {
+      cabin_total: cabinTotal,
+      cabin_remaining: cabinTotal - cabinReserved,
+    })
+  }
 }
 
 // ── Duplicate ─────────────────────────────────────────────────────────────

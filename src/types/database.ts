@@ -84,6 +84,18 @@ export interface Hotel {
   created_at: string
 }
 
+export interface CabinGrade {
+  id: string
+  voyage_id: string
+  grade: string
+  total: number
+  reserved: number
+  price_per_person: number | null
+  currency: string
+  sort_order: number
+  created_at: string
+}
+
 export interface AuditLog {
   id: string
   table_name: string
