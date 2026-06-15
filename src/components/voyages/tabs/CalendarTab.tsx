@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -9,7 +9,7 @@ import {
 import { ko } from 'date-fns/locale'
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { fetchVoyages } from '@/lib/queries/voyages'
-import { fetchAllPaymentSchedules } from '@/lib/queries/paymentSchedules'
+import { fetchPaymentSchedulesByMonth } from '@/lib/queries/paymentSchedules'
 import type { Voyage, VoyageStatus, PaymentCategory, PaymentType } from '@/types/database'
 import type { PaymentScheduleRow } from '@/lib/queries/paymentSchedules'
 
@@ -56,40 +56,70 @@ export default function CalendarTab() {
     queryFn: fetchVoyages,
   })
 
-  const { data: payments = [] } = useQuery({
-    queryKey: ['all-payment-schedules'],
-    queryFn: fetchAllPaymentSchedules,
+  const currentYear  = currentDate.getFullYear()
+  const currentMonth = currentDate.getMonth() + 1  // 1-12
+
+  // 현재 연월 데이터만 동적 페칭 — 대용량 누적에도 일정한 쿼리 크기 유지
+  const { data: payments = [], isFetching: paymentsFetching } = useQuery({
+    queryKey: ['payment-schedules-month', currentYear, currentMonth],
+    queryFn: () => fetchPaymentSchedulesByMonth(currentYear, currentMonth),
+    staleTime: 60_000,
   })
 
-  const monthStart = startOfMonth(currentDate)
-  const monthEnd   = endOfMonth(currentDate)
-  const calStart   = startOfWeek(monthStart, { weekStartsOn: 0 })
-  const calEnd     = endOfWeek(monthEnd, { weekStartsOn: 0 })
-  const days       = eachDayOfInterval({ start: calStart, end: calEnd })
-
-  const getVoyagesForDay = (day: Date): Voyage[] =>
-    voyages.filter(v => {
-      const start = parseISO(v.departure_date)
-      const end   = v.return_date ? parseISO(v.return_date) : start
-      return isWithinInterval(day, { start, end })
+  // 달력 날짜 범위 계산: currentDate 변경 시에만 재계산
+  const days = useMemo(() => {
+    const ms = startOfMonth(currentDate)
+    const me = endOfMonth(currentDate)
+    return eachDayOfInterval({
+      start: startOfWeek(ms, { weekStartsOn: 0 }),
+      end:   endOfWeek(me,   { weekStartsOn: 0 }),
     })
+  }, [currentDate])
 
-  const getPaymentsForDay = (day: Date): PaymentScheduleRow[] =>
-    payments.filter(p => isSameDay(parseISO(p.due_date), day))
+  // 날짜별 행사 맵: voyages/currentDate 변경 시에만 재계산
+  const voyagesByDay = useMemo(() => {
+    const map = new Map<string, Voyage[]>()
+    for (const day of days) {
+      const key = format(day, 'yyyy-MM-dd')
+      map.set(key, voyages.filter(v => {
+        const start = parseISO(v.departure_date)
+        const end   = v.return_date ? parseISO(v.return_date) : start
+        return isWithinInterval(day, { start, end })
+      }))
+    }
+    return map
+  }, [voyages, days])
 
-  const voyagesThisMonth = voyages.filter(v =>
-    isSameMonth(parseISO(v.departure_date), currentDate)
+  // 날짜별 결제 마감 맵: payments/days 변경 시에만 재계산
+  const paymentsByDay = useMemo(() => {
+    const map = new Map<string, PaymentScheduleRow[]>()
+    for (const p of payments) {
+      const key = p.due_date  // already YYYY-MM-DD
+      const list = map.get(key) ?? []
+      list.push(p)
+      map.set(key, list)
+    }
+    return map
+  }, [payments])
+
+  const getVoyagesForDay  = (day: Date): Voyage[]            => voyagesByDay.get(format(day, 'yyyy-MM-dd'))  ?? []
+  const getPaymentsForDay = (day: Date): PaymentScheduleRow[] => paymentsByDay.get(format(day, 'yyyy-MM-dd')) ?? []
+
+  const voyagesThisMonth = useMemo(
+    () => voyages.filter(v => isSameMonth(parseISO(v.departure_date), currentDate)),
+    [voyages, currentDate],
   )
 
-  // 이번 달 결제 마감: 미완료 + 날짜순
-  const paymentsThisMonth = payments
-    .filter(p => isSameMonth(parseISO(p.due_date), currentDate))
-    .sort((a, b) => a.due_date.localeCompare(b.due_date))
+  // 이번 달 결제 마감: 날짜순 (이미 due_date 기준 정렬로 수신)
+  const paymentsThisMonth = useMemo(
+    () => [...payments].sort((a, b) => a.due_date.localeCompare(b.due_date)),
+    [payments],
+  )
 
   const goToVoyage = (id: string) =>
     navigate(`/voyages?tab=항차검색&voyage=${id}`)
 
-  const isLoading = voyagesLoading
+  const isLoading = voyagesLoading || paymentsFetching
 
   return (
     <div>

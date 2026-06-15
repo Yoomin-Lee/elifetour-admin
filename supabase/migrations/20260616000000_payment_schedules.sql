@@ -17,6 +17,13 @@ CREATE TABLE payment_schedules (
   UNIQUE (voyage_id, category, payment_type)
 );
 
+-- 대용량 누적 데이터 대비: due_date 기반 월별 필터링 성능 최적화
+CREATE INDEX IF NOT EXISTS idx_payment_schedules_due_date
+  ON payment_schedules (due_date);
+
+CREATE INDEX IF NOT EXISTS idx_payment_schedules_voyage_id
+  ON payment_schedules (voyage_id);
+
 ALTER TABLE payment_schedules ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "read payment_schedules"
