@@ -40,7 +40,7 @@ function VoyageNewInner() {
   const mutation = useMutation({
     mutationFn: createVoyageWithChildren,
     onSuccess: (voyage) => {
-      navigate(`/voyages/search?voyage=${voyage.id}`)
+      navigate(`/voyages?tab=항차검색&voyage=${voyage.id}`)
     },
   })
 

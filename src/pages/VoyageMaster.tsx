@@ -1,5 +1,6 @@
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
 
 import SearchTab      from '@/components/voyages/tabs/SearchTab'
 import ProductTab     from '@/components/voyages/tabs/ProductTab'
@@ -45,6 +46,7 @@ function tabContent(tab: TabKey) {
 
 function VoyageMasterInner() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const activeTab = (searchParams.get('tab') as TabKey) ?? '항차검색'
 
   function switchTab(key: TabKey) {
@@ -60,22 +62,34 @@ function VoyageMasterInner() {
     <div className="flex flex-col">
       {/* 탭 바 */}
       <div className="border-b border-slate-200 bg-white sticky top-0 z-10">
-        <nav className="flex overflow-x-auto scrollbar-none px-4" aria-label="항차 마스터 탭">
-          {TABS.map(t => (
+        <div className="flex items-center">
+          <nav className="flex flex-1 overflow-x-auto scrollbar-none px-4" aria-label="항차 마스터 탭">
+            {TABS.map(t => (
+              <button
+                key={t.key}
+                onClick={() => switchTab(t.key)}
+                className={[
+                  'flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
+                  activeTab === t.key
+                    ? 'border-brand text-brand'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300',
+                ].join(' ')}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+          <div className="shrink-0 px-3">
             <button
-              key={t.key}
-              onClick={() => switchTab(t.key)}
-              className={[
-                'flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
-                activeTab === t.key
-                  ? 'border-brand text-brand'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300',
-              ].join(' ')}
+              type="button"
+              onClick={() => navigate('/voyages/new')}
+              className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark transition"
             >
-              {t.label}
+              <Plus className="h-3.5 w-3.5" />
+              새 행사
             </button>
-          ))}
-        </nav>
+          </div>
+        </div>
       </div>
 
       {/* 탭 콘텐츠 */}
