@@ -228,11 +228,14 @@ export default function FlightsTab() {
     r.arr_airport.toLowerCase().includes(filter.toLowerCase())
   )
 
-  // 행사 출발일 최신순 → 같은 행사 내 항공편 출발시간 오름차순
+  // 행사 출발일 최신순 → 항공사 코드 알파벳순 → 출발시간 오름차순
   const sortedFiltered = [...filtered].sort((a, b) => {
     const aVoy = a.voyages?.departure_date ?? ''
     const bVoy = b.voyages?.departure_date ?? ''
     if (aVoy !== bVoy) return bVoy.localeCompare(aVoy)
+    const aAirline = a.flight_num.match(/^[A-Za-z]+/)?.[0] ?? ''
+    const bAirline = b.flight_num.match(/^[A-Za-z]+/)?.[0] ?? ''
+    if (aAirline !== bAirline) return aAirline.localeCompare(bAirline)
     return new Date(a.dep_datetime).getTime() - new Date(b.dep_datetime).getTime()
   })
 
