@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Pencil, Check, X } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 import { fetchVoyages, updateVoyage } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
@@ -28,6 +29,7 @@ export default function CruiseTab() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ cruise_line: '', ship_name: '', cabin_total: '', cabin_remaining: '' })
   const qc = useQueryClient()
+  const { canWrite } = useAuth() as { canWrite: boolean }
 
   const { data: voyages = [], isLoading } = useQuery({
     queryKey: ['voyages'],
@@ -136,7 +138,7 @@ export default function CruiseTab() {
                       </span>
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {isEdit ? null : (
+                      {!isEdit && canWrite && (
                         <button
                           onClick={() => startEdit(v)}
                           className="rounded p-1 text-slate-400 hover:text-brand hover:bg-slate-100 transition"

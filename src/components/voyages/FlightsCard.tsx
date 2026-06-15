@@ -63,9 +63,11 @@ function toInput(r: DraftFlight, voyageId: string, idx: number) {
 export default function FlightsCard({
   flights,
   voyageId,
+  canWrite = true,
 }: {
   flights: Flight[]
   voyageId: string
+  canWrite?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DraftFlight[]>([])
@@ -204,13 +206,15 @@ export default function FlightsCard({
         <CardTitle>항공</CardTitle>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">{flights.length}편</span>
-          <button
-            onClick={startEdit}
-            className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-            title="편집"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
+          {canWrite && (
+            <button
+              onClick={startEdit}
+              className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              title="편집"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">

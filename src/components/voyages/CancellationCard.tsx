@@ -79,10 +79,12 @@ export default function CancellationCard({
   policies,
   departureDate,
   voyageId,
+  canWrite = true,
 }: {
   policies: CancellationPolicy[]
   departureDate: string
   voyageId: string
+  canWrite?: boolean
 }) {
   const today = dMinus(departureDate)
   const [editing, setEditing] = useState(false)
@@ -214,13 +216,15 @@ export default function CancellationCard({
         <CardTitle>취소료</CardTitle>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">D-{today > 0 ? today : 0} 기준</span>
-          <button
-            onClick={startEdit}
-            className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-            title="편집"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
+          {canWrite && (
+            <button
+              onClick={startEdit}
+              className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              title="편집"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">

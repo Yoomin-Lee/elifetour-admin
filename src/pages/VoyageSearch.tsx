@@ -26,7 +26,10 @@ function Skeleton({ className }: { className?: string }) {
 function VoyageSearchInner() {
   const [searchParams, setSearchParams] = useSearchParams()
   const voyageId = searchParams.get('voyage')
-  const { user } = useAuth() as { user: { email?: string; user_metadata?: { name?: string; full_name?: string } } | null }
+  const { user, canWrite } = useAuth() as {
+    user: { email?: string; user_metadata?: { name?: string; full_name?: string } } | null
+    canWrite: boolean
+  }
 
   const authorName =
     user?.user_metadata?.name ??
@@ -105,21 +108,23 @@ function VoyageSearchInner() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* 왼쪽: 개요 + 기항지 + 히스토리 */}
           <div className="flex flex-col gap-4">
-            <OverviewCard voyage={selectedVoyage} />
-            <ItineraryCard days={itineraryQuery.data ?? []} voyageId={voyageId} />
+            <OverviewCard voyage={selectedVoyage} canWrite={canWrite} />
+            <ItineraryCard days={itineraryQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
             <HistoryCard
               logs={historyQuery.data ?? []}
               voyageId={voyageId}
               author={authorName}
+              canWrite={canWrite}
             />
           </div>
           {/* 오른쪽: 항공 + 취소료 */}
           <div className="flex flex-col gap-4">
-            <FlightsCard flights={flightsQuery.data ?? []} voyageId={voyageId} />
+            <FlightsCard flights={flightsQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
             <CancellationCard
               policies={cancellationQuery.data ?? []}
               departureDate={selectedVoyage.departure_date}
               voyageId={voyageId}
+              canWrite={canWrite}
             />
           </div>
         </div>

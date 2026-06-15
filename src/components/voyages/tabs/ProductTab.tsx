@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/context/AuthContext'
 import { Search, Plus, Eye, Copy, Pencil, Check, X } from 'lucide-react'
 import { fetchVoyages, duplicateVoyage, updateVoyage } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
@@ -47,6 +48,7 @@ function toForm(v: Voyage): EditForm {
 export default function ProductTab() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const { canWrite } = useAuth() as { canWrite: boolean }
   const [filter, setFilter] = useState('')
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -119,9 +121,11 @@ export default function ProductTab() {
               className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg w-52 focus:outline-none focus:ring-1 focus:ring-brand"
             />
           </div>
-          <Button size="sm" onClick={() => navigate('/voyages/new')}>
-            <Plus className="h-4 w-4" /> 새 행사 등록
-          </Button>
+          {canWrite && (
+            <Button size="sm" onClick={() => navigate('/voyages/new')}>
+              <Plus className="h-4 w-4" /> 새 행사 등록
+            </Button>
+          )}
         </div>
       </div>
 
@@ -195,13 +199,15 @@ export default function ProductTab() {
                       <div className="flex items-center gap-1 justify-end">
                         {!isEdit && (
                           <>
-                            <button
-                              title="편집"
-                              onClick={() => startEdit(v)}
-                              className="p-1 rounded text-slate-400 hover:text-brand hover:bg-slate-100 transition"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
+                            {canWrite && (
+                              <button
+                                title="편집"
+                                onClick={() => startEdit(v)}
+                                className="p-1 rounded text-slate-400 hover:text-brand hover:bg-slate-100 transition"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                             <button
                               title="항차 조회"
                               onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
@@ -209,17 +215,19 @@ export default function ProductTab() {
                             >
                               <Eye className="h-3.5 w-3.5" />
                             </button>
-                            <button
-                              title="복제"
-                              onClick={() => { setDuplicatingId(v.id); dupMut.mutate(v.id) }}
-                              disabled={duplicatingId !== null}
-                              className="p-1 rounded text-slate-400 hover:text-slate-700 transition disabled:opacity-40"
-                            >
-                              {duplicatingId === v.id
-                                ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-                                : <Copy className="h-3.5 w-3.5" />
-                              }
-                            </button>
+                            {canWrite && (
+                              <button
+                                title="복제"
+                                onClick={() => { setDuplicatingId(v.id); dupMut.mutate(v.id) }}
+                                disabled={duplicatingId !== null}
+                                className="p-1 rounded text-slate-400 hover:text-slate-700 transition disabled:opacity-40"
+                              >
+                                {duplicatingId === v.id
+                                  ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                                  : <Copy className="h-3.5 w-3.5" />
+                                }
+                              </button>
+                            )}
                           </>
                         )}
                       </div>

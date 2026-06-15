@@ -22,10 +22,12 @@ export default function HistoryCard({
   logs,
   voyageId,
   author,
+  canWrite = true,
 }: {
   logs: HistoryLog[]
   voyageId: string
   author: string
+  canWrite?: boolean
 }) {
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -51,30 +53,32 @@ export default function HistoryCard({
         <span className="text-xs text-slate-400">{logs.length}건</span>
       </CardHeader>
       <CardContent className="p-0">
-        {/* 메모 입력 */}
-        <div className="px-5 py-3 border-b border-slate-100">
-          <div className="flex gap-2 items-end">
-            <textarea
-              ref={textareaRef}
-              value={text}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit() }}
-              placeholder="메모 추가… (Ctrl+Enter로 저장)"
-              rows={2}
-              className="flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 transition"
-            />
-            <button
-              onClick={submit}
-              disabled={!text.trim() || mutation.isPending}
-              className="mb-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-white transition hover:bg-brand-dark disabled:opacity-40"
-            >
-              <Send className="h-4 w-4" />
-            </button>
+        {/* 메모 입력 (staff/admin만) */}
+        {canWrite && (
+          <div className="px-5 py-3 border-b border-slate-100">
+            <div className="flex gap-2 items-end">
+              <textarea
+                ref={textareaRef}
+                value={text}
+                onChange={e => setText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit() }}
+                placeholder="메모 추가… (Ctrl+Enter로 저장)"
+                rows={2}
+                className="flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 transition"
+              />
+              <button
+                onClick={submit}
+                disabled={!text.trim() || mutation.isPending}
+                className="mb-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-white transition hover:bg-brand-dark disabled:opacity-40"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+            {mutation.isError && (
+              <p className="mt-1 text-xs text-red-500">저장에 실패했습니다</p>
+            )}
           </div>
-          {mutation.isError && (
-            <p className="mt-1 text-xs text-red-500">저장에 실패했습니다</p>
-          )}
-        </div>
+        )}
 
         {/* 로그 목록 */}
         <ul className="divide-y divide-slate-50">

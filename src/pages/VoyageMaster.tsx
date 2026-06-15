@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 import SearchTab      from '@/components/voyages/tabs/SearchTab'
 import ProductTab     from '@/components/voyages/tabs/ProductTab'
@@ -47,6 +48,7 @@ function tabContent(tab: TabKey) {
 function VoyageMasterInner() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { canWrite } = useAuth() as { canWrite: boolean }
   const activeTab = (searchParams.get('tab') as TabKey) ?? '항차검색'
 
   function switchTab(key: TabKey) {
@@ -79,16 +81,18 @@ function VoyageMasterInner() {
               </button>
             ))}
           </nav>
-          <div className="shrink-0 px-3">
-            <button
-              type="button"
-              onClick={() => navigate('/voyages/new')}
-              className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark transition"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              새 행사
-            </button>
-          </div>
+          {canWrite && (
+            <div className="shrink-0 px-3">
+              <button
+                type="button"
+                onClick={() => navigate('/voyages/new')}
+                className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark transition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                새 행사
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 import { fetchAllHotels, addHotel, updateHotel, deleteHotel, fetchVoyages } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
@@ -108,6 +109,7 @@ export default function HotelTab() {
   const [addOpen, setAddOpen] = useState(false)
   const [addForm, setAddForm] = useState<HotelForm>(EMPTY_FORM)
   const qc = useQueryClient()
+  const { canWrite } = useAuth() as { canWrite: boolean }
 
   const { data = [], isLoading } = useQuery({
     queryKey: ['all-hotels'],
@@ -183,9 +185,11 @@ export default function HotelTab() {
               className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg w-52 focus:outline-none focus:ring-1 focus:ring-brand"
             />
           </div>
-          <Button size="sm" onClick={() => { setAddForm(EMPTY_FORM); setAddOpen(o => !o) }}>
-            <Plus className="h-3.5 w-3.5" /> 추가
-          </Button>
+          {canWrite && (
+            <Button size="sm" onClick={() => { setAddForm(EMPTY_FORM); setAddOpen(o => !o) }}>
+              <Plus className="h-3.5 w-3.5" /> 추가
+            </Button>
+          )}
         </div>
       </div>
 
@@ -259,7 +263,7 @@ export default function HotelTab() {
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-1 justify-end">
-                          {!isEdit && (
+                          {!isEdit && canWrite && (
                             <>
                               <button
                                 onClick={() => startEdit(r)}

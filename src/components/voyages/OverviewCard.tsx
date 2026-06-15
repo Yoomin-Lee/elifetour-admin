@@ -70,7 +70,7 @@ function toForm(v: Voyage): Form {
   }
 }
 
-export default function OverviewCard({ voyage }: { voyage: Voyage }) {
+export default function OverviewCard({ voyage, canWrite = true }: { voyage: Voyage; canWrite?: boolean }) {
   const [editing, setEditing] = useState(false)
   const [f, setF] = useState<Form>(toForm(voyage))
   const qc = useQueryClient()
@@ -181,13 +181,15 @@ export default function OverviewCard({ voyage }: { voyage: Voyage }) {
         <CardTitle>개요</CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant={STATUS_VARIANT[voyage.status]}>{voyage.status}</Badge>
-          <button
-            onClick={() => { setF(toForm(voyage)); setEditing(true) }}
-            className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-            title="편집"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
+          {canWrite && (
+            <button
+              onClick={() => { setF(toForm(voyage)); setEditing(true) }}
+              className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              title="편집"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </CardHeader>
       <CardContent>

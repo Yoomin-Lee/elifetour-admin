@@ -62,9 +62,11 @@ function toInput(r: DraftDay, idx: number) {
 export default function ItineraryCard({
   days,
   voyageId,
+  canWrite = true,
 }: {
   days: ItineraryDay[]
   voyageId: string
+  canWrite?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DraftDay[]>([])
@@ -191,13 +193,15 @@ export default function ItineraryCard({
         <CardTitle>기항지 일정</CardTitle>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">{days.length}일</span>
-          <button
-            onClick={startEdit}
-            className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-            title="편집"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
+          {canWrite && (
+            <button
+              onClick={startEdit}
+              className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              title="편집"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">
