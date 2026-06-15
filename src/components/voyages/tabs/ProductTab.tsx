@@ -30,6 +30,7 @@ export default function ProductTab() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [filter, setFilter] = useState('')
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
 
   const { data: voyages = [], isLoading } = useQuery({
     queryKey: ['voyages'],
@@ -38,7 +39,12 @@ export default function ProductTab() {
 
   const dupMut = useMutation({
     mutationFn: duplicateVoyage,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['voyages'] }) },
+    onSuccess: (newVoyage) => {
+      qc.invalidateQueries({ queryKey: ['voyages'] })
+      setDuplicatingId(null)
+      navigate(`/voyages?tab=항차검색&voyage=${newVoyage.id}`)
+    },
+    onError: () => setDuplicatingId(null),
   })
 
   const filtered = voyages.filter(v =>
@@ -151,11 +157,14 @@ export default function ProductTab() {
                       </button>
                       <button
                         title="복제"
-                        onClick={() => dupMut.mutate(v.id)}
-                        disabled={dupMut.isPending}
-                        className="p-1 rounded text-slate-400 hover:text-slate-700 transition"
+                        onClick={() => { setDuplicatingId(v.id); dupMut.mutate(v.id) }}
+                        disabled={duplicatingId !== null}
+                        className="p-1 rounded text-slate-400 hover:text-slate-700 transition disabled:opacity-40"
                       >
-                        <Copy className="h-3.5 w-3.5" />
+                        {duplicatingId === v.id
+                          ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                          : <Copy className="h-3.5 w-3.5" />
+                        }
                       </button>
                     </div>
                   </td>
