@@ -1,8 +1,9 @@
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, Controller } from 'react-hook-form'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { DatePicker } from '@/components/ui/date-picker'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const STATUSES = ['미오픈', '판매중', '마감', '출발완료', '취소'] as const
@@ -22,7 +23,7 @@ function Field({
 }
 
 export default function BasicInfoSection() {
-  const { register, formState: { errors }, watch, setValue } = useFormContext<VoyageFormValues>()
+  const { register, control, formState: { errors }, watch, setValue } = useFormContext<VoyageFormValues>()
 
   const cabinTotal = watch('cabin_total')
 
@@ -44,11 +45,31 @@ export default function BasicInfoSection() {
           </Field>
 
           <Field label="출발일 *" error={errors.departure_date?.message}>
-            <Input type="date" {...register('departure_date')} />
+            <Controller
+              name="departure_date"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder="출발일 선택"
+                />
+              )}
+            />
           </Field>
 
           <Field label="귀국일" error={errors.return_date?.message}>
-            <Input type="date" {...register('return_date')} />
+            <Controller
+              name="return_date"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder="귀국일 선택"
+                />
+              )}
+            />
           </Field>
 
           <Field label="항공사" error={errors.airline?.message}>

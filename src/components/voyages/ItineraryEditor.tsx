@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
-import { Plus, Trash2, Upload, Download } from 'lucide-react'
+import { Plus, Trash2, Upload, Download, MapPin, ChevronDown } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { parseItineraryExcel, downloadItineraryTemplate } from '@/lib/excel'
+import { ITINERARY_PRESETS, PRESET_OPTIONS } from '@/config/itineraryPresets'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const EMPTY_DAY = {
@@ -13,9 +14,11 @@ const EMPTY_DAY = {
 
 export default function ItineraryEditor() {
   const { register, formState: { errors } } = useFormContext<VoyageFormValues>()
-  const { fields, append, remove } = useFieldArray<VoyageFormValues, 'itinerary'>({ name: 'itinerary' })
+  const { fields, append, remove, replace } = useFieldArray<VoyageFormValues, 'itinerary'>({ name: 'itinerary' })
   const fileRef = useRef<HTMLInputElement>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [presetOpen, setPresetOpen] = useState(false)
+  const [pendingPreset, setPendingPreset] = useState<string | null>(null)
 
   async function handleExcelImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -32,14 +35,78 @@ export default function ItineraryEditor() {
     e.target.value = ''
   }
 
+  function applyPreset(key: string, mode: 'replace' | 'append') {
+    const preset = ITINERARY_PRESETS[key]
+    if (!preset) return
+    const rows = preset.ports.map((p, i) => ({
+      date: '',
+      port: p.port,
+      arrival_time: p.arrival_time,
+      departure_time: p.departure_time,
+      summary: p.summary,
+      sort_order: i + 1,
+    }))
+    if (mode === 'replace') {
+      replace(rows)
+    } else {
+      rows.forEach(r => append(r))
+    }
+    setImportMsg(`${preset.label} — ${rows.length}개 기항지 불러옴`)
+    setTimeout(() => setImportMsg(null), 4000)
+    setPendingPreset(null)
+    setPresetOpen(false)
+  }
+
+  function handlePresetSelect(key: string) {
+    if (fields.length > 0) {
+      setPendingPreset(key)
+      setPresetOpen(false)
+    } else {
+      applyPreset(key, 'replace')
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>기항지 일정</CardTitle>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {importMsg && (
             <span className="text-xs text-brand font-medium">{importMsg}</span>
           )}
+
+          {/* 루트 불러오기 드롭다운 */}
+          <div className="relative">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPresetOpen(v => !v)}
+              className="gap-1"
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              루트 불러오기
+              <ChevronDown className={`h-3 w-3 transition-transform ${presetOpen ? 'rotate-180' : ''}`} />
+            </Button>
+            {presetOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
+                <div className="absolute left-0 top-full mt-1 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden">
+                  {PRESET_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handlePresetSelect(opt.value)}
+                      className="w-full px-3 py-2 text-left text-xs hover:bg-slate-50 transition"
+                    >
+                      <span className="font-medium text-slate-700">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
           <Button
             type="button"
             variant="ghost"
@@ -56,7 +123,7 @@ export default function ItineraryEditor() {
             size="sm"
             onClick={() => fileRef.current?.click()}
           >
-            <Upload className="h-4 w-4" /> Excel 불러오기
+            <Upload className="h-4 w-4" /> Excel
           </Button>
           <Button
             type="button"
@@ -75,10 +142,46 @@ export default function ItineraryEditor() {
           />
         </div>
       </CardHeader>
+
       <CardContent>
+        {/* 프리셋 적용 확인 */}
+        {pendingPreset && (
+          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm text-amber-800 font-medium mb-2">
+              이미 입력된 기항지가 있습니다. 어떻게 처리할까요?
+            </p>
+            <p className="text-xs text-amber-600 mb-3">
+              선택한 루트: <span className="font-semibold">{ITINERARY_PRESETS[pendingPreset]?.label}</span>
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => applyPreset(pendingPreset, 'replace')}
+                className="rounded px-3 py-1.5 text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition"
+              >
+                기존 삭제 후 불러오기
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset(pendingPreset, 'append')}
+                className="rounded px-3 py-1.5 text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-100 transition"
+              >
+                기존 유지하고 추가
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingPreset(null)}
+                className="rounded px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-100 transition"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+
         {fields.length === 0 ? (
           <p className="py-4 text-center text-sm text-slate-400">
-            Excel 파일을 불러오거나 직접 입력하세요
+            루트를 불러오거나 직접 입력하세요
           </p>
         ) : (
           <div className="space-y-2">
