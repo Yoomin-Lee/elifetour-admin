@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Eye, Copy } from 'lucide-react'
-import { fetchVoyages, duplicateVoyage } from '@/lib/queries/voyages'
+import { Search, Plus, Eye, Copy, Pencil, Check, X } from 'lucide-react'
+import { fetchVoyages, duplicateVoyage, updateVoyage } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
-import type { Voyage } from '@/types/database'
+import type { Voyage, VoyageStatus } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 
 const STATUS_COLORS: Record<string, string> = {
   '미오픈':   'bg-slate-100 text-slate-600',
@@ -16,6 +18,8 @@ const STATUS_COLORS: Record<string, string> = {
   '출발완료': 'bg-green-100 text-green-700',
   '취소':     'bg-red-100 text-red-500',
 }
+
+const STATUSES: VoyageStatus[] = ['미오픈', '판매중', '마감', '출발완료', '취소']
 
 function calcDDay(departure: string): string {
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -26,11 +30,27 @@ function calcDDay(departure: string): string {
   return `D+${Math.abs(diff)}`
 }
 
+type EditForm = {
+  status: VoyageStatus
+  customer_count: string
+  tour_leader: string
+}
+
+function toForm(v: Voyage): EditForm {
+  return {
+    status: v.status,
+    customer_count: String(v.customer_count ?? ''),
+    tour_leader: v.tour_leader ?? '',
+  }
+}
+
 export default function ProductTab() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [filter, setFilter] = useState('')
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<EditForm>({ status: '미오픈', customer_count: '', tour_leader: '' })
 
   const { data: voyages = [], isLoading } = useQuery({
     queryKey: ['voyages'],
@@ -46,6 +66,29 @@ export default function ProductTab() {
     },
     onError: () => setDuplicatingId(null),
   })
+
+  const saveMut = useMutation({
+    mutationFn: (id: string) => updateVoyage(id, {
+      status: editForm.status,
+      customer_count: Number(editForm.customer_count) || 0,
+      tour_leader: editForm.tour_leader || null,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['voyages'] })
+      setEditingId(null)
+    },
+  })
+
+  function startEdit(v: Voyage) {
+    setEditForm(toForm(v))
+    setEditingId(v.id)
+    saveMut.reset()
+  }
+
+  function set(field: keyof EditForm) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setEditForm(prev => ({ ...prev, [field]: e.target.value }))
+  }
 
   const filtered = voyages.filter(v =>
     !filter || voyageTitle(v).toLowerCase().includes(filter.toLowerCase()) ||
@@ -97,7 +140,7 @@ export default function ProductTab() {
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">고객</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">인솔자</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-16">D-DAY</th>
-              <th className="px-3 py-2.5 w-16" />
+              <th className="px-3 py-2.5 w-20" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -113,62 +156,129 @@ export default function ProductTab() {
             )}
             {ordered.map(v => {
               const isCancelled = v.status === '취소'
+              const isEdit = editingId === v.id
               return (
-                <tr
-                  key={v.id}
-                  className={[
-                    'hover:bg-slate-50 transition-colors',
-                    isCancelled ? 'opacity-50' : '',
-                  ].join(' ')}
-                >
-                  <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
-                    {isCancelled ? (
-                      <span className="line-through text-slate-400">{voyageTitle(v)}</span>
-                    ) : voyageTitle(v)}
-                  </td>
-                  <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
-                  <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
-                  <td className="px-3 py-2 text-slate-600">{v.cruise_line ?? '—'}</td>
-                  <td className="px-3 py-2 text-slate-600">{v.ship_name ?? '—'}</td>
-                  <td className="px-3 py-2 text-slate-600">{v.airline ?? '—'}</td>
-                  <td className="px-3 py-2">
-                    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_COLORS[v.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                      {v.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right text-slate-700 font-medium">{v.customer_count}</td>
-                  <td className="px-3 py-2 text-slate-600">{v.tour_leader ?? '—'}</td>
-                  <td className="px-3 py-2 text-right">
-                    <span className={[
-                      'font-mono text-[11px]',
-                      isCancelled ? 'text-slate-400' : 'text-slate-700',
-                    ].join(' ')}>
-                      {calcDDay(v.departure_date)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-1 justify-end">
-                      <button
-                        title="항차 조회"
-                        onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
-                        className="p-1 rounded text-slate-400 hover:text-brand transition"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        title="복제"
-                        onClick={() => { setDuplicatingId(v.id); dupMut.mutate(v.id) }}
-                        disabled={duplicatingId !== null}
-                        className="p-1 rounded text-slate-400 hover:text-slate-700 transition disabled:opacity-40"
-                      >
-                        {duplicatingId === v.id
-                          ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-                          : <Copy className="h-3.5 w-3.5" />
-                        }
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <>
+                  <tr
+                    key={v.id}
+                    className={[
+                      'hover:bg-slate-50 transition-colors',
+                      isCancelled ? 'opacity-50' : '',
+                    ].join(' ')}
+                  >
+                    <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
+                      {isCancelled ? (
+                        <span className="line-through text-slate-400">{voyageTitle(v)}</span>
+                      ) : voyageTitle(v)}
+                    </td>
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
+                    <td className="px-3 py-2 text-slate-600">{v.cruise_line ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600">{v.ship_name ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600">{v.airline ?? '—'}</td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_COLORS[v.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                        {v.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right text-slate-700 font-medium">{v.customer_count}</td>
+                    <td className="px-3 py-2 text-slate-600">{v.tour_leader ?? '—'}</td>
+                    <td className="px-3 py-2 text-right">
+                      <span className={[
+                        'font-mono text-[11px]',
+                        isCancelled ? 'text-slate-400' : 'text-slate-700',
+                      ].join(' ')}>
+                        {calcDDay(v.departure_date)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1 justify-end">
+                        {!isEdit && (
+                          <>
+                            <button
+                              title="편집"
+                              onClick={() => startEdit(v)}
+                              className="p-1 rounded text-slate-400 hover:text-brand hover:bg-slate-100 transition"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              title="항차 조회"
+                              onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
+                              className="p-1 rounded text-slate-400 hover:text-brand transition"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              title="복제"
+                              onClick={() => { setDuplicatingId(v.id); dupMut.mutate(v.id) }}
+                              disabled={duplicatingId !== null}
+                              className="p-1 rounded text-slate-400 hover:text-slate-700 transition disabled:opacity-40"
+                            >
+                              {duplicatingId === v.id
+                                ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                                : <Copy className="h-3.5 w-3.5" />
+                              }
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+
+                  {isEdit && (
+                    <tr key={`${v.id}-edit`}>
+                      <td colSpan={11} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
+                        {saveMut.isError && (
+                          <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
+                        )}
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mb-2">
+                          <div>
+                            <label className="label">상태</label>
+                            <Select value={editForm.status} onChange={set('status')} className="h-7 py-0 text-sm">
+                              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="label">고객 수</label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={editForm.customer_count}
+                              onChange={set('customer_count')}
+                              className="h-7 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="label">인솔자</label>
+                            <Input
+                              value={editForm.tour_leader}
+                              onChange={set('tour_leader')}
+                              placeholder="미정"
+                              className="h-7 text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => saveMut.mutate(v.id)}
+                            disabled={saveMut.isPending}
+                            className="flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-green-700 hover:bg-green-100 transition disabled:opacity-40"
+                          >
+                            <Check className="h-3.5 w-3.5" />{saveMut.isPending ? '저장 중…' : '저장'}
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            disabled={saveMut.isPending}
+                            className="flex h-7 items-center gap-1 rounded px-2 text-xs text-slate-400 hover:bg-slate-100 transition"
+                          >
+                            <X className="h-3.5 w-3.5" />취소
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               )
             })}
           </tbody>
