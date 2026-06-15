@@ -196,6 +196,121 @@ export async function deleteHotel(id: string): Promise<void> {
   if (error) throw error
 }
 
+// ── Voyage update ─────────────────────────────────────────────────────────
+
+export async function updateVoyage(
+  id: string,
+  patch: Partial<Omit<Voyage, 'id' | 'created_at' | 'updated_at'>>,
+): Promise<Voyage> {
+  const { data, error } = await sb()
+    .from('voyages')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as Voyage
+}
+
+// ── Flight CRUD ─────────────────────────────────────────────────────────────
+
+type FlightInput = Omit<Flight, 'id' | 'voyage_id' | 'created_at'>
+
+export async function saveFlight(
+  voyageId: string,
+  data: FlightInput,
+  id?: string,
+): Promise<Flight> {
+  if (id) {
+    const { data: row, error } = await sb()
+      .from('flights')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return row as Flight
+  }
+  const { data: row, error } = await sb()
+    .from('flights')
+    .insert({ ...data, voyage_id: voyageId })
+    .select()
+    .single()
+  if (error) throw error
+  return row as Flight
+}
+
+export async function deleteFlightRow(id: string): Promise<void> {
+  const { error } = await sb().from('flights').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── ItineraryDay CRUD ─────────────────────────────────────────────────────
+
+type ItineraryDayInput = Omit<ItineraryDay, 'id' | 'voyage_id'>
+
+export async function saveItineraryDay(
+  voyageId: string,
+  data: ItineraryDayInput,
+  id?: string,
+): Promise<ItineraryDay> {
+  if (id) {
+    const { data: row, error } = await sb()
+      .from('itinerary_days')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return row as ItineraryDay
+  }
+  const { data: row, error } = await sb()
+    .from('itinerary_days')
+    .insert({ ...data, voyage_id: voyageId })
+    .select()
+    .single()
+  if (error) throw error
+  return row as ItineraryDay
+}
+
+export async function deleteItineraryDay(id: string): Promise<void> {
+  const { error } = await sb().from('itinerary_days').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── CancellationPolicy CRUD ───────────────────────────────────────────────
+
+type CancellationPolicyInput = Omit<CancellationPolicy, 'id' | 'voyage_id'>
+
+export async function saveCancellationPolicy(
+  voyageId: string,
+  data: CancellationPolicyInput,
+  id?: string,
+): Promise<CancellationPolicy> {
+  if (id) {
+    const { data: row, error } = await sb()
+      .from('cancellation_policies')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return row as CancellationPolicy
+  }
+  const { data: row, error } = await sb()
+    .from('cancellation_policies')
+    .insert({ ...data, voyage_id: voyageId })
+    .select()
+    .single()
+  if (error) throw error
+  return row as CancellationPolicy
+}
+
+export async function deleteCancellationPolicy(id: string): Promise<void> {
+  const { error } = await sb().from('cancellation_policies').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ── Duplicate ─────────────────────────────────────────────────────────────
 
 export async function duplicateVoyage(voyageId: string): Promise<Voyage> {

@@ -114,7 +114,7 @@ function VoyageSearchInner() {
           {/* 왼쪽: 개요 + 기항지 + 히스토리 */}
           <div className="flex flex-col gap-4">
             <OverviewCard voyage={selectedVoyage} />
-            <ItineraryCard days={itineraryQuery.data ?? []} />
+            <ItineraryCard days={itineraryQuery.data ?? []} voyageId={voyageId} />
             <HistoryCard
               logs={historyQuery.data ?? []}
               voyageId={voyageId}
@@ -123,10 +123,11 @@ function VoyageSearchInner() {
           </div>
           {/* 오른쪽: 항공 + 취소료 */}
           <div className="flex flex-col gap-4">
-            <FlightsCard flights={flightsQuery.data ?? []} />
+            <FlightsCard flights={flightsQuery.data ?? []} voyageId={voyageId} />
             <CancellationCard
               policies={cancellationQuery.data ?? []}
               departureDate={selectedVoyage.departure_date}
+              voyageId={voyageId}
             />
           </div>
         </div>

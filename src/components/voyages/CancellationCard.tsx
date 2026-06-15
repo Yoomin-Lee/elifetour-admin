@@ -1,9 +1,14 @@
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Pencil, Plus, Trash2, Check, X } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { saveCancellationPolicy, deleteCancellationPolicy } from '@/lib/queries/voyages'
 import type { CancellationPolicy } from '@/types/database'
 
-/** 오늘 기준 출발까지 남은 일수 */
 function dMinus(departureDate: string): number {
   const dep = new Date(departureDate + 'T00:00:00')
   const today = new Date()
@@ -21,20 +26,202 @@ function dLabel(val: number | null): string {
   return val == null ? '~' : `D-${val}`
 }
 
+type DraftPolicy = {
+  _key: string
+  _isNew: boolean
+  _deleted: boolean
+  id: string
+  category: string
+  start_d_minus: string
+  end_d_minus: string
+  fee_description: string
+  fee_unit: string
+  note: string
+  sort_order: number
+}
+
+function toDraft(p: CancellationPolicy): DraftPolicy {
+  return {
+    _key: p.id, _isNew: false, _deleted: false, id: p.id,
+    category: p.category ?? '',
+    start_d_minus: p.start_d_minus != null ? String(p.start_d_minus) : '',
+    end_d_minus: p.end_d_minus != null ? String(p.end_d_minus) : '',
+    fee_description: p.fee_description ?? '',
+    fee_unit: p.fee_unit ?? '',
+    note: p.note ?? '',
+    sort_order: p.sort_order,
+  }
+}
+
+const EMPTY: Omit<DraftPolicy, '_key'> = {
+  _isNew: true, _deleted: false, id: '',
+  category: '', start_d_minus: '', end_d_minus: '',
+  fee_description: '', fee_unit: '', note: '', sort_order: 0,
+}
+
+function toInput(r: DraftPolicy, idx: number) {
+  return {
+    category: r.category || null,
+    start_d_minus: r.start_d_minus ? Number(r.start_d_minus) : null,
+    end_d_minus: r.end_d_minus ? Number(r.end_d_minus) : null,
+    start_date: null,
+    end_date: null,
+    fee_description: r.fee_description || null,
+    fee_type: null,
+    fee_value: null,
+    fee_unit: r.fee_unit || null,
+    note: r.note || null,
+    sort_order: r.sort_order || idx + 1,
+  }
+}
+
 export default function CancellationCard({
   policies,
   departureDate,
+  voyageId,
 }: {
   policies: CancellationPolicy[]
   departureDate: string
+  voyageId: string
 }) {
   const today = dMinus(departureDate)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState<DraftPolicy[]>([])
+  const qc = useQueryClient()
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      let idx = 0
+      await Promise.all(draft.map(r => {
+        if (r._deleted && !r._isNew) return deleteCancellationPolicy(r.id)
+        if (r._isNew && !r._deleted) return saveCancellationPolicy(voyageId, toInput(r, idx++))
+        if (!r._isNew && !r._deleted) return saveCancellationPolicy(voyageId, toInput(r, idx++), r.id)
+        return Promise.resolve()
+      }))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['cancellation', voyageId] })
+      setEditing(false)
+      setDraft([])
+    },
+  })
+
+  function startEdit() {
+    setDraft(policies.map(toDraft))
+    setEditing(true)
+  }
+
+  function addRow() {
+    setDraft(d => [...d, { ...EMPTY, _key: `new-${Date.now()}` }])
+  }
+
+  function removeRow(key: string) {
+    setDraft(d =>
+      d.map(r => r._key === key
+        ? (r._isNew ? null : { ...r, _deleted: true })
+        : r
+      ).filter((r): r is DraftPolicy => r !== null)
+    )
+  }
+
+  function upd(key: string, field: keyof DraftPolicy, value: string) {
+    setDraft(d => d.map(r => r._key === key ? { ...r, [field]: value } : r))
+  }
+
+  const visible = draft.filter(r => !r._deleted)
+
+  if (editing) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>취소료</CardTitle>
+          <div className="flex items-center gap-1">
+            <Button type="button" size="sm" variant="outline" onClick={addRow} disabled={saveMut.isPending}>
+              <Plus className="h-3.5 w-3.5" /> 행 추가
+            </Button>
+            <button
+              onClick={() => saveMut.mutate()}
+              disabled={saveMut.isPending}
+              className="flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-green-700 hover:bg-green-50 transition disabled:opacity-40"
+            >
+              <Check className="h-3.5 w-3.5" />{saveMut.isPending ? '저장 중…' : '저장'}
+            </button>
+            <button
+              onClick={() => { setEditing(false); setDraft([]) }}
+              disabled={saveMut.isPending}
+              className="flex h-7 items-center gap-1 rounded px-2 text-xs text-slate-400 hover:bg-slate-100 transition"
+            >
+              <X className="h-3.5 w-3.5" />취소
+            </button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {saveMut.isError && (
+            <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
+          )}
+          <div className="space-y-2">
+            {visible.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-400">행 추가를 눌러 취소료를 등록하세요</p>
+            ) : (
+              visible.map((r, i) => (
+                <div key={r._key} className="relative rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+                  <button
+                    type="button"
+                    onClick={() => removeRow(r._key)}
+                    className="absolute right-2 top-2 rounded p-1 text-slate-400 hover:text-red-500 transition"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="mb-2 block text-xs font-medium text-slate-400">{i + 1}번</span>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div>
+                      <label className="label">구분</label>
+                      <Input value={r.category} onChange={e => upd(r._key, 'category', e.target.value)} placeholder="크루즈" className="h-7 text-sm" />
+                    </div>
+                    <div>
+                      <label className="label">시작 D-</label>
+                      <Input type="number" value={r.start_d_minus} onChange={e => upd(r._key, 'start_d_minus', e.target.value)} placeholder="90" className="h-7 text-sm" />
+                    </div>
+                    <div>
+                      <label className="label">종료 D-</label>
+                      <Input type="number" value={r.end_d_minus} onChange={e => upd(r._key, 'end_d_minus', e.target.value)} placeholder="45" className="h-7 text-sm" />
+                    </div>
+                    <div>
+                      <label className="label">단위</label>
+                      <Input value={r.fee_unit} onChange={e => upd(r._key, 'fee_unit', e.target.value)} placeholder="인당" className="h-7 text-sm" />
+                    </div>
+                    <div className="col-span-2 sm:col-span-4">
+                      <label className="label">취소료 설명</label>
+                      <Input value={r.fee_description} onChange={e => upd(r._key, 'fee_description', e.target.value)} placeholder="크루즈 요금의 50%" className="h-7 text-sm" />
+                    </div>
+                    <div className="col-span-2 sm:col-span-4">
+                      <label className="label">비고</label>
+                      <Input value={r.note} onChange={e => upd(r._key, 'note', e.target.value)} placeholder="추가 메모" className="h-7 text-sm" />
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>취소료</CardTitle>
-        <span className="text-xs text-slate-400">D-{today > 0 ? today : 0} 기준</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400">D-{today > 0 ? today : 0} 기준</span>
+          <button
+            onClick={startEdit}
+            className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            title="편집"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         {policies.length === 0 ? (
