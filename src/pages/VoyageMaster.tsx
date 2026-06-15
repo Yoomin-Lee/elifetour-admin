@@ -12,6 +12,7 @@ import CancellationTab from '@/components/voyages/tabs/CancellationTab'
 import ShoreTab       from '@/components/voyages/tabs/ShoreTab'
 import HistoryTab     from '@/components/voyages/tabs/HistoryTab'
 import MNTab          from '@/components/voyages/tabs/MNTab'
+import CalendarTab    from '@/components/voyages/tabs/CalendarTab'
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
@@ -27,6 +28,7 @@ const TABS = [
   { key: '지상',     label: '지상'     },
   { key: '히스토리', label: '히스토리' },
   { key: 'MN',       label: 'MN'       },
+  { key: '달력',     label: '달력'     },
 ] as const
 
 type TabKey = typeof TABS[number]['key']
@@ -42,6 +44,7 @@ function tabContent(tab: TabKey) {
     case '지상':     return <ShoreTab />
     case '히스토리': return <HistoryTab />
     case 'MN':       return <MNTab />
+    case '달력':     return <CalendarTab />
   }
 }
 
