@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, Controller } from 'react-hook-form'
 import { Plus, Trash2, Upload, Download } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { TimePicker } from '@/components/ui/time-picker'
 import { parseFlightsExcel, downloadFlightsTemplate } from '@/lib/excel'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
@@ -15,7 +16,7 @@ const EMPTY_FLIGHT = {
 }
 
 export default function FlightsEditor() {
-  const { register } = useFormContext<VoyageFormValues>()
+  const { register, control } = useFormContext<VoyageFormValues>()
   const { fields, append, remove } = useFieldArray<VoyageFormValues, 'flights'>({ name: 'flights' })
   const fileRef = useRef<HTMLInputElement>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
@@ -116,7 +117,13 @@ export default function FlightsEditor() {
                 </div>
                 <div>
                   <label className="label">출발 시간</label>
-                  <Input type="time" {...register(`flights.${i}.departure_time`)} />
+                  <Controller
+                    name={`flights.${i}.departure_time`}
+                    control={control}
+                    render={({ field }) => (
+                      <TimePicker value={field.value ?? ''} onChange={field.onChange} />
+                    )}
+                  />
                 </div>
                 <div>
                   <label className="label">도착일</label>
@@ -124,7 +131,13 @@ export default function FlightsEditor() {
                 </div>
                 <div>
                   <label className="label">도착 시간</label>
-                  <Input type="time" {...register(`flights.${i}.arrival_time`)} />
+                  <Controller
+                    name={`flights.${i}.arrival_time`}
+                    control={control}
+                    render={({ field }) => (
+                      <TimePicker value={field.value ?? ''} onChange={field.onChange} />
+                    )}
+                  />
                 </div>
               </div>
             </div>

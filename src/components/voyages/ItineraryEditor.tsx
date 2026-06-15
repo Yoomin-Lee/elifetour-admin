@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, Controller } from 'react-hook-form'
 import { Plus, Trash2, Upload, Download, MapPin, ChevronDown } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { TimePicker } from '@/components/ui/time-picker'
 import { parseItineraryExcel, downloadItineraryTemplate } from '@/lib/excel'
 import { ITINERARY_PRESETS, PRESET_OPTIONS } from '@/config/itineraryPresets'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
@@ -13,7 +14,7 @@ const EMPTY_DAY = {
 }
 
 export default function ItineraryEditor() {
-  const { register, formState: { errors } } = useFormContext<VoyageFormValues>()
+  const { register, control, formState: { errors } } = useFormContext<VoyageFormValues>()
   const { fields, append, remove, replace } = useFieldArray<VoyageFormValues, 'itinerary'>({ name: 'itinerary' })
   const fileRef = useRef<HTMLInputElement>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
@@ -207,11 +208,23 @@ export default function ItineraryEditor() {
                     </div>
                     <div>
                       <label className="label">도착</label>
-                      <Input type="time" {...register(`itinerary.${i}.arrival_time`)} />
+                      <Controller
+                        name={`itinerary.${i}.arrival_time`}
+                        control={control}
+                        render={({ field }) => (
+                          <TimePicker value={field.value ?? ''} onChange={field.onChange} />
+                        )}
+                      />
                     </div>
                     <div>
                       <label className="label">출발</label>
-                      <Input type="time" {...register(`itinerary.${i}.departure_time`)} />
+                      <Controller
+                        name={`itinerary.${i}.departure_time`}
+                        control={control}
+                        render={({ field }) => (
+                          <TimePicker value={field.value ?? ''} onChange={field.onChange} />
+                        )}
+                      />
                     </div>
                     <div className="col-span-2 sm:col-span-5">
                       <label className="label">비고</label>

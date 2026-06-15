@@ -14,6 +14,7 @@ import { fetchVoyages } from '@/lib/queries/voyages'
 import { getAirportTimezone } from '@/lib/utils/flightCalc'
 import { voyageTitle } from '@/types/database'
 import { Input } from '@/components/ui/input'
+import { TimePicker } from '@/components/ui/time-picker'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import type { VoyageFlight } from '@/lib/queries/voyageFlights'
@@ -124,7 +125,7 @@ function FlightFormFields({
       </div>
       <div>
         <label className="label">출발시간 (현지)</label>
-        <Input type="time" value={form.departureTime} onChange={set('departureTime')} className="h-7 text-sm" />
+        <TimePicker size="sm" value={form.departureTime} onChange={v => setForm(prev => ({ ...prev, departureTime: v }))} />
       </div>
       <div>
         <label className="label">도착일 (현지)</label>
@@ -132,7 +133,7 @@ function FlightFormFields({
       </div>
       <div>
         <label className="label">도착시간 (현지)</label>
-        <Input type="time" value={form.arrivalTime} onChange={set('arrivalTime')} className="h-7 text-sm" />
+        <TimePicker size="sm" value={form.arrivalTime} onChange={v => setForm(prev => ({ ...prev, arrivalTime: v }))} />
       </div>
       <div>
         <label className="label">항공요금</label>

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { site } from '../config/site'
 
@@ -60,6 +60,8 @@ const adminNavItems = [
 
 export default function Sidebar({ open, onClose }) {
   const { isAdmin } = useAuth()
+  const location = useLocation()
+  const isCalendarActive = location.pathname === '/voyages' && location.search.includes('tab=달력')
 
   return (
     <aside
@@ -144,6 +146,22 @@ export default function Sidebar({ open, onClose }) {
             {item.label}
           </NavLink>
         ))}
+        {/* 달력 서브 항목 */}
+        <NavLink
+          to="/voyages?tab=달력"
+          onClick={onClose}
+          className={[
+            'flex items-center gap-3 rounded-lg pl-9 pr-3 py-2 text-sm font-medium transition',
+            isCalendarActive
+              ? 'bg-white/15 text-white'
+              : 'text-white/60 hover:bg-white/10 hover:text-white',
+          ].join(' ')}
+        >
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          일정 달력
+        </NavLink>
 
         {/* 관리자 전용 메뉴 */}
         {isAdmin && (

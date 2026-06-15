@@ -4,6 +4,7 @@ import { Pencil, Plus, Trash2, Check, X } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
+import { TimePicker } from '@/components/ui/time-picker'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatTime } from '@/lib/utils'
 import { saveItineraryDay, deleteItineraryDay } from '@/lib/queries/voyages'
@@ -160,11 +161,11 @@ export default function ItineraryCard({
                     </div>
                     <div>
                       <label className="label">도착</label>
-                      <Input type="time" value={r.arrival_time} onChange={e => upd(r._key, 'arrival_time', e.target.value)} className="h-7 text-sm" />
+                      <TimePicker size="sm" value={r.arrival_time} onChange={v => upd(r._key, 'arrival_time', v)} />
                     </div>
                     <div>
                       <label className="label">출발</label>
-                      <Input type="time" value={r.departure_time} onChange={e => upd(r._key, 'departure_time', e.target.value)} className="h-7 text-sm" />
+                      <TimePicker size="sm" value={r.departure_time} onChange={v => upd(r._key, 'departure_time', v)} />
                     </div>
                     <div className="col-span-2 sm:col-span-5">
                       <label className="label">비고</label>
