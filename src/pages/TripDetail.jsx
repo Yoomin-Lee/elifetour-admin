@@ -37,6 +37,7 @@ export default function TripDetail() {
   const [editingPax, setEditingPax] = useState(null)
   const [saving, setSaving] = useState(false)
   const [paxSearch, setPaxSearch] = useState('')
+  const [updatingBooking, setUpdatingBooking] = useState(null)
 
   const load = useCallback(async () => {
     try {
@@ -87,12 +88,25 @@ export default function TripDetail() {
     setPassengers((p) => p.filter((x) => x.id !== paxId))
   }
 
+  async function handleBookingStatus(paxId, newStatus) {
+    setUpdatingBooking(paxId)
+    try {
+      const updated = await updatePassenger(paxId, { booking_status: newStatus })
+      setPassengers((p) => p.map((x) => x.id === updated.id ? updated : x))
+    } finally {
+      setUpdatingBooking(null)
+    }
+  }
+
+  const BOOKING_LABEL = { inquiry: '문의', confirmed: '계약', balance: '잔금', passport: '여권', departed: '출발' }
+
   function exportCSV() {
-    const headers = ['순번', '성명', '생년월일', '성별', '연락처', '여권번호', '여권만료일', '국적', '객실', '결제상태', '입금액', '특이사항', '메모']
+    const headers = ['순번', '성명', '생년월일', '성별', '연락처', '여권번호', '여권만료일', '국적', '객실', '예약단계', '결제상태', '입금액', '특이사항', '메모']
     const rows = filtered.map((p, i) => [
       i + 1, p.name, p.birth_date || '', p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '',
       p.phone || '', p.passport_no || '', p.passport_expire || '', p.nationality || '',
       p.room_type === 'single' ? '1인실' : p.room_type === 'triple' ? '3인실' : '2인실',
+      BOOKING_LABEL[p.booking_status] || '문의',
       p.payment_status === 'paid' ? '완납' : p.payment_status === 'partial' ? '일부납' : '미납',
       p.payment_amount || 0, p.special_request || '', p.notes || ''
     ])
@@ -110,6 +124,10 @@ export default function TripDetail() {
 
   const paidCount = passengers.filter((p) => p.payment_status === 'paid').length
   const partialCount = passengers.filter((p) => p.payment_status === 'partial').length
+  const bookingCounts = statusOptions.booking.map((o) => ({
+    ...o,
+    count: passengers.filter((p) => (p.booking_status || 'inquiry') === o.value).length,
+  }))
 
   if (loading) return (
     <div className="flex justify-center py-20 text-slate-400">불러오는 중...</div>
@@ -182,6 +200,13 @@ export default function TripDetail() {
             <p className="text-xs text-slate-500 mt-0.5">
               총 {passengers.length}명 · 완납 {paidCount}명 · 일부납 {partialCount}명 · 미납 {passengers.length - paidCount - partialCount}명
             </p>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+              {bookingCounts.map((o) => (
+                <span key={o.value} className="text-xs text-slate-400">
+                  {o.label} <span className="font-medium text-slate-600">{o.count}</span>
+                </span>
+              ))}
+            </div>
           </div>
           <div className="flex gap-2">
             <button className="btn-secondary text-sm" onClick={exportCSV}>CSV 내보내기</button>
@@ -214,6 +239,7 @@ export default function TripDetail() {
                 <th className="px-4 py-2.5 text-left font-medium">여권번호</th>
                 <th className="px-4 py-2.5 text-left font-medium">만료일</th>
                 <th className="px-4 py-2.5 text-left font-medium">객실</th>
+                <th className="px-4 py-2.5 text-left font-medium">예약단계</th>
                 <th className="px-4 py-2.5 text-left font-medium">결제</th>
                 <th className="px-4 py-2.5 text-left font-medium">입금액</th>
                 <th className="px-4 py-2.5 text-left font-medium">특이사항</th>
@@ -223,7 +249,7 @@ export default function TripDetail() {
             <tbody className="divide-y divide-slate-50">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="py-10 text-center text-slate-400">
+                  <td colSpan={13} className="py-10 text-center text-slate-400">
                     {paxSearch ? '검색 결과 없음' : '등록된 여행자가 없습니다'}
                   </td>
                 </tr>
@@ -238,6 +264,22 @@ export default function TripDetail() {
                   <td className="px-4 py-2.5 text-slate-600">{p.passport_expire || '-'}</td>
                   <td className="px-4 py-2.5 text-slate-600">
                     {p.room_type === 'single' ? '1인실' : p.room_type === 'triple' ? '3인실' : '2인실'}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    {canWrite ? (
+                      <select
+                        value={p.booking_status || 'inquiry'}
+                        onChange={(e) => handleBookingStatus(p.id, e.target.value)}
+                        disabled={updatingBooking === p.id}
+                        className="text-xs rounded px-1.5 py-0.5 border border-slate-200 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-50"
+                      >
+                        {statusOptions.booking.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <StatusBadge type="booking" value={p.booking_status || 'inquiry'} />
+                    )}
                   </td>
                   <td className="px-4 py-2.5">
                     <StatusBadge type="payment" value={p.payment_status} />
@@ -272,7 +314,10 @@ export default function TripDetail() {
                   <span className="font-semibold text-slate-800">{p.name}</span>
                   <span className="ml-2 text-xs text-slate-400">{p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : ''}</span>
                 </div>
-                <StatusBadge type="payment" value={p.payment_status} />
+                <div className="flex items-center gap-1.5">
+                  <StatusBadge type="booking" value={p.booking_status || 'inquiry'} />
+                  <StatusBadge type="payment" value={p.payment_status} />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-1 text-xs text-slate-600">
                 <span>📞 {p.phone || '-'}</span>

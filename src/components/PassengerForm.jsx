@@ -4,7 +4,8 @@ import { statusOptions } from '../config/site'
 const emptyForm = {
   name: '', birth_date: '', gender: '', phone: '',
   passport_no: '', passport_expire: '', nationality: '한국',
-  room_type: 'double', payment_status: 'pending', payment_amount: '',
+  room_type: 'double', booking_status: 'inquiry',
+  payment_status: 'pending', payment_amount: '',
   special_request: '', notes: '',
 }
 
@@ -66,7 +67,15 @@ export default function PassengerForm({ initial = {}, onSubmit, onCancel, loadin
           </select>
         </div>
 
-        {/* 결제 */}
+        {/* 예약 단계 + 결제 */}
+        <div>
+          <label className="label">예약 단계</label>
+          <select className="select" value={form.booking_status} onChange={set('booking_status')}>
+            {statusOptions.booking.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="label">결제상태</label>
           <select className="select" value={form.payment_status} onChange={set('payment_status')}>
