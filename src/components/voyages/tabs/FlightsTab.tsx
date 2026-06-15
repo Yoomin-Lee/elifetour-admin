@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -228,6 +228,34 @@ export default function FlightsTab() {
     r.arr_airport.toLowerCase().includes(filter.toLowerCase())
   )
 
+  // 날짜(최신순) + 행사별 정렬 후 그룹핑
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    const aDate = format(toZonedTime(new Date(a.dep_datetime), getAirportTimezone(a.dep_airport)), 'yyyy-MM-dd')
+    const bDate = format(toZonedTime(new Date(b.dep_datetime), getAirportTimezone(b.dep_airport)), 'yyyy-MM-dd')
+    if (aDate !== bDate) return bDate.localeCompare(aDate)
+    const aName = a.voyages ? voyageTitle(a.voyages) : ''
+    const bName = b.voyages ? voyageTitle(b.voyages) : ''
+    if (aName !== bName) return aName.localeCompare(bName)
+    return new Date(a.dep_datetime).getTime() - new Date(b.dep_datetime).getTime()
+  })
+
+  type FlightGroup = { key: string; dateLabel: string; voyageName: string; rows: VoyageFlight[] }
+  const groups: FlightGroup[] = []
+  const seenKeys = new Map<string, FlightGroup>()
+  for (const r of sortedFiltered) {
+    const tz = getAirportTimezone(r.dep_airport)
+    const zoned = toZonedTime(new Date(r.dep_datetime), tz)
+    const dateKey = format(zoned, 'yyyy-MM-dd')
+    const dateLabel = format(zoned, 'yyyy년 M월 d일')
+    const gkey = `${dateKey}__${r.voyage_id}`
+    if (!seenKeys.has(gkey)) {
+      const g: FlightGroup = { key: gkey, dateLabel, voyageName: r.voyages ? voyageTitle(r.voyages) : '(행사 미지정)', rows: [] }
+      seenKeys.set(gkey, g)
+      groups.push(g)
+    }
+    seenKeys.get(gkey)!.rows.push(r)
+  }
+
   return (
     <div className="space-y-4">
       {/* 헤더 */}
@@ -305,84 +333,96 @@ export default function FlightsTab() {
             {!isLoading && filtered.length === 0 && (
               <tr><td colSpan={11} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
-            {filtered.map(r => {
-              const dep = localDt(r.dep_datetime, r.dep_airport)
-              const arr = localDt(r.arr_datetime, r.arr_airport)
-              const isEdit = editingId === r.id
-              return (
-                <>
-                  <tr key={r.id} className="hover:bg-slate-50">
-                    <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
-                      {r.voyages ? voyageTitle(r.voyages) : '—'}
-                    </td>
-                    <td className="px-3 py-2 font-mono text-slate-700">{r.flight_num}</td>
-                    <td className="px-3 py-2 font-mono text-slate-600">{r.dep_airport}</td>
-                    <td className="px-3 py-2 font-mono text-slate-600">{r.arr_airport}</td>
-                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{dep.display.date}</td>
-                    <td className="px-3 py-2 font-mono text-slate-700">{dep.display.time}</td>
-                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{arr.display.date}</td>
-                    <td className="px-3 py-2 font-mono text-slate-700">{arr.display.time}</td>
-                    <td className="px-3 py-2 text-slate-600">{r.flight_duration ?? '—'}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">
-                      {formatFare(r.flight_fare, r.currency_code)}
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-1 justify-end">
-                        {!isEdit && canWrite && (
-                          <>
-                            <button
-                              onClick={() => startEdit(r)}
-                              className="rounded p-1 text-slate-400 hover:text-brand hover:bg-slate-100 transition"
-                              title="편집"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => deleteMut.mutate(r.id)}
-                              disabled={deleteMut.isPending && deleteMut.variables === r.id}
-                              className="rounded p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 transition disabled:opacity-40"
-                              title="삭제"
-                            >
-                              {deleteMut.isPending && deleteMut.variables === r.id
-                                ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-                                : <Trash2 className="h-3.5 w-3.5" />
-                              }
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-
-                  {isEdit && (
-                    <tr key={`${r.id}-edit`}>
-                      <td colSpan={11} className="px-4 py-3 bg-brand/5 border-t border-brand/10">
-                        {editMut.isError && (
-                          <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 공항 코드와 날짜를 확인해주세요.</p>
-                        )}
-                        <FlightFormFields form={editForm} setForm={setEditForm} voyages={voyages} showVoyageSelect={false} />
-                        <div className="mt-3 flex gap-2">
-                          <button
-                            onClick={() => editMut.mutate(r.id)}
-                            disabled={editMut.isPending}
-                            className="flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-green-700 hover:bg-green-100 transition disabled:opacity-40"
-                          >
-                            <Check className="h-3.5 w-3.5" />{editMut.isPending ? '저장 중…' : '저장'}
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            disabled={editMut.isPending}
-                            className="flex h-7 items-center gap-1 rounded px-2 text-xs text-slate-400 hover:bg-slate-100 transition"
-                          >
-                            <X className="h-3.5 w-3.5" />취소
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </>
-              )
-            })}
+            {groups.map(g => (
+              <Fragment key={g.key}>
+                {/* 날짜 + 행사 그룹 헤더 */}
+                <tr className="bg-slate-50 border-t-2 border-slate-200">
+                  <td colSpan={11} className="px-3 py-1.5">
+                    <span className="text-[11px] font-bold text-slate-600">{g.dateLabel}</span>
+                    <span className="mx-2 text-slate-300">·</span>
+                    <span className="text-[11px] font-medium text-slate-500">{g.voyageName}</span>
+                    <span className="ml-2 text-[10px] text-slate-400">{g.rows.length}편</span>
+                  </td>
+                </tr>
+                {g.rows.map(r => {
+                  const dep = localDt(r.dep_datetime, r.dep_airport)
+                  const arr = localDt(r.arr_datetime, r.arr_airport)
+                  const isEdit = editingId === r.id
+                  return (
+                    <Fragment key={r.id}>
+                      <tr className="hover:bg-slate-50">
+                        <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
+                          {r.voyages ? voyageTitle(r.voyages) : '—'}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-slate-700">{r.flight_num}</td>
+                        <td className="px-3 py-2 font-mono text-slate-600">{r.dep_airport}</td>
+                        <td className="px-3 py-2 font-mono text-slate-600">{r.arr_airport}</td>
+                        <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{dep.display.date}</td>
+                        <td className="px-3 py-2 font-mono text-slate-700">{dep.display.time}</td>
+                        <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{arr.display.date}</td>
+                        <td className="px-3 py-2 font-mono text-slate-700">{arr.display.time}</td>
+                        <td className="px-3 py-2 text-slate-600">{r.flight_duration ?? '—'}</td>
+                        <td className="px-3 py-2 text-right text-slate-700">
+                          {formatFare(r.flight_fare, r.currency_code)}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-1 justify-end">
+                            {!isEdit && canWrite && (
+                              <>
+                                <button
+                                  onClick={() => startEdit(r)}
+                                  className="rounded p-1 text-slate-400 hover:text-brand hover:bg-slate-100 transition"
+                                  title="편집"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => deleteMut.mutate(r.id)}
+                                  disabled={deleteMut.isPending && deleteMut.variables === r.id}
+                                  className="rounded p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 transition disabled:opacity-40"
+                                  title="삭제"
+                                >
+                                  {deleteMut.isPending && deleteMut.variables === r.id
+                                    ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                                    : <Trash2 className="h-3.5 w-3.5" />
+                                  }
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {isEdit && (
+                        <tr>
+                          <td colSpan={11} className="px-4 py-3 bg-brand/5 border-t border-brand/10">
+                            {editMut.isError && (
+                              <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 공항 코드와 날짜를 확인해주세요.</p>
+                            )}
+                            <FlightFormFields form={editForm} setForm={setEditForm} voyages={voyages} showVoyageSelect={false} />
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                onClick={() => editMut.mutate(r.id)}
+                                disabled={editMut.isPending}
+                                className="flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-green-700 hover:bg-green-100 transition disabled:opacity-40"
+                              >
+                                <Check className="h-3.5 w-3.5" />{editMut.isPending ? '저장 중…' : '저장'}
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                disabled={editMut.isPending}
+                                className="flex h-7 items-center gap-1 rounded px-2 text-xs text-slate-400 hover:bg-slate-100 transition"
+                              >
+                                <X className="h-3.5 w-3.5" />취소
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </Fragment>
+            ))}
           </tbody>
         </table>
       </div>
