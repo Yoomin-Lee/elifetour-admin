@@ -42,6 +42,10 @@ export function useRealtimeSync(): { connected: boolean } {
         qc.invalidateQueries({ queryKey: ['cabin-grades'] })
         qc.invalidateQueries({ queryKey: ['voyages'] })
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_schedules' }, () => {
+        qc.invalidateQueries({ queryKey: ['payment-schedules'] })
+        qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
+      })
       .subscribe(status => {
         setConnected(status === 'SUBSCRIBED')
       })

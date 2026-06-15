@@ -1,0 +1,355 @@
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Check, Save, Trash2 } from 'lucide-react'
+import { fetchVoyages } from '@/lib/queries/voyages'
+import {
+  fetchPaymentSchedules,
+  upsertPaymentSchedule,
+  deletePaymentSchedule,
+  togglePaymentCompleted,
+} from '@/lib/queries/paymentSchedules'
+import { DatePicker } from '@/components/ui/date-picker'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { voyageTitle } from '@/types/database'
+import type { PaymentCategory, PaymentType, PaymentSchedule } from '@/types/database'
+
+const CATEGORIES: PaymentCategory[] = ['CRUISE', 'FLIGHT', 'HOTEL']
+const PAYMENT_TYPES: PaymentType[] = ['DEPOSIT_1ST', 'DEPOSIT_2ND', 'BALANCE']
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD'] as const
+
+const CATEGORY_LABEL: Record<PaymentCategory, string> = {
+  CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔',
+}
+const PAYMENT_TYPE_LABEL: Record<PaymentType, string> = {
+  DEPOSIT_1ST: '1차 데포짓', DEPOSIT_2ND: '2차 데포짓', BALANCE: '잔금',
+}
+const CATEGORY_STYLE: Record<PaymentCategory, { header: string; card: string }> = {
+  CRUISE: {
+    header: 'text-cyan-700 bg-cyan-50 border-cyan-200',
+    card:   'border-cyan-200 bg-cyan-50/60 text-cyan-900',
+  },
+  FLIGHT: {
+    header: 'text-amber-700 bg-amber-50 border-amber-200',
+    card:   'border-amber-200 bg-amber-50/60 text-amber-900',
+  },
+  HOTEL: {
+    header: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+    card:   'border-emerald-200 bg-emerald-50/60 text-emerald-900',
+  },
+}
+
+type DraftCell = {
+  id?: string
+  amount: string
+  currency: string
+  due_date: string
+  is_completed: boolean
+  memo: string
+}
+type DraftKey = string  // `${category}_${payment_type}`
+
+function makeDraftKey(category: PaymentCategory, pt: PaymentType): DraftKey {
+  return `${category}_${pt}`
+}
+
+function emptyCell(): DraftCell {
+  return { amount: '', currency: 'KRW', due_date: '', is_completed: false, memo: '' }
+}
+
+function fromSchedule(s: PaymentSchedule): DraftCell {
+  return {
+    id: s.id,
+    amount: s.amount > 0 ? String(s.amount) : '',
+    currency: s.currency,
+    due_date: s.due_date,
+    is_completed: s.is_completed,
+    memo: s.memo ?? '',
+  }
+}
+
+function formatAmount(amount: string, currency: string): string {
+  const n = Number(amount)
+  if (!n) return '—'
+  if (currency === 'KRW') return `₩${n.toLocaleString()}`
+  if (currency === 'USD') return `$${n.toLocaleString()}`
+  if (currency === 'EUR') return `€${n.toLocaleString()}`
+  return `${n.toLocaleString()} ${currency}`
+}
+
+export default function PaymentTab() {
+  const [voyageId, setVoyageId] = useState('')
+  const [editing, setEditing] = useState<DraftKey | null>(null)
+  const [drafts, setDrafts] = useState<Record<DraftKey, DraftCell>>({})
+  const qc = useQueryClient()
+
+  const { data: voyages = [] } = useQuery({
+    queryKey: ['voyages'],
+    queryFn: fetchVoyages,
+  })
+
+  const { data: schedules = [], isLoading } = useQuery({
+    queryKey: ['payment-schedules', voyageId],
+    queryFn: () => fetchPaymentSchedules(voyageId),
+    enabled: !!voyageId,
+  })
+
+  useEffect(() => {
+    if (!voyageId) return
+    const next: Record<DraftKey, DraftCell> = {}
+    for (const c of CATEGORIES) {
+      for (const pt of PAYMENT_TYPES) {
+        const key = makeDraftKey(c, pt)
+        const existing = schedules.find(s => s.category === c && s.payment_type === pt)
+        next[key] = existing ? fromSchedule(existing) : emptyCell()
+      }
+    }
+    setDrafts(next)
+    setEditing(null)
+  }, [schedules, voyageId])
+
+  const upsertMut = useMutation({
+    mutationFn: ({ key, cell }: { key: DraftKey; cell: DraftCell }) => {
+      const [cat, ...rest] = key.split('_')
+      return upsertPaymentSchedule({
+        voyage_id: voyageId,
+        category: cat as PaymentCategory,
+        payment_type: rest.join('_') as PaymentType,
+        amount: Number(cell.amount) || 0,
+        currency: cell.currency,
+        due_date: cell.due_date,
+        is_completed: cell.is_completed,
+        memo: cell.memo || null,
+      })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payment-schedules', voyageId] })
+      qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
+      setEditing(null)
+    },
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deletePaymentSchedule(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payment-schedules', voyageId] })
+      qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
+    },
+  })
+
+  const toggleMut = useMutation({
+    mutationFn: ({ id, is_completed }: { id: string; is_completed: boolean }) =>
+      togglePaymentCompleted(id, is_completed),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payment-schedules', voyageId] })
+      qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
+    },
+  })
+
+  function getCell(c: PaymentCategory, pt: PaymentType): DraftCell {
+    return drafts[makeDraftKey(c, pt)] ?? emptyCell()
+  }
+
+  function updateCell(key: DraftKey, patch: Partial<DraftCell>) {
+    setDrafts(prev => ({ ...prev, [key]: { ...(prev[key] ?? emptyCell()), ...patch } }))
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-base font-bold text-slate-800">결제 스케줄</h2>
+        <p className="text-sm text-slate-400">크루즈·항공·호텔 데포짓 및 잔금 마감일 관리</p>
+      </div>
+
+      {/* 행사 선택 */}
+      <div className="max-w-xs">
+        <label className="label">행사 선택</label>
+        <Select value={voyageId} onChange={e => setVoyageId(e.target.value)}>
+          <option value="">— 행사를 선택하세요 —</option>
+          {[...voyages]
+            .sort((a, b) => b.departure_date.localeCompare(a.departure_date))
+            .map(v => (
+              <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
+            ))}
+        </Select>
+      </div>
+
+      {!voyageId && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 py-16 text-center text-sm text-slate-400">
+          행사를 선택하면 결제 스케줄을 관리할 수 있습니다
+        </div>
+      )}
+
+      {voyageId && isLoading && (
+        <div className="py-16 text-center text-sm text-slate-400">불러오는 중…</div>
+      )}
+
+      {voyageId && !isLoading && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px] border-collapse">
+            <thead>
+              <tr>
+                <th className="w-28 pb-3" />
+                {CATEGORIES.map(c => (
+                  <th key={c} className="pb-3 px-2 text-center">
+                    <span className={`inline-block text-xs font-bold rounded-full px-3 py-1 border ${CATEGORY_STYLE[c].header}`}>
+                      {CATEGORY_LABEL[c]}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {PAYMENT_TYPES.map((pt, ptIdx) => (
+                <tr key={pt} className={ptIdx < PAYMENT_TYPES.length - 1 ? 'border-b border-slate-100' : ''}>
+                  <td className="pr-3 py-3 align-top">
+                    <span className="text-xs font-semibold text-slate-500 leading-none">
+                      {PAYMENT_TYPE_LABEL[pt]}
+                    </span>
+                  </td>
+                  {CATEGORIES.map(c => {
+                    const key = makeDraftKey(c, pt)
+                    const cell = getCell(c, pt)
+                    const isEdit = editing === key
+
+                    return (
+                      <td key={c} className="px-2 py-3 align-top w-[200px]">
+                        <div className={`rounded-xl border p-3 min-h-[80px] transition-all ${
+                          isEdit
+                            ? 'border-brand/40 bg-brand/5 shadow-sm'
+                            : cell.due_date
+                            ? CATEGORY_STYLE[c].card
+                            : 'border-dashed border-slate-200 bg-slate-50/50'
+                        }`}>
+                          {isEdit ? (
+                            <div className="space-y-2">
+                              <div>
+                                <label className="label">마감일 *</label>
+                                <DatePicker
+                                  value={cell.due_date}
+                                  onChange={v => updateCell(key, { due_date: v })}
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-1.5">
+                                <div>
+                                  <label className="label">금액</label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={cell.amount}
+                                    onChange={e => updateCell(key, { amount: e.target.value })}
+                                    placeholder="0"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="label">통화</label>
+                                  <Select
+                                    value={cell.currency}
+                                    onChange={e => updateCell(key, { currency: e.target.value })}
+                                  >
+                                    {CURRENCIES.map(cur => (
+                                      <option key={cur} value={cur}>{cur}</option>
+                                    ))}
+                                  </Select>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="label">메모</label>
+                                <Input
+                                  value={cell.memo}
+                                  onChange={e => updateCell(key, { memo: e.target.value })}
+                                  placeholder="메모 (선택)"
+                                />
+                              </div>
+                              <div className="flex gap-1.5 pt-1">
+                                <button
+                                  type="button"
+                                  disabled={!cell.due_date || upsertMut.isPending}
+                                  onClick={() => upsertMut.mutate({ key, cell })}
+                                  className="flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium bg-brand text-white hover:bg-brand-dark transition disabled:opacity-40"
+                                >
+                                  <Save className="h-3 w-3" />
+                                  {upsertMut.isPending ? '저장 중…' : '저장'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditing(null)}
+                                  className="px-2 rounded-lg text-xs text-slate-400 hover:bg-slate-100 transition"
+                                >
+                                  취소
+                                </button>
+                              </div>
+                            </div>
+                          ) : cell.due_date ? (
+                            <div className="space-y-1.5">
+                              <div className="flex items-start justify-between gap-1">
+                                <span className="text-sm font-bold leading-tight">
+                                  {formatAmount(cell.amount, cell.currency)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (cell.id) {
+                                      const next = !cell.is_completed
+                                      updateCell(key, { is_completed: next })
+                                      toggleMut.mutate({ id: cell.id, is_completed: next })
+                                    }
+                                  }}
+                                  className={`shrink-0 flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold border transition ${
+                                    cell.is_completed
+                                      ? 'bg-green-100 text-green-700 border-green-200'
+                                      : 'bg-white/70 text-inherit border-current opacity-50 hover:opacity-100'
+                                  }`}
+                                >
+                                  <Check className="h-2.5 w-2.5" />
+                                  {cell.is_completed ? '완료' : '미완료'}
+                                </button>
+                              </div>
+                              <p className={`text-[11px] ${cell.is_completed ? 'line-through opacity-50' : 'opacity-75'}`}>
+                                마감 {cell.due_date}
+                              </p>
+                              {cell.memo && (
+                                <p className="text-[11px] opacity-60 truncate">{cell.memo}</p>
+                              )}
+                              <div className="flex gap-1 pt-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditing(key)}
+                                  className="flex-1 text-center text-[11px] opacity-50 hover:opacity-100 py-0.5 rounded hover:bg-black/5 transition"
+                                >
+                                  편집
+                                </button>
+                                {cell.id && (
+                                  <button
+                                    type="button"
+                                    onClick={() => cell.id && deleteMut.mutate(cell.id)}
+                                    disabled={deleteMut.isPending}
+                                    className="px-1.5 text-[11px] opacity-40 hover:opacity-100 hover:text-red-500 rounded hover:bg-red-50 transition"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setEditing(key)}
+                              className="w-full h-full flex items-center justify-center py-4 text-xs text-slate-400 hover:text-brand transition"
+                            >
+                              + 추가
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}

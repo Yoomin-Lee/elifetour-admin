@@ -161,11 +161,19 @@ export default function HotelTab() {
     editMut.reset()
   }
 
-  const filtered = data.filter(r =>
-    !filter ||
-    (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
-    r.hotel_name.toLowerCase().includes(filter.toLowerCase())
-  )
+  const filtered = [...data]
+    .filter(r =>
+      !filter ||
+      (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
+      r.hotel_name.toLowerCase().includes(filter.toLowerCase())
+    )
+    .sort((a, b) => {
+      const dateDiff = b.stay_date.localeCompare(a.stay_date)
+      if (dateDiff !== 0) return dateDiff
+      const aVoy = a.voyages?.departure_date ?? ''
+      const bVoy = b.voyages?.departure_date ?? ''
+      return bVoy.localeCompare(aVoy)
+    })
 
   return (
     <div className="space-y-4">

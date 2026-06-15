@@ -7,9 +7,11 @@ import {
   parseISO, isWithinInterval, isSameDay,
 } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { fetchVoyages } from '@/lib/queries/voyages'
-import type { Voyage, VoyageStatus } from '@/types/database'
+import { fetchAllPaymentSchedules } from '@/lib/queries/paymentSchedules'
+import type { Voyage, VoyageStatus, PaymentCategory, PaymentType } from '@/types/database'
+import type { PaymentScheduleRow } from '@/lib/queries/paymentSchedules'
 
 const STATUS_STYLE: Record<VoyageStatus, string> = {
   '미오픈':   'bg-slate-100 text-slate-500 border-slate-200',
@@ -27,16 +29,36 @@ const STATUS_DOT: Record<VoyageStatus, string> = {
   '취소':     'bg-red-300',
 }
 
+const PAYMENT_STYLE: Record<PaymentCategory, string> = {
+  CRUISE: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  FLIGHT: 'bg-amber-50 text-amber-700 border-amber-200',
+  HOTEL:  'bg-emerald-50 text-emerald-700 border-emerald-200',
+}
+
+const PAYMENT_CATEGORY_LABEL: Record<PaymentCategory, string> = {
+  CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔',
+}
+
+const PAYMENT_TYPE_SHORT: Record<PaymentType, string> = {
+  DEPOSIT_1ST: '1차', DEPOSIT_2ND: '2차', BALANCE: '잔금',
+}
+
 const WEEK_DAYS = ['일', '월', '화', '수', '목', '금', '토']
-const MAX_SHOW = 3
+const MAX_VOYAGE_SHOW = 2
+const MAX_PAYMENT_SHOW = 2
 
 export default function CalendarTab() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const navigate = useNavigate()
 
-  const { data: voyages = [], isLoading } = useQuery({
+  const { data: voyages = [], isLoading: voyagesLoading } = useQuery({
     queryKey: ['voyages'],
     queryFn: fetchVoyages,
+  })
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ['all-payment-schedules'],
+    queryFn: fetchAllPaymentSchedules,
   })
 
   const monthStart = startOfMonth(currentDate)
@@ -52,12 +74,22 @@ export default function CalendarTab() {
       return isWithinInterval(day, { start, end })
     })
 
+  const getPaymentsForDay = (day: Date): PaymentScheduleRow[] =>
+    payments.filter(p => isSameDay(parseISO(p.due_date), day))
+
   const voyagesThisMonth = voyages.filter(v =>
     isSameMonth(parseISO(v.departure_date), currentDate)
   )
 
+  // 이번 달 결제 마감: 미완료 + 날짜순
+  const paymentsThisMonth = payments
+    .filter(p => isSameMonth(parseISO(p.due_date), currentDate))
+    .sort((a, b) => a.due_date.localeCompare(b.due_date))
+
   const goToVoyage = (id: string) =>
     navigate(`/voyages?tab=항차검색&voyage=${id}`)
+
+  const isLoading = voyagesLoading
 
   return (
     <div>
@@ -66,6 +98,12 @@ export default function CalendarTab() {
         <p className="text-sm text-slate-500">
           {format(currentDate, 'yyyy년 M월', { locale: ko })} · 출발 행사{' '}
           <span className="font-semibold text-slate-700">{voyagesThisMonth.length}건</span>
+          {paymentsThisMonth.length > 0 && (
+            <>
+              {' · '}결제 마감{' '}
+              <span className="font-semibold text-slate-700">{paymentsThisMonth.length}건</span>
+            </>
+          )}
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -121,16 +159,17 @@ export default function CalendarTab() {
         ) : (
           <div className="grid grid-cols-7 divide-x divide-slate-100">
             {days.map(day => {
-              const dayVoyages = getVoyagesForDay(day)
-              const inMonth   = isSameMonth(day, currentDate)
-              const todayFlag = isToday(day)
+              const dayVoyages  = getVoyagesForDay(day)
+              const dayPayments = getPaymentsForDay(day)
+              const inMonth     = isSameMonth(day, currentDate)
+              const todayFlag   = isToday(day)
               const isSun = day.getDay() === 0
               const isSat = day.getDay() === 6
 
               return (
                 <div
                   key={day.toISOString()}
-                  className={`min-h-[90px] md:min-h-[110px] p-1.5 border-b border-slate-100 ${
+                  className={`min-h-[100px] md:min-h-[120px] p-1.5 border-b border-slate-100 ${
                     !inMonth ? 'bg-slate-50/60' : ''
                   }`}
                 >
@@ -149,16 +188,14 @@ export default function CalendarTab() {
                     </span>
                   </div>
 
-                  {/* 행사 이벤트 */}
                   <div className="space-y-0.5">
-                    {dayVoyages.slice(0, MAX_SHOW).map(v => (
+                    {/* 행사 이벤트 */}
+                    {dayVoyages.slice(0, MAX_VOYAGE_SHOW).map(v => (
                       <button
                         key={v.id}
                         onClick={() => goToVoyage(v.id)}
                         title={`${v.region} (${v.departure_date} ~ ${v.return_date ?? ''})`}
-                        className={`w-full flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border truncate transition hover:opacity-75 ${
-                          STATUS_STYLE[v.status]
-                        }`}
+                        className={`w-full flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border truncate transition hover:opacity-75 ${STATUS_STYLE[v.status]}`}
                       >
                         {isSameDay(day, parseISO(v.departure_date)) && (
                           <span className="shrink-0 text-[9px] font-bold opacity-70">출</span>
@@ -169,10 +206,40 @@ export default function CalendarTab() {
                         <span className="truncate">{v.region}</span>
                       </button>
                     ))}
-                    {dayVoyages.length > MAX_SHOW && (
+                    {dayVoyages.length > MAX_VOYAGE_SHOW && (
                       <p className="text-[10px] text-slate-400 px-1">
-                        +{dayVoyages.length - MAX_SHOW}개 더
+                        +{dayVoyages.length - MAX_VOYAGE_SHOW}개
                       </p>
+                    )}
+
+                    {/* 결제 마감일 */}
+                    {dayPayments.length > 0 && (
+                      <div className="mt-0.5 pt-0.5 border-t border-slate-100 space-y-0.5">
+                        {dayPayments.slice(0, MAX_PAYMENT_SHOW).map(p => (
+                          <div
+                            key={p.id}
+                            title={`${PAYMENT_CATEGORY_LABEL[p.category]} ${PAYMENT_TYPE_SHORT[p.payment_type]} 마감${p.voyages ? ` · ${p.voyages.region}` : ''}`}
+                            className={`w-full flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded border border-dashed truncate ${
+                              p.is_completed
+                                ? 'opacity-40 line-through bg-slate-50 border-slate-200 text-slate-400'
+                                : PAYMENT_STYLE[p.category]
+                            }`}
+                          >
+                            <span className="shrink-0 font-bold text-[9px]">
+                              {PAYMENT_CATEGORY_LABEL[p.category][0]}
+                            </span>
+                            <span className="truncate">
+                              {PAYMENT_TYPE_SHORT[p.payment_type]}
+                              {p.voyages && ` ${p.voyages.region}`}
+                            </span>
+                          </div>
+                        ))}
+                        {dayPayments.length > MAX_PAYMENT_SHOW && (
+                          <p className="text-[10px] text-slate-400 px-1">
+                            +{dayPayments.length - MAX_PAYMENT_SHOW}건
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -182,11 +249,12 @@ export default function CalendarTab() {
         )}
       </div>
 
-      {/* 범례 + 이번 달 행사 목록 */}
-      <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* 하단 패널 */}
+      <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* 범례 */}
         <div className="card p-4">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">범례</p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 mb-3">
             {(Object.keys(STATUS_STYLE) as VoyageStatus[]).map(key => (
               <div key={key} className="flex items-center gap-1.5">
                 <span className={`inline-block w-3 h-3 rounded-sm border ${STATUS_STYLE[key]}`} />
@@ -194,12 +262,21 @@ export default function CalendarTab() {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-slate-400 mt-3">
+          <p className="text-[11px] text-slate-400 mb-2">
             <span className="font-semibold">출</span> = 출발일 &nbsp;·&nbsp;
             <span className="font-semibold">귀</span> = 귀국일
           </p>
+          <div className="border-t border-slate-100 pt-2 flex flex-wrap gap-2">
+            {(['CRUISE','FLIGHT','HOTEL'] as PaymentCategory[]).map(c => (
+              <div key={c} className="flex items-center gap-1.5">
+                <span className={`inline-block w-3 h-3 rounded-sm border border-dashed ${PAYMENT_STYLE[c]}`} />
+                <span className="text-xs text-slate-600">{PAYMENT_CATEGORY_LABEL[c]} 결제</span>
+              </div>
+            ))}
+          </div>
         </div>
 
+        {/* 이번 달 출발 행사 */}
         <div className="card p-4">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">
             {format(currentDate, 'M월', { locale: ko })} 출발 행사
@@ -228,7 +305,44 @@ export default function CalendarTab() {
             </div>
           )}
         </div>
+
+        {/* 이번 달 결제 마감 */}
+        <div className="card p-4">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">
+            {format(currentDate, 'M월', { locale: ko })} 결제 마감
+          </p>
+          {paymentsThisMonth.length === 0 ? (
+            <p className="text-sm text-slate-400">이번 달 결제 마감이 없습니다.</p>
+          ) : (
+            <div className="space-y-1">
+              {paymentsThisMonth.map(p => (
+                <div
+                  key={p.id}
+                  className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${
+                    p.is_completed ? 'opacity-50' : ''
+                  }`}
+                >
+                  <span className={`shrink-0 w-2 h-2 rounded-full border-2 ${
+                    p.category === 'CRUISE' ? 'border-cyan-400' :
+                    p.category === 'FLIGHT' ? 'border-amber-400' : 'border-emerald-400'
+                  }`} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-xs font-medium text-slate-700 truncate ${p.is_completed ? 'line-through' : ''}`}>
+                      {PAYMENT_CATEGORY_LABEL[p.category]} {PAYMENT_TYPE_SHORT[p.payment_type]}
+                      {p.voyages && <span className="text-slate-400 font-normal"> · {p.voyages.region}</span>}
+                    </p>
+                    <p className="text-[11px] text-slate-400">{p.due_date}</p>
+                  </div>
+                  {p.is_completed && (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-green-500" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
+

@@ -107,6 +107,23 @@ export interface AuditLog {
   logged_at: string
 }
 
+export type PaymentCategory = 'CRUISE' | 'FLIGHT' | 'HOTEL'
+export type PaymentType = 'DEPOSIT_1ST' | 'DEPOSIT_2ND' | 'BALANCE'
+
+export interface PaymentSchedule {
+  id: string
+  voyage_id: string
+  category: PaymentCategory
+  payment_type: PaymentType
+  amount: number
+  currency: string
+  due_date: string       // YYYY-MM-DD
+  is_completed: boolean
+  memo: string | null
+  created_at: string
+  updated_at: string
+}
+
 /** 항차 표시명: "27/09/10 서부지중해" */
 export function voyageTitle(v: Pick<Voyage, 'departure_date' | 'region'>): string {
   const d = v.departure_date

@@ -13,6 +13,7 @@ import ShoreTab       from '@/components/voyages/tabs/ShoreTab'
 import HistoryTab     from '@/components/voyages/tabs/HistoryTab'
 import MNTab          from '@/components/voyages/tabs/MNTab'
 import CalendarTab    from '@/components/voyages/tabs/CalendarTab'
+import PaymentTab     from '@/components/voyages/tabs/PaymentTab'
 import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 
 const qc = new QueryClient({
@@ -30,6 +31,7 @@ const TABS = [
   { key: '히스토리', label: '히스토리' },
   { key: 'MN',       label: 'MN'       },
   { key: '달력',     label: '달력'     },
+  { key: '결제',     label: '결제'     },
 ] as const
 
 type TabKey = typeof TABS[number]['key']
@@ -46,6 +48,7 @@ function tabContent(tab: TabKey) {
     case '히스토리': return <HistoryTab />
     case 'MN':       return <MNTab />
     case '달력':     return <CalendarTab />
+    case '결제':     return <PaymentTab />
   }
 }
 

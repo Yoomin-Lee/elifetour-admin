@@ -20,12 +20,20 @@ export default function ShoreTab() {
     queryFn: fetchAllItinerary,
   })
 
-  const filtered = data.filter(r =>
-    !filter ||
-    (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
-    (r.port ?? '').toLowerCase().includes(filter.toLowerCase()) ||
-    (r.category ?? '').includes(filter)
-  )
+  const filtered = [...data]
+    .filter(r =>
+      !filter ||
+      (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
+      (r.port ?? '').toLowerCase().includes(filter.toLowerCase()) ||
+      (r.category ?? '').includes(filter)
+    )
+    .sort((a, b) => {
+      const aVoy = a.voyages?.departure_date ?? ''
+      const bVoy = b.voyages?.departure_date ?? ''
+      const voyDiff = bVoy.localeCompare(aVoy)
+      if (voyDiff !== 0) return voyDiff
+      return b.date.localeCompare(a.date)
+    })
 
   function currencySymbol(c: string | null) {
     if (c === 'KRW') return '₩'
