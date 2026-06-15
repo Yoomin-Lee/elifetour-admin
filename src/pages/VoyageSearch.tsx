@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import VoyageCombobox from '@/components/voyages/VoyageCombobox'
@@ -15,16 +15,8 @@ import {
   fetchHistory,
 } from '@/lib/queries/voyages'
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
-})
-
 export default function VoyageSearch() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <VoyageSearchInner />
-    </QueryClientProvider>
-  )
+  return <VoyageSearchInner />
 }
 
 function Skeleton({ className }: { className?: string }) {

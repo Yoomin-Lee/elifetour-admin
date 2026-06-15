@@ -178,6 +178,20 @@ export async function fetchAllHotels(): Promise<HotelRow[]> {
 
 // ── Hotel CRUD ─────────────────────────────────────────────────────────────
 
+export async function updateHotel(
+  id: string,
+  data: Partial<Omit<Hotel, 'id' | 'voyage_id' | 'created_at'>>,
+): Promise<Hotel> {
+  const { data: row, error } = await sb()
+    .from('hotels')
+    .update(data)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return row as Hotel
+}
+
 export async function addHotel(
   voyageId: string,
   hotel: Omit<Hotel, 'id' | 'voyage_id' | 'created_at'>
