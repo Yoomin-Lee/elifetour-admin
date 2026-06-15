@@ -19,8 +19,7 @@ function Spinner() {
   )
 }
 
-// TODO: 개발 완료 후 DEV_MODE = false 로 되돌릴 것
-const DEV_MODE = true
+const DEV_MODE = false
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()

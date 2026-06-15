@@ -53,7 +53,11 @@ export function AuthProvider({ children }) {
     })
   }
 
-  const signOut = () => isSupabaseReady && supabase.auth.signOut()
+  const signOut = async () => {
+    setUser(null)
+    setProfile(null)
+    if (isSupabaseReady) await supabase.auth.signOut()
+  }
 
   const role = profile?.role ?? 'staff'
   const isAdmin = role === 'admin'

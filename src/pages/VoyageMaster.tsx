@@ -57,7 +57,7 @@ function VoyageMasterInner() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* 탭 바 */}
       <div className="border-b border-slate-200 bg-white sticky top-0 z-10">
         <nav className="flex overflow-x-auto scrollbar-none px-4" aria-label="항차 마스터 탭">
@@ -79,7 +79,7 @@ function VoyageMasterInner() {
       </div>
 
       {/* 탭 콘텐츠 */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6">
+      <div className="p-4 sm:p-6">
         {tabContent(activeTab)}
       </div>
     </div>

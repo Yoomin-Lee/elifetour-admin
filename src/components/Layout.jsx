@@ -7,7 +7,7 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-dvh overflow-hidden bg-slate-50">
       {/* 모바일 오버레이 */}
       {sidebarOpen && (
         <div

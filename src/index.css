@@ -32,6 +32,16 @@
   * { -webkit-tap-highlight-color: transparent; }
 }
 
+@layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer components {
   .btn-primary {
     @apply inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark active:scale-95 disabled:opacity-50;

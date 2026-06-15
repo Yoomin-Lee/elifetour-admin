@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const ROLE_LABEL = { admin: '관리자', staff: '직원', escort: '인솔자' }
@@ -9,6 +10,12 @@ const ROLE_COLOR = {
 
 export default function TopBar({ onMenuClick }) {
   const { user, role, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleSignOut() {
+    await signOut()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6">
@@ -44,7 +51,7 @@ export default function TopBar({ onMenuClick }) {
         </div>
         <button
           type="button"
-          onClick={signOut}
+          onClick={handleSignOut}
           className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
         >
           로그아웃
