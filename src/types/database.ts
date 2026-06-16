@@ -124,6 +124,34 @@ export interface PaymentSchedule {
   updated_at: string
 }
 
+export type PartnerType = 'LAND' | 'CRUISE' | 'AIRLINE' | 'HOTEL' | 'BUS' | 'GUIDE' | 'OTHER'
+
+export interface Partner {
+  id: string
+  type: PartnerType
+  name: string
+  country: string | null
+  region: string | null
+  contact_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  website: string | null
+  memo: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export const PARTNER_TYPE_LABEL: Record<PartnerType, string> = {
+  LAND:    '랜드사',
+  CRUISE:  '크루즈사',
+  AIRLINE: '항공사',
+  HOTEL:   '호텔',
+  BUS:     '버스',
+  GUIDE:   '가이드',
+  OTHER:   '기타',
+}
+
 /** 항차 표시명: "27/09/10 서부지중해" */
 export function voyageTitle(v: Pick<Voyage, 'departure_date' | 'region'>): string {
   const d = v.departure_date

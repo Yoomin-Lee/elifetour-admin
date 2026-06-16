@@ -39,5 +39,4 @@ React 19 + Vite 7 + Supabase + Tailwind CSS 기반의 여행사 내부 직원용
 - 달력형 일정 스케줄러
 - 협력업체(랜드사/호텔) DB
 - 역할별 권한 분리 (admin/staff/guide)
-- 영수증 업로드 (Supabase Storage)
 - 사내 위키 (Knowledge Base)
