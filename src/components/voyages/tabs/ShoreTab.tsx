@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { fetchAllItinerary } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import { formatDate, formatTime } from '@/lib/utils'
+import { YearSelect } from '@/components/ui/year-select'
 
 const CATEGORY_COLORS: Record<string, string> = {
   '크루즈':   'bg-blue-50 text-blue-700',
@@ -15,18 +16,29 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function ShoreTab() {
   const [filter, setFilter] = useState('')
+  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
   const { data = [], isLoading } = useQuery({
     queryKey: ['all-itinerary'],
     queryFn: fetchAllItinerary,
   })
 
+  const years = useMemo(() => {
+    const ys = new Set<string>()
+    data.forEach(r => {
+      const yr = r.voyages?.departure_date?.slice(0, 4)
+      if (yr) ys.add(yr)
+    })
+    return Array.from(ys).sort().reverse()
+  }, [data])
+
   const filtered = [...data]
-    .filter(r =>
-      !filter ||
-      (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
-      (r.port ?? '').toLowerCase().includes(filter.toLowerCase()) ||
-      (r.category ?? '').includes(filter)
-    )
+    .filter(r => {
+      if (yearFilter !== 'ALL' && !r.voyages?.departure_date?.startsWith(yearFilter)) return false
+      return !filter ||
+        (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
+        (r.port ?? '').toLowerCase().includes(filter.toLowerCase()) ||
+        (r.category ?? '').includes(filter)
+    })
     .sort((a, b) => {
       const aVoy = a.voyages?.departure_date ?? ''
       const bVoy = b.voyages?.departure_date ?? ''
@@ -49,14 +61,17 @@ export default function ShoreTab() {
           <h1 className="text-lg font-bold text-slate-800">지상</h1>
           <p className="text-sm text-slate-400">기항지 일정 전체 {data.length}건</p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          <input
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-            placeholder="행사명·기항지·구분 검색"
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg w-52 focus:outline-none focus:ring-1 focus:ring-brand"
-          />
+        <div className="flex items-center gap-2">
+          <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              value={filter}
+              onChange={e => setFilter(e.target.value)}
+              placeholder="행사명·기항지·구분 검색"
+              className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg w-52 focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+          </div>
         </div>
       </div>
 

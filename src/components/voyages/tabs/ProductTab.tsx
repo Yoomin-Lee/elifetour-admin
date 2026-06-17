@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/context/AuthContext'
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { YearSelect } from '@/components/ui/year-select'
 
 const STATUS_COLORS: Record<string, string> = {
   '미오픈':   'bg-slate-100 text-slate-600',
@@ -50,6 +51,7 @@ export default function ProductTab() {
   const qc = useQueryClient()
   const { canWrite } = useAuth() as { canWrite: boolean }
   const [filter, setFilter] = useState('')
+  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ status: '미오픈', customer_count: '', tour_leader: '' })
@@ -92,12 +94,19 @@ export default function ProductTab() {
       setEditForm(prev => ({ ...prev, [field]: e.target.value }))
   }
 
-  const filtered = voyages.filter(v =>
-    !filter || voyageTitle(v).toLowerCase().includes(filter.toLowerCase()) ||
-    (v.region ?? '').includes(filter) ||
-    (v.cruise_line ?? '').toLowerCase().includes(filter.toLowerCase()) ||
-    (v.tour_leader ?? '').includes(filter)
-  )
+  const years = useMemo(() => {
+    const ys = new Set<string>()
+    voyages.forEach(v => { if (v.departure_date) ys.add(v.departure_date.slice(0, 4)) })
+    return Array.from(ys).sort().reverse()
+  }, [voyages])
+
+  const filtered = voyages.filter(v => {
+    if (yearFilter !== 'ALL' && !v.departure_date?.startsWith(yearFilter)) return false
+    return !filter || voyageTitle(v).toLowerCase().includes(filter.toLowerCase()) ||
+      (v.region ?? '').includes(filter) ||
+      (v.cruise_line ?? '').toLowerCase().includes(filter.toLowerCase()) ||
+      (v.tour_leader ?? '').includes(filter)
+  })
 
   const active = filtered.filter(v => v.status !== '취소')
   const cancelled = filtered.filter(v => v.status === '취소')
@@ -112,6 +121,7 @@ export default function ProductTab() {
           <p className="text-sm text-slate-400">전체 {voyages.length}건 · 취소 제외 {active.length}건</p>
         </div>
         <div className="flex items-center gap-2">
+          <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input

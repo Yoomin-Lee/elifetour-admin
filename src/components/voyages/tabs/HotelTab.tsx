@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { YearSelect } from '@/components/ui/year-select'
 import type { Hotel } from '@/types/database'
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP'] as const
@@ -104,6 +105,7 @@ function HotelFormFields({
 
 export default function HotelTab() {
   const [filter, setFilter] = useState('')
+  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<HotelForm>(EMPTY_FORM)
   const [addOpen, setAddOpen] = useState(false)
@@ -161,12 +163,22 @@ export default function HotelTab() {
     editMut.reset()
   }
 
+  const years = useMemo(() => {
+    const ys = new Set<string>()
+    data.forEach(r => {
+      const yr = r.voyages?.departure_date?.slice(0, 4)
+      if (yr) ys.add(yr)
+    })
+    return Array.from(ys).sort().reverse()
+  }, [data])
+
   const filtered = [...data]
-    .filter(r =>
-      !filter ||
-      (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
-      r.hotel_name.toLowerCase().includes(filter.toLowerCase())
-    )
+    .filter(r => {
+      if (yearFilter !== 'ALL' && !r.voyages?.departure_date?.startsWith(yearFilter)) return false
+      return !filter ||
+        (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
+        r.hotel_name.toLowerCase().includes(filter.toLowerCase())
+    })
     .sort((a, b) => {
       const dateDiff = b.stay_date.localeCompare(a.stay_date)
       if (dateDiff !== 0) return dateDiff
@@ -184,6 +196,7 @@ export default function HotelTab() {
           <p className="text-sm text-slate-400">전체 {data.length}건</p>
         </div>
         <div className="flex items-center gap-2">
+          <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input

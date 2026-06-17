@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react'
+import { useState, useMemo, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { TimePicker } from '@/components/ui/time-picker'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { YearSelect } from '@/components/ui/year-select'
 import type { VoyageFlight } from '@/lib/queries/voyageFlights'
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP'] as const
@@ -151,6 +152,7 @@ function FlightFormFields({
 
 export default function FlightsTab() {
   const [filter, setFilter] = useState('')
+  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<FlightForm>(EMPTY_FORM)
   const [addOpen, setAddOpen] = useState(false)
@@ -220,13 +222,23 @@ export default function FlightsTab() {
     editMut.reset()
   }
 
-  const filtered = data.filter(r =>
-    !filter ||
-    (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
-    r.flight_num.toLowerCase().includes(filter.toLowerCase()) ||
-    r.dep_airport.toLowerCase().includes(filter.toLowerCase()) ||
-    r.arr_airport.toLowerCase().includes(filter.toLowerCase())
-  )
+  const years = useMemo(() => {
+    const ys = new Set<string>()
+    data.forEach(r => {
+      const yr = r.voyages?.departure_date?.slice(0, 4)
+      if (yr) ys.add(yr)
+    })
+    return Array.from(ys).sort().reverse()
+  }, [data])
+
+  const filtered = data.filter(r => {
+    if (yearFilter !== 'ALL' && !r.voyages?.departure_date?.startsWith(yearFilter)) return false
+    return !filter ||
+      (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
+      r.flight_num.toLowerCase().includes(filter.toLowerCase()) ||
+      r.dep_airport.toLowerCase().includes(filter.toLowerCase()) ||
+      r.arr_airport.toLowerCase().includes(filter.toLowerCase())
+  })
 
   // 행사 출발일 최신순 → 항공사 코드 알파벳순 → 출발시간 오름차순
   const sortedFiltered = [...filtered].sort((a, b) => {
@@ -248,6 +260,7 @@ export default function FlightsTab() {
           <p className="text-sm text-slate-400">전체 {data.length}편 · 현지 시각 기준, DST 반영</p>
         </div>
         <div className="flex items-center gap-2">
+          <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input

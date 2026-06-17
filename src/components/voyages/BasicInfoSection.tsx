@@ -1,9 +1,9 @@
 import { useFormContext, Controller } from 'react-hook-form'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { DatePicker } from '@/components/ui/date-picker'
+import { FieldSelect } from '@/components/ui/field-select'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const STATUSES = ['미오픈', '판매중', '마감', '출발완료', '취소'] as const
@@ -39,9 +39,17 @@ export default function BasicInfoSection() {
           </Field>
 
           <Field label="상태" error={errors.status?.message}>
-            <Select {...register('status')}>
-              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-            </Select>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <FieldSelect
+                  value={field.value ?? ''}
+                  options={STATUSES as unknown as string[]}
+                  onChange={field.onChange}
+                />
+              )}
+            />
           </Field>
 
           <Field label="출발일 *" error={errors.departure_date?.message}>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { YearSelect } from '@/components/ui/year-select'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Pencil, Check, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -315,14 +316,7 @@ export default function CruiseTab() {
           <p className="text-sm text-slate-400">캐빈 현황 · ▶ 클릭으로 등급별 현황 확인</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={yearFilter}
-            onChange={e => setYearFilter(e.target.value)}
-            className="py-1.5 pl-3 pr-7 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand bg-white"
-          >
-            <option value="ALL">전체 연도</option>
-            {years.map(y => <option key={y} value={y}>{y}년</option>)}
-          </select>
+          <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input

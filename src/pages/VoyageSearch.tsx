@@ -1,7 +1,9 @@
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import VoyageCombobox from '@/components/voyages/VoyageCombobox'
+import { YearSelect } from '@/components/ui/year-select'
 import OverviewCard from '@/components/voyages/OverviewCard'
 import FlightsCard from '@/components/voyages/FlightsCard'
 import ItineraryCard from '@/components/voyages/ItineraryCard'
@@ -37,7 +39,24 @@ function VoyageSearchInner() {
     user?.email ??
     '직원'
 
+  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
+
   const voyagesQuery = useQuery({ queryKey: ['voyages'], queryFn: fetchVoyages })
+
+  const years = useMemo(() => {
+    const ys = new Set<string>()
+    voyagesQuery.data?.forEach(v => {
+      if (v.departure_date) ys.add(v.departure_date.slice(0, 4))
+    })
+    return Array.from(ys).sort().reverse()
+  }, [voyagesQuery.data])
+
+  const filteredVoyages = useMemo(() => {
+    const all = voyagesQuery.data ?? []
+    if (yearFilter === 'ALL') return all
+    return all.filter(v => v.departure_date?.startsWith(yearFilter))
+  }, [voyagesQuery.data, yearFilter])
+
   const flightsQuery = useQuery({
     queryKey: ['flights', voyageId],
     queryFn: () => fetchFlights(voyageId!),
@@ -70,12 +89,26 @@ function VoyageSearchInner() {
           <h1 className="text-lg font-bold text-slate-800">항차 조회</h1>
           <p className="text-sm text-slate-400">행사를 선택하면 전체 정보를 확인할 수 있습니다</p>
         </div>
-        <VoyageCombobox
-          voyages={voyagesQuery.data ?? []}
-          selectedId={voyageId}
-          onSelect={id => setSearchParams(prev => { const next = new URLSearchParams(prev); next.set('voyage', id); return next })}
-          loading={voyagesQuery.isLoading}
-        />
+
+        {/* 연도 드롭다운 + 행사 선택 */}
+        <div className="flex items-center gap-2">
+          <YearSelect
+            value={yearFilter}
+            years={years}
+            onChange={y => {
+              setYearFilter(y)
+              if (selectedVoyage && !selectedVoyage.departure_date?.startsWith(y) && y !== 'ALL') {
+                setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('voyage'); return next })
+              }
+            }}
+          />
+          <VoyageCombobox
+            voyages={filteredVoyages}
+            selectedId={voyageId}
+            onSelect={id => setSearchParams(prev => { const next = new URLSearchParams(prev); next.set('voyage', id); return next })}
+            loading={voyagesQuery.isLoading}
+          />
+        </div>
       </div>
 
       {/* 행사 미선택 */}
