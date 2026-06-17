@@ -1,12 +1,13 @@
-import { useRef, useState } from 'react'
-import { useFieldArray, useFormContext, Controller } from 'react-hook-form'
-import { Plus, Trash2, Upload, Download } from 'lucide-react'
+import { useRef, useState, useEffect } from 'react'
+import { useFieldArray, useFormContext, Controller, useWatch } from 'react-hook-form'
+import { Plus, Trash2, Upload, Download, Zap } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { parseFlightsExcel, downloadFlightsTemplate } from '@/lib/excel'
+import { useFlightCalc } from '@/hooks/useFlightCalc'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const EMPTY_FLIGHT = {
@@ -16,8 +17,132 @@ const EMPTY_FLIGHT = {
   duration: '', fare: undefined, sort_order: 0,
 }
 
+/** "(ICN)" 형식 또는 단순 공항코드 추출 */
+function extractIata(str: string): string {
+  const m = str?.match(/\(([A-Z]{3})\)/)
+  return m ? m[1] : (str?.trim().toUpperCase() ?? '')
+}
+
+/** 항공편 한 행 — 소요시간 자동 계산 포함 */
+function FlightRow({ index, onRemove }: { index: number; onRemove: () => void }) {
+  const { register, control, setValue, getValues } = useFormContext<VoyageFormValues>()
+
+  const origin      = useWatch({ control, name: `flights.${index}.origin` })
+  const destination = useWatch({ control, name: `flights.${index}.destination` })
+  const depDate     = useWatch({ control, name: `flights.${index}.departure_date` })
+  const depTime     = useWatch({ control, name: `flights.${index}.departure_time` })
+  const arrDate     = useWatch({ control, name: `flights.${index}.arrival_date` })
+  const arrTime     = useWatch({ control, name: `flights.${index}.arrival_time` })
+
+  const { result, isValid } = useFlightCalc({
+    departureAirport: extractIata(origin ?? ''),
+    arrivalAirport:   extractIata(destination ?? ''),
+    departureDate:    depDate ?? '',
+    departureTime:    depTime ?? '',
+    arrivalDate:      arrDate ?? '',
+    arrivalTime:      arrTime ?? '',
+  })
+
+  // 마지막으로 자동 입력한 값 추적 → 수동 수정 시 덮어쓰지 않음
+  const lastAutoRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!isValid || !result) return
+    const newText = result.durationText
+    if (newText === lastAutoRef.current) return
+
+    const cur = getValues(`flights.${index}.duration`)
+    if (!cur || cur === lastAutoRef.current) {
+      setValue(`flights.${index}.duration`, newText, { shouldDirty: true })
+    }
+    lastAutoRef.current = newText
+  }, [result?.durationText, isValid])
+
+  return (
+    <div className="relative rounded-lg border border-slate-100 bg-white p-4">
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute right-3 top-3 rounded p-1 text-slate-300 hover:text-red-500 transition"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+          <label className="label">편명</label>
+          <Input {...register(`flights.${index}.flight_no`)} placeholder="KE907" />
+        </div>
+        <div>
+          <label className="label">출발지</label>
+          <Input {...register(`flights.${index}.origin`)} placeholder="인천(ICN)" />
+        </div>
+        <div>
+          <label className="label">도착지</label>
+          <Input {...register(`flights.${index}.destination`)} placeholder="바르셀로나(BCN)" />
+        </div>
+        <div>
+          <label className="label flex items-center gap-1">
+            소요 시간
+            {isValid && result && (
+              <span className="flex items-center gap-0.5 text-[10px] font-normal text-brand">
+                <Zap className="h-2.5 w-2.5" /> 자동
+              </span>
+            )}
+          </label>
+          <Input
+            {...register(`flights.${index}.duration`)}
+            placeholder="자동 계산"
+            className={isValid && result ? 'border-brand/40 bg-brand/5' : ''}
+          />
+        </div>
+
+        <div>
+          <label className="label">출발일</label>
+          <Controller
+            name={`flights.${index}.departure_date`}
+            control={control}
+            render={({ field }) => (
+              <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="출발일" />
+            )}
+          />
+        </div>
+        <div>
+          <label className="label">출발 시간</label>
+          <Controller
+            name={`flights.${index}.departure_time`}
+            control={control}
+            render={({ field }) => (
+              <TimePicker value={field.value ?? ''} onChange={field.onChange} />
+            )}
+          />
+        </div>
+        <div>
+          <label className="label">도착일</label>
+          <Controller
+            name={`flights.${index}.arrival_date`}
+            control={control}
+            render={({ field }) => (
+              <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="도착일" />
+            )}
+          />
+        </div>
+        <div>
+          <label className="label">도착 시간</label>
+          <Controller
+            name={`flights.${index}.arrival_time`}
+            control={control}
+            render={({ field }) => (
+              <TimePicker value={field.value ?? ''} onChange={field.onChange} />
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function FlightsEditor() {
-  const { register, control } = useFormContext<VoyageFormValues>()
   const { fields, append, remove } = useFieldArray<VoyageFormValues, 'flights'>({ name: 'flights' })
   const fileRef = useRef<HTMLInputElement>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
@@ -80,6 +205,7 @@ export default function FlightsEditor() {
           />
         </div>
       </CardHeader>
+
       <CardContent className="space-y-3">
         {fields.length === 0 ? (
           <p className="py-4 text-center text-sm text-slate-400">
@@ -87,73 +213,7 @@ export default function FlightsEditor() {
           </p>
         ) : (
           fields.map((field, i) => (
-            <div key={field.id} className="relative rounded-lg border border-slate-100 p-4">
-              <button
-                type="button"
-                onClick={() => remove(i)}
-                className="absolute right-3 top-3 rounded p-1 text-slate-400 hover:text-red-500 transition"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div>
-                  <label className="label">편명</label>
-                  <Input {...register(`flights.${i}.flight_no`)} placeholder="KE907" />
-                </div>
-                <div>
-                  <label className="label">출발지</label>
-                  <Input {...register(`flights.${i}.origin`)} placeholder="인천(ICN)" />
-                </div>
-                <div>
-                  <label className="label">도착지</label>
-                  <Input {...register(`flights.${i}.destination`)} placeholder="바르셀로나(BCN)" />
-                </div>
-                <div>
-                  <label className="label">소요 시간</label>
-                  <Input {...register(`flights.${i}.duration`)} placeholder="12h 40m" />
-                </div>
-                <div>
-                  <label className="label">출발일</label>
-                  <Controller
-                    name={`flights.${i}.departure_date`}
-                    control={control}
-                    render={({ field }) => (
-                      <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="출발일" />
-                    )}
-                  />
-                </div>
-                <div>
-                  <label className="label">출발 시간</label>
-                  <Controller
-                    name={`flights.${i}.departure_time`}
-                    control={control}
-                    render={({ field }) => (
-                      <TimePicker value={field.value ?? ''} onChange={field.onChange} />
-                    )}
-                  />
-                </div>
-                <div>
-                  <label className="label">도착일</label>
-                  <Controller
-                    name={`flights.${i}.arrival_date`}
-                    control={control}
-                    render={({ field }) => (
-                      <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="도착일" />
-                    )}
-                  />
-                </div>
-                <div>
-                  <label className="label">도착 시간</label>
-                  <Controller
-                    name={`flights.${i}.arrival_time`}
-                    control={control}
-                    render={({ field }) => (
-                      <TimePicker value={field.value ?? ''} onChange={field.onChange} />
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
+            <FlightRow key={field.id} index={i} onRemove={() => remove(i)} />
           ))
         )}
       </CardContent>
