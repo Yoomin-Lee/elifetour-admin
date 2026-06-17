@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Pencil, Check, X, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { Search, Pencil, Check, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
@@ -42,20 +42,6 @@ type DraftGrade = {
 
 const DEFAULT_GRADES = ['내측', '오션뷰', '발코니', '스위트']
 
-function gradesToDraft(grades: CabinGrade[]): DraftGrade[] {
-  return grades.map(g => ({
-    _key: g.id,
-    _isNew: false,
-    _deleted: false,
-    id: g.id,
-    grade: g.grade,
-    total: g.total,
-    reserved: g.reserved,
-    price_per_person: g.price_per_person,
-    currency: g.currency,
-    sort_order: g.sort_order,
-  }))
-}
 
 function formatPrice(price: number | null, currency: string): string {
   if (price == null) return '—'
@@ -75,19 +61,21 @@ function GradesPanel({
 }) {
   const qc = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
-  const [draft, setDraft] = useState<DraftGrade[]>([])
+  const [draft, setDraft] = useState<DraftGrade | null>(null)
 
   const { data: grades = [], isLoading } = useQuery({
     queryKey: ['cabin-grades', voyageId],
     queryFn: () => fetchCabinGrades(voyageId),
   })
 
+  const grade = grades[0] ?? null
+
   const saveMut = useMutation({
     mutationFn: () => {
-      const toSave = draft
-        .filter(d => !d._deleted)
-        .map(({ _key, _isNew, _deleted, id, ...rest }) => ({ id: _isNew ? undefined : id, ...rest }))
-      const deletedIds = draft.filter(d => d._deleted && !d._isNew).map(d => d.id)
+      if (!draft) return saveCabinGrades(voyageId, [], grades.map(g => g.id))
+      const { _key, _isNew, _deleted, id, ...rest } = draft
+      const toSave = [{ id: _isNew ? undefined : id, ...rest }]
+      const deletedIds = grades.filter(g => g.id !== id).map(g => g.id)
       return saveCabinGrades(voyageId, toSave, deletedIds)
     },
     onSuccess: () => {
@@ -98,46 +86,24 @@ function GradesPanel({
   })
 
   function startEdit() {
-    setDraft(gradesToDraft(grades))
+    setDraft(grade ? {
+      _key: grade.id, _isNew: false, _deleted: false,
+      id: grade.id, grade: grade.grade,
+      total: grade.total, reserved: grade.reserved,
+      price_per_person: grade.price_per_person,
+      currency: grade.currency, sort_order: 0,
+    } : {
+      _key: 'new', _isNew: true, _deleted: false,
+      id: '', grade: '', total: 0, reserved: 0,
+      price_per_person: null, currency: 'KRW', sort_order: 0,
+    })
     setIsEditing(true)
     saveMut.reset()
   }
 
-  function addGrade() {
-    const nextOrder = draft.filter(d => !d._deleted).length
-    setDraft(prev => [
-      ...prev,
-      {
-        _key: `new-${Date.now()}`,
-        _isNew: true,
-        _deleted: false,
-        id: '',
-        grade: '',
-        total: 0,
-        reserved: 0,
-        price_per_person: null,
-        currency: 'KRW',
-        sort_order: nextOrder,
-      },
-    ])
+  function setField(field: keyof DraftGrade, value: unknown) {
+    setDraft(prev => prev ? { ...prev, [field]: value } : prev)
   }
-
-  function updateDraft(key: string, field: keyof DraftGrade, value: unknown) {
-    setDraft(prev => prev.map(d => d._key === key ? { ...d, [field]: value } : d))
-  }
-
-  function removeDraft(key: string, isNew: boolean) {
-    if (isNew) setDraft(prev => prev.filter(d => d._key !== key))
-    else setDraft(prev => prev.map(d => d._key === key ? { ...d, _deleted: true } : d))
-  }
-
-  const visible = isEditing
-    ? draft.filter(d => !d._deleted)
-    : grades
-
-  const totalCabins   = visible.reduce((s, g) => s + (isEditing ? (g as DraftGrade).total : (g as CabinGrade).total), 0)
-  const totalReserved = visible.reduce((s, g) => s + (isEditing ? (g as DraftGrade).reserved : (g as CabinGrade).reserved), 0)
-  const totalRemaining = totalCabins - totalReserved
 
   if (isLoading) {
     return <div className="px-6 py-4 text-xs text-slate-400">불러오는 중…</div>
@@ -146,16 +112,10 @@ function GradesPanel({
   return (
     <div className="bg-slate-50/70 border-t border-slate-200 px-4 py-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">선실 등급별 현황</span>
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">선실 등급 현황</span>
         <div className="flex items-center gap-2">
           {isEditing ? (
             <>
-              <button
-                onClick={addGrade}
-                className="flex items-center gap-1 text-xs text-brand hover:text-brand-dark font-medium"
-              >
-                <Plus className="h-3 w-3" />등급 추가
-              </button>
               <button
                 onClick={() => saveMut.mutate()}
                 disabled={saveMut.isPending}
@@ -186,7 +146,7 @@ function GradesPanel({
         <p className="mb-2 text-xs text-red-500">저장에 실패했습니다.</p>
       )}
 
-      {visible.length === 0 && !isEditing ? (
+      {!isEditing && !grade ? (
         <p className="text-xs text-slate-400 py-2">
           등록된 등급이 없습니다.{canWrite && (
             <button onClick={startEdit} className="ml-2 text-brand hover:underline">추가하기</button>
@@ -203,108 +163,80 @@ function GradesPanel({
                 <th className="py-1.5 text-right font-medium w-14">잔여</th>
                 <th className="py-1.5 text-right font-medium w-28">1인 요금</th>
                 <th className="py-1.5 text-right font-medium w-16">통화</th>
-                {isEditing && <th className="w-8" />}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isEditing
-                ? visible.map(d => {
-                    const g = d as DraftGrade
-                    return (
-                      <tr key={g._key}>
-                        <td className="py-1">
-                          <input
-                            value={g.grade}
-                            onChange={e => updateDraft(g._key, 'grade', e.target.value)}
-                            placeholder="내측, 오션뷰…"
-                            list="grade-suggestions"
-                            className="input h-6 text-xs w-full"
-                          />
-                          <datalist id="grade-suggestions">
-                            {DEFAULT_GRADES.map(s => <option key={s} value={s} />)}
-                          </datalist>
-                        </td>
-                        <td className="py-1 pr-1">
-                          <input
-                            type="number" min={0}
-                            value={g.total}
-                            onChange={e => updateDraft(g._key, 'total', Number(e.target.value))}
-                            className="input h-6 text-xs text-right w-full"
-                          />
-                        </td>
-                        <td className="py-1 pr-1">
-                          <input
-                            type="number" min={0}
-                            value={g.reserved}
-                            onChange={e => updateDraft(g._key, 'reserved', Number(e.target.value))}
-                            className="input h-6 text-xs text-right w-full"
-                          />
-                        </td>
-                        <td className="py-1 text-right text-slate-500">
-                          {g.total - g.reserved}
-                        </td>
-                        <td className="py-1 pr-1">
-                          <input
-                            type="number" min={0}
-                            value={g.price_per_person ?? ''}
-                            onChange={e => updateDraft(g._key, 'price_per_person', e.target.value ? Number(e.target.value) : null)}
-                            placeholder="—"
-                            className="input h-6 text-xs text-right w-full"
-                          />
-                        </td>
-                        <td className="py-1 pr-1">
-                          <select
-                            value={g.currency}
-                            onChange={e => updateDraft(g._key, 'currency', e.target.value)}
-                            className="select h-6 text-xs w-full"
-                          >
-                            <option value="KRW">KRW</option>
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                          </select>
-                        </td>
-                        <td className="py-1 text-right">
-                          <button
-                            onClick={() => removeDraft(g._key, g._isNew)}
-                            className="p-1 text-slate-300 hover:text-red-400 transition"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })
-                : grades.map(g => (
-                    <tr key={g.id}>
-                      <td className="py-1.5 font-medium text-slate-700">{g.grade}</td>
-                      <td className="py-1.5 text-right text-slate-600">{g.total}</td>
-                      <td className="py-1.5 text-right text-slate-600">{g.reserved}</td>
-                      <td className="py-1.5 text-right">
-                        <span className={g.total - g.reserved === 0 ? 'text-red-500 font-medium' : 'text-slate-600'}>
-                          {g.total - g.reserved}
-                        </span>
-                      </td>
-                      <td className="py-1.5 text-right text-slate-600">
-                        {formatPrice(g.price_per_person, g.currency)}
-                      </td>
-                      <td className="py-1.5 text-right text-slate-400">{g.currency}</td>
-                    </tr>
-                  ))
-              }
-            </tbody>
-            {visible.length > 0 && (
-              <tfoot>
-                <tr className="border-t border-slate-200 font-semibold text-slate-700">
-                  <td className="py-1.5 text-slate-500">합계</td>
-                  <td className="py-1.5 text-right">{totalCabins}</td>
-                  <td className="py-1.5 text-right">{totalReserved}</td>
-                  <td className="py-1.5 text-right">
-                    <span className={totalRemaining === 0 ? 'text-red-500' : ''}>{totalRemaining}</span>
+            <tbody>
+              {isEditing && draft ? (
+                <tr>
+                  <td className="py-1">
+                    <input
+                      value={draft.grade}
+                      onChange={e => setField('grade', e.target.value)}
+                      placeholder="내측, 오션뷰…"
+                      list="grade-suggestions"
+                      className="input h-6 text-xs w-full"
+                    />
+                    <datalist id="grade-suggestions">
+                      {DEFAULT_GRADES.map(s => <option key={s} value={s} />)}
+                    </datalist>
                   </td>
-                  <td colSpan={isEditing ? 3 : 2} />
+                  <td className="py-1 pr-1">
+                    <input
+                      type="number" min={0}
+                      value={draft.total}
+                      onChange={e => setField('total', Number(e.target.value))}
+                      className="input h-6 text-xs text-right w-full"
+                    />
+                  </td>
+                  <td className="py-1 pr-1">
+                    <input
+                      type="number" min={0}
+                      value={draft.reserved}
+                      onChange={e => setField('reserved', Number(e.target.value))}
+                      className="input h-6 text-xs text-right w-full"
+                    />
+                  </td>
+                  <td className="py-1 text-right text-slate-500">
+                    {draft.total - draft.reserved}
+                  </td>
+                  <td className="py-1 pr-1">
+                    <input
+                      type="number" min={0}
+                      value={draft.price_per_person ?? ''}
+                      onChange={e => setField('price_per_person', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="—"
+                      className="input h-6 text-xs text-right w-full"
+                    />
+                  </td>
+                  <td className="py-1 pr-1">
+                    <select
+                      value={draft.currency}
+                      onChange={e => setField('currency', e.target.value)}
+                      className="select h-6 text-xs w-full"
+                    >
+                      <option value="KRW">KRW</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                    </select>
+                  </td>
                 </tr>
-              </tfoot>
-            )}
+              ) : grade && (
+                <tr>
+                  <td className="py-1.5 font-medium text-slate-700">{grade.grade}</td>
+                  <td className="py-1.5 text-right text-slate-600">{grade.total}</td>
+                  <td className="py-1.5 text-right text-slate-600">{grade.reserved}</td>
+                  <td className="py-1.5 text-right">
+                    <span className={grade.total - grade.reserved === 0 ? 'text-red-500 font-medium' : 'text-slate-600'}>
+                      {grade.total - grade.reserved}
+                    </span>
+                  </td>
+                  <td className="py-1.5 text-right text-slate-600">
+                    {formatPrice(grade.price_per_person, grade.currency)}
+                  </td>
+                  <td className="py-1.5 text-right text-slate-400">{grade.currency}</td>
+                </tr>
+              )}
+            </tbody>
           </table>
         </div>
       )}
