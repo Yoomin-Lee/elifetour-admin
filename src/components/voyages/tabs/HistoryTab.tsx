@@ -17,7 +17,7 @@ function formatDateTime(iso: string): string {
 
 export default function HistoryTab() {
   const [filter, setFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
   const { data = [], isLoading } = useQuery({
     queryKey: ['all-history'],
     queryFn: fetchAllHistoryLogs,

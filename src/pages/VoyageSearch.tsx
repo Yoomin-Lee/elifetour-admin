@@ -39,7 +39,7 @@ function VoyageSearchInner() {
     user?.email ??
     '직원'
 
-  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
 
   const voyagesQuery = useQuery({ queryKey: ['voyages'], queryFn: fetchVoyages })
 

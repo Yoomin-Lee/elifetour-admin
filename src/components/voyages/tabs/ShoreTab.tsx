@@ -16,7 +16,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function ShoreTab() {
   const [filter, setFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
   const { data = [], isLoading } = useQuery({
     queryKey: ['all-itinerary'],
     queryFn: fetchAllItinerary,

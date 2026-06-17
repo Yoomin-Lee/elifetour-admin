@@ -152,7 +152,7 @@ function FlightFormFields({
 
 export default function FlightsTab() {
   const [filter, setFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<FlightForm>(EMPTY_FORM)
   const [addOpen, setAddOpen] = useState(false)

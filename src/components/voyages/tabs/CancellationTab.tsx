@@ -8,7 +8,7 @@ import { YearSelect } from '@/components/ui/year-select'
 
 export default function CancellationTab() {
   const [filter, setFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
   const { data = [], isLoading } = useQuery({
     queryKey: ['all-cancellation'],
     queryFn: fetchAllCancellationPolicies,

@@ -105,7 +105,7 @@ function HotelFormFields({
 
 export default function HotelTab() {
   const [filter, setFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<HotelForm>(EMPTY_FORM)
   const [addOpen, setAddOpen] = useState(false)

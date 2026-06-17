@@ -51,7 +51,7 @@ export default function ProductTab() {
   const qc = useQueryClient()
   const { canWrite } = useAuth() as { canWrite: boolean }
   const [filter, setFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ status: '미오픈', customer_count: '', tour_leader: '' })

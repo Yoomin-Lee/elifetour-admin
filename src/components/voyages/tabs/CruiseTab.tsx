@@ -249,7 +249,7 @@ function GradesPanel({
 
 export default function CruiseTab() {
   const [filter, setFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<CruiseForm>({ cruise_line: '', ship_name: '', cabin_total: '', cabin_remaining: '' })
   const [expandedId, setExpandedId] = useState<string | null>(null)
