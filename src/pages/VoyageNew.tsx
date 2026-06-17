@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider, useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
@@ -40,8 +41,10 @@ function VoyageNewInner() {
   const mutation = useMutation({
     mutationFn: createVoyageWithChildren,
     onSuccess: (voyage) => {
+      toast.success('새 행사가 등록됐습니다')
       navigate(`/voyages?tab=항차검색&voyage=${voyage.id}`)
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
   const onSubmit = (values: VoyageFormValues) => mutation.mutate(values)

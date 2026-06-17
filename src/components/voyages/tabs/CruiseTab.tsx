@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { YearSelect } from '@/components/ui/year-select'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Search, Pencil, Check, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades } from '@/lib/queries/voyages'
@@ -83,7 +84,9 @@ function GradesPanel({
       qc.invalidateQueries({ queryKey: ['cabin-grades', voyageId] })
       qc.invalidateQueries({ queryKey: ['voyages'] })
       setIsEditing(false)
+      toast.success('저장됐습니다')
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
   function startEdit() {
@@ -271,7 +274,9 @@ export default function CruiseTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['voyages'] })
       setEditingId(null)
+      toast.success('저장됐습니다')
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
   function startEdit(v: Voyage) {

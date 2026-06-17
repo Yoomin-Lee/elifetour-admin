@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Pencil, Check, X } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -93,7 +94,9 @@ export default function OverviewCard({ voyage, canWrite = true }: { voyage: Voya
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['voyages'] })
       setEditing(false)
+      toast.success('저장됐습니다')
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
   function set(field: keyof Form) {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Check, Save, Trash2 } from 'lucide-react'
 import { fetchVoyages } from '@/lib/queries/voyages'
 import {
@@ -155,10 +156,12 @@ export default function PaymentTab() {
   const toggleMut = useMutation({
     mutationFn: ({ id, is_completed }: { id: string; is_completed: boolean }) =>
       togglePaymentCompleted(id, is_completed),
-    onSuccess: () => {
+    onSuccess: (_d, { is_completed }) => {
       qc.invalidateQueries({ queryKey: ['payment-schedules', voyageId] })
       qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
+      toast.success(is_completed ? '완료 처리됐습니다' : '미완료로 변경됐습니다')
     },
+    onError: () => toast.error('변경에 실패했습니다'),
   })
 
   function getCell(c: PaymentCategory, pt: PaymentType): DraftCell {

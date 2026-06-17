@@ -1,5 +1,6 @@
 import { useState, useMemo, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Search, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { format } from 'date-fns'
@@ -187,12 +188,18 @@ export default function FlightsTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
       setEditingId(null)
+      toast.success('저장됐습니다')
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
   const deleteMut = useMutation({
     mutationFn: deleteVoyageFlight,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['all-voyage-flights'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
+      toast.success('삭제됐습니다')
+    },
+    onError: () => toast.error('삭제에 실패했습니다'),
   })
 
   const addMut = useMutation({
@@ -213,7 +220,9 @@ export default function FlightsTab() {
       qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
       setAddOpen(false)
       setAddForm(EMPTY_FORM)
+      toast.success('추가됐습니다')
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
   function startEdit(r: VoyageFlight) {

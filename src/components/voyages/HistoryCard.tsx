@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Send } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { addHistoryLog } from '@/lib/queries/voyages'
@@ -38,7 +39,9 @@ export default function HistoryCard({
     onSuccess: () => {
       setText('')
       qc.invalidateQueries({ queryKey: ['history', voyageId] })
+      toast.success('메모가 저장됐습니다')
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
   const submit = () => {
