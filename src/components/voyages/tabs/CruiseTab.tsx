@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Pencil, Check, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -248,6 +248,7 @@ function GradesPanel({
 
 export default function CruiseTab() {
   const [filter, setFilter] = useState('')
+  const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()))
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<CruiseForm>({ cruise_line: '', ship_name: '', cabin_total: '', cabin_remaining: '' })
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -287,12 +288,21 @@ export default function CruiseTab() {
     setExpandedId(prev => prev === id ? null : id)
   }
 
-  const filtered = voyages.filter(v =>
-    !filter ||
-    voyageTitle(v).toLowerCase().includes(filter.toLowerCase()) ||
-    (v.cruise_line ?? '').toLowerCase().includes(filter.toLowerCase()) ||
-    (v.ship_name ?? '').toLowerCase().includes(filter.toLowerCase())
-  )
+  const years = useMemo(() => {
+    const ys = new Set<string>()
+    voyages.forEach(v => ys.add(v.departure_date.slice(0, 4)))
+    return Array.from(ys).sort()
+  }, [voyages])
+
+  const filtered = voyages.filter(v => {
+    if (yearFilter !== 'ALL' && !v.departure_date.startsWith(yearFilter)) return false
+    if (!filter) return true
+    return (
+      voyageTitle(v).toLowerCase().includes(filter.toLowerCase()) ||
+      (v.cruise_line ?? '').toLowerCase().includes(filter.toLowerCase()) ||
+      (v.ship_name ?? '').toLowerCase().includes(filter.toLowerCase())
+    )
+  })
   const active    = filtered.filter(v => v.status !== '취소')
   const cancelled = filtered.filter(v => v.status === '취소')
   const ordered   = [...active, ...cancelled]
@@ -304,14 +314,24 @@ export default function CruiseTab() {
           <h1 className="text-lg font-bold text-slate-800">크루즈</h1>
           <p className="text-sm text-slate-400">캐빈 현황 · ▶ 클릭으로 등급별 현황 확인</p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          <input
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-            placeholder="행사명·선사·크루즈 검색"
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg w-52 focus:outline-none focus:ring-1 focus:ring-brand"
-          />
+        <div className="flex items-center gap-2">
+          <select
+            value={yearFilter}
+            onChange={e => setYearFilter(e.target.value)}
+            className="py-1.5 pl-3 pr-7 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand bg-white"
+          >
+            <option value="ALL">전체 연도</option>
+            {years.map(y => <option key={y} value={y}>{y}년</option>)}
+          </select>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              value={filter}
+              onChange={e => setFilter(e.target.value)}
+              placeholder="행사명·선사·크루즈 검색"
+              className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg w-52 focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+          </div>
         </div>
       </div>
 
