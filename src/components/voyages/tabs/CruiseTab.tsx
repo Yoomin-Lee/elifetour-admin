@@ -292,7 +292,7 @@ export default function CruiseTab() {
   const years = useMemo(() => {
     const ys = new Set<string>()
     voyages.forEach(v => ys.add(v.departure_date.slice(0, 4)))
-    return Array.from(ys).sort()
+    return Array.from(ys).sort().reverse()
   }, [voyages])
 
   const filtered = voyages.filter(v => {
