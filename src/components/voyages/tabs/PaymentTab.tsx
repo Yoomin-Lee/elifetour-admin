@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, Save, Trash2 } from 'lucide-react'
 import { fetchVoyages } from '@/lib/queries/voyages'
@@ -12,6 +12,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import VoyageCombobox from '@/components/voyages/VoyageCombobox'
+import { YearSelect } from '@/components/ui/year-select'
 import { voyageTitle } from '@/types/database'
 import type { PaymentCategory, PaymentType, PaymentSchedule } from '@/types/database'
 
@@ -80,6 +81,7 @@ function formatAmount(amount: string, currency: string): string {
 
 export default function PaymentTab() {
   const [voyageId, setVoyageId] = useState('')
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editing, setEditing] = useState<DraftKey | null>(null)
   const [drafts, setDrafts] = useState<Record<DraftKey, DraftCell>>({})
   const qc = useQueryClient()
@@ -88,6 +90,18 @@ export default function PaymentTab() {
     queryKey: ['voyages'],
     queryFn: fetchVoyages,
   })
+
+  const years = useMemo(() => {
+    const ys = new Set<string>()
+    voyages.forEach(v => { if (v.departure_date) ys.add(v.departure_date.slice(0, 4)) })
+    return Array.from(ys).sort().reverse()
+  }, [voyages])
+
+  const filteredVoyages = useMemo(() => {
+    const sorted = [...voyages].sort((a, b) => b.departure_date.localeCompare(a.departure_date))
+    if (yearFilter === 'ALL') return sorted
+    return sorted.filter(v => v.departure_date?.startsWith(yearFilter))
+  }, [voyages, yearFilter])
 
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ['payment-schedules', voyageId],
@@ -165,11 +179,24 @@ export default function PaymentTab() {
       {/* 행사 선택 */}
       <div>
         <label className="label">행사 선택</label>
-        <VoyageCombobox
-          voyages={[...voyages].sort((a, b) => b.departure_date.localeCompare(a.departure_date))}
-          selectedId={voyageId || null}
-          onSelect={id => setVoyageId(id)}
-        />
+        <div className="flex items-center gap-2">
+          <YearSelect
+            value={yearFilter}
+            years={years}
+            onChange={y => {
+              setYearFilter(y)
+              const selected = voyages.find(v => v.id === voyageId)
+              if (selected && y !== 'ALL' && !selected.departure_date?.startsWith(y)) {
+                setVoyageId('')
+              }
+            }}
+          />
+          <VoyageCombobox
+            voyages={filteredVoyages}
+            selectedId={voyageId || null}
+            onSelect={id => setVoyageId(id)}
+          />
+        </div>
       </div>
 
       {!voyageId && (
