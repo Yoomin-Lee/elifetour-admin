@@ -240,7 +240,7 @@ export default function FlightsTab() {
       r.arr_airport.toLowerCase().includes(filter.toLowerCase())
   })
 
-  // 행사 출발일 최신순 → 항공사 코드 알파벳순 → 출발시간 오름차순
+  // 행사 출발일 최신순 → 항공사 코드 알파벳순 → 출발시간 내림차순 (도착편 위, 출발편 아래)
   const sortedFiltered = [...filtered].sort((a, b) => {
     const aVoy = a.voyages?.departure_date ?? ''
     const bVoy = b.voyages?.departure_date ?? ''
@@ -248,7 +248,7 @@ export default function FlightsTab() {
     const aAirline = a.flight_num.match(/^[A-Za-z]+/)?.[0] ?? ''
     const bAirline = b.flight_num.match(/^[A-Za-z]+/)?.[0] ?? ''
     if (aAirline !== bAirline) return aAirline.localeCompare(bAirline)
-    return new Date(a.dep_datetime).getTime() - new Date(b.dep_datetime).getTime()
+    return new Date(b.dep_datetime).getTime() - new Date(a.dep_datetime).getTime()
   })
 
   return (
