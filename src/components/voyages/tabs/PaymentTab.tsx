@@ -11,6 +11,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import VoyageCombobox from '@/components/voyages/VoyageCombobox'
 import { voyageTitle } from '@/types/database'
 import type { PaymentCategory, PaymentType, PaymentSchedule } from '@/types/database'
 
@@ -162,16 +163,13 @@ export default function PaymentTab() {
       </div>
 
       {/* 행사 선택 */}
-      <div className="max-w-xs">
+      <div>
         <label className="label">행사 선택</label>
-        <Select value={voyageId} onChange={e => setVoyageId(e.target.value)}>
-          <option value="">— 행사를 선택하세요 —</option>
-          {[...voyages]
-            .sort((a, b) => b.departure_date.localeCompare(a.departure_date))
-            .map(v => (
-              <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
-            ))}
-        </Select>
+        <VoyageCombobox
+          voyages={[...voyages].sort((a, b) => b.departure_date.localeCompare(a.departure_date))}
+          selectedId={voyageId || null}
+          onSelect={id => setVoyageId(id)}
+        />
       </div>
 
       {!voyageId && (

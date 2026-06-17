@@ -321,11 +321,18 @@ export default function CalendarTab() {
                   <button
                     key={v.id}
                     onClick={() => goToVoyage(v.id)}
-                    className="w-full flex items-center gap-2.5 hover:bg-slate-50 rounded-lg px-2 py-1.5 transition text-left"
+                    className={`w-full flex items-center gap-2.5 hover:bg-slate-50 rounded-lg px-2 py-1.5 transition text-left ${v.status === '취소' ? 'opacity-60' : ''}`}
                   >
                     <span className={`shrink-0 w-2 h-2 rounded-full ${STATUS_DOT[v.status]}`} />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{v.region}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className={`text-sm font-medium truncate ${v.status === '취소' ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                          {v.region}
+                        </p>
+                        {v.status === '취소' && (
+                          <span className="shrink-0 text-[10px] font-semibold text-red-400 bg-red-50 px-1 rounded">취소</span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-400">
                         {v.departure_date} ~ {v.return_date ?? '-'}
                       </p>
