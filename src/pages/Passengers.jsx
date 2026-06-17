@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { Search, Phone, BookOpen, Users } from 'lucide-react'
 import { searchPassengers } from '../lib/passengers'
 import StatusBadge from '../components/StatusBadge'
 
@@ -55,7 +56,7 @@ export default function Passengers() {
 
           {results.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-12 text-slate-400">
-              <span className="text-3xl">🔍</span>
+              <Search className="h-8 w-8" />
               <p>검색 결과가 없습니다</p>
             </div>
           ) : (
@@ -116,8 +117,8 @@ export default function Passengers() {
                       {p.eli_trips?.title || '-'} · {p.eli_trips?.depart_date || '-'}
                     </p>
                     <div className="flex gap-4 text-xs text-slate-600 mt-1">
-                      <span>📞 {p.phone || '-'}</span>
-                      <span>🛂 {p.passport_no || '-'}</span>
+                      <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{p.phone || '-'}</span>
+                      <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{p.passport_no || '-'}</span>
                     </div>
                     <Link to={`/trips/${p.trip_id}`} className="mt-2 inline-block text-xs text-brand font-medium">
                       여행 보기 →
@@ -132,7 +133,7 @@ export default function Passengers() {
 
       {!searched && (
         <div className="flex flex-col items-center gap-2 py-16 text-slate-300">
-          <span className="text-5xl">👥</span>
+          <Users className="h-12 w-12" />
           <p className="text-sm">이름, 연락처, 여권번호로 검색하세요</p>
         </div>
       )}

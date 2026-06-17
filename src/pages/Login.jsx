@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Plane, AlertTriangle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
@@ -15,8 +16,8 @@ export default function Login() {
         <div className="rounded-2xl bg-white p-8 shadow-2xl">
           {/* 로고 영역 */}
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand text-white text-2xl font-black shadow-lg">
-              ✈
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand text-white shadow-lg">
+              <Plane className="h-8 w-8" />
             </div>
             <h1 className="text-2xl font-bold text-slate-800">이라이프투어</h1>
             <p className="mt-1 text-sm text-slate-500">직원 전용 관리 시스템</p>
@@ -24,7 +25,7 @@ export default function Login() {
 
           {!isSupabaseReady && (
             <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
-              ⚠ Supabase 미설정 — .env.local 을 확인하세요.
+              <AlertTriangle className="h-4 w-4 inline mr-1" />Supabase 미설정 — .env.local 을 확인하세요.
             </div>
           )}
 

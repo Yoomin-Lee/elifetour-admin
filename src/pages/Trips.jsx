@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { Map } from 'lucide-react'
 import { getTrips, createTrip, deleteTrip } from '../lib/trips'
 import { useAuth } from '../context/AuthContext'
 import StatusBadge from '../components/StatusBadge'
@@ -93,7 +94,7 @@ export default function Trips() {
         <div className="flex justify-center py-16 text-slate-400">불러오는 중...</div>
       ) : trips.length === 0 ? (
         <div className="card flex flex-col items-center gap-3 py-16 text-slate-400">
-          <span className="text-4xl">🗺️</span>
+          <Map className="h-10 w-10" />
           <p>등록된 여행이 없습니다</p>
           {canWrite && <button className="btn-primary" onClick={() => setShowForm(true)}>첫 여행 등록하기</button>}
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { Phone, BookOpen, BedDouble, Banknote, AlertTriangle } from 'lucide-react'
 import { getTripById, updateTrip, deleteTrip } from '../lib/trips'
 import { getPassengers, createPassenger, updatePassenger, deletePassenger } from '../lib/passengers'
 import StatusBadge from '../components/StatusBadge'
@@ -320,11 +321,11 @@ export default function TripDetail() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-1 text-xs text-slate-600">
-                <span>📞 {p.phone || '-'}</span>
-                <span>🛂 {p.passport_no || '-'}</span>
-                <span>🛏 {p.room_type === 'single' ? '1인실' : p.room_type === 'triple' ? '3인실' : '2인실'}</span>
-                <span>💰 {p.payment_amount ? formatMoney(p.payment_amount) : '미입금'}</span>
-                {p.special_request && <span className="col-span-2 text-amber-600">⚠ {p.special_request}</span>}
+                <span className="flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{p.phone || '-'}</span>
+                <span className="flex items-center gap-1"><BookOpen className="h-3 w-3 shrink-0" />{p.passport_no || '-'}</span>
+                <span className="flex items-center gap-1"><BedDouble className="h-3 w-3 shrink-0" />{p.room_type === 'single' ? '1인실' : p.room_type === 'triple' ? '3인실' : '2인실'}</span>
+                <span className="flex items-center gap-1"><Banknote className="h-3 w-3 shrink-0" />{p.payment_amount ? formatMoney(p.payment_amount) : '미입금'}</span>
+                {p.special_request && <span className="col-span-2 flex items-center gap-1 text-amber-600"><AlertTriangle className="h-3 w-3 shrink-0" />{p.special_request}</span>}
               </div>
               {canWrite && (
                 <div className="flex gap-3 mt-3">

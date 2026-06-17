@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CalendarDays, Plane, Map, Users, Inbox } from 'lucide-react'
 import { getTrips, getDashboardStats } from '../lib/trips'
 import { getTotalPassengersThisMonth } from '../lib/passengers'
 import StatusBadge from '../components/StatusBadge'
 
-function StatCard({ label, value, icon, color }) {
+function StatCard({ label, value, icon: Icon, color }) {
   const colors = {
     blue:  'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
@@ -12,8 +13,8 @@ function StatCard({ label, value, icon, color }) {
   }
   return (
     <div className="card flex items-center gap-4 p-5">
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl ${colors[color]}`}>
-        {icon}
+      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${colors[color]}`}>
+        <Icon className="h-6 w-6" />
       </div>
       <div>
         <p className="text-xs font-medium text-slate-500">{label}</p>
@@ -69,10 +70,10 @@ export default function Dashboard() {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-        <StatCard label="예정 여행" value={loading ? '…' : stats.upcoming} icon="📅" color="blue" />
-        <StatCard label="진행중 여행" value={loading ? '…' : stats.ongoing} icon="✈️" color="green" />
-        <StatCard label="전체 여행" value={loading ? '…' : stats.total} icon="🗺️" color="orange" />
-        <StatCard label="이번달 신규 여행자" value={loading ? '…' : paxCount} icon="👥" color="blue" />
+        <StatCard label="예정 여행" value={loading ? '…' : stats.upcoming} icon={CalendarDays} color="blue" />
+        <StatCard label="진행중 여행" value={loading ? '…' : stats.ongoing} icon={Plane} color="green" />
+        <StatCard label="전체 여행" value={loading ? '…' : stats.total} icon={Map} color="orange" />
+        <StatCard label="이번달 신규 여행자" value={loading ? '…' : paxCount} icon={Users} color="blue" />
       </div>
 
       {/* 예정 여행 목록 */}
@@ -87,7 +88,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-center py-12 text-slate-400">불러오는 중...</div>
         ) : upcomingTrips.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-400">
-            <span className="text-3xl">📭</span>
+            <Inbox className="h-8 w-8" />
             <p className="text-sm">예정된 여행이 없습니다</p>
             <Link to="/trips" className="btn-primary text-xs mt-1">여행 등록하기</Link>
           </div>
