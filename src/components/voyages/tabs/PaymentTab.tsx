@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Check, Save, Trash2 } from 'lucide-react'
+import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { fetchVoyages } from '@/lib/queries/voyages'
 import {
   fetchPaymentSchedules,
@@ -85,6 +86,7 @@ export default function PaymentTab() {
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editing, setEditing] = useState<DraftKey | null>(null)
   const [drafts, setDrafts] = useState<Record<DraftKey, DraftCell>>({})
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null)
   const qc = useQueryClient()
 
   const { data: voyages = [] } = useQuery({
@@ -150,7 +152,10 @@ export default function PaymentTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payment-schedules', voyageId] })
       qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
+      setDeleteTarget(null)
+      toast.success('삭제됐습니다')
     },
+    onError: () => toast.error('삭제에 실패했습니다'),
   })
 
   const toggleMut = useMutation({
@@ -350,8 +355,7 @@ export default function PaymentTab() {
                                 {cell.id && (
                                   <button
                                     type="button"
-                                    onClick={() => cell.id && deleteMut.mutate(cell.id)}
-                                    disabled={deleteMut.isPending}
+                                    onClick={() => cell.id && setDeleteTarget({ id: cell.id, label: `${CATEGORY_LABEL[c]} ${PAYMENT_TYPE_LABEL[pt]}` })}
                                     className="px-1.5 text-[11px] opacity-40 hover:opacity-100 hover:text-red-500 rounded hover:bg-red-50 transition"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -377,6 +381,15 @@ export default function PaymentTab() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          message={`${deleteTarget.label} 결제 정보를 삭제합니다.`}
+          onConfirm={() => deleteMut.mutate(deleteTarget.id)}
+          onCancel={() => setDeleteTarget(null)}
+          pending={deleteMut.isPending}
+        />
       )}
     </div>
   )

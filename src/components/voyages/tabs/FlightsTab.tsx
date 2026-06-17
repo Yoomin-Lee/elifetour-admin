@@ -2,6 +2,7 @@ import { useState, useMemo, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Search, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { useAuth } from '@/context/AuthContext'
 import { format } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
@@ -158,6 +159,7 @@ export default function FlightsTab() {
   const [editForm, setEditForm] = useState<FlightForm>(EMPTY_FORM)
   const [addOpen, setAddOpen] = useState(false)
   const [addForm, setAddForm] = useState<FlightForm>(EMPTY_FORM)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null)
   const qc = useQueryClient()
   const { canWrite } = useAuth() as { canWrite: boolean }
 
@@ -197,6 +199,7 @@ export default function FlightsTab() {
     mutationFn: deleteVoyageFlight,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
+      setDeleteTarget(null)
       toast.success('삭제됐습니다')
     },
     onError: () => toast.error('삭제에 실패했습니다'),
@@ -371,15 +374,11 @@ export default function FlightsTab() {
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              onClick={() => deleteMut.mutate(r.id)}
-                              disabled={deleteMut.isPending && deleteMut.variables === r.id}
-                              className="rounded p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 transition disabled:opacity-40"
+                              onClick={() => setDeleteTarget({ id: r.id, label: `${r.flight_num} (${r.dep_airport}→${r.arr_airport})` })}
+                              className="rounded p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 transition"
                               title="삭제"
                             >
-                              {deleteMut.isPending && deleteMut.variables === r.id
-                                ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-                                : <Trash2 className="h-3.5 w-3.5" />
-                              }
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </>
                         )}
@@ -418,6 +417,15 @@ export default function FlightsTab() {
           </tbody>
         </table>
       </div>
+
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          message={`항공편 ${deleteTarget.label}을(를) 삭제합니다.`}
+          onConfirm={() => deleteMut.mutate(deleteTarget.id)}
+          onCancel={() => setDeleteTarget(null)}
+          pending={deleteMut.isPending}
+        />
+      )}
     </div>
   )
 }
