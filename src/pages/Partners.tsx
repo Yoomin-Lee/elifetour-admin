@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Check, X, Search, ToggleLeft, ToggleRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -203,7 +203,7 @@ function PartnerModal({
 
 // ── 메인 페이지 ───────────────────────────────────────────────────────────────
 
-export default function Partners() {
+function Partners() {
   const { canWrite } = useAuth() as { canWrite: boolean }
   const qc = useQueryClient()
 
@@ -494,5 +494,17 @@ function TypeBadge({ type }: { type: PartnerType }) {
     <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${TYPE_COLORS[type]}`}>
       {PARTNER_TYPE_LABEL[type]}
     </span>
+  )
+}
+
+// ── QueryClient 래퍼 ──────────────────────────────────────────────────────────
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } })
+
+export default function PartnersPage() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Partners />
+    </QueryClientProvider>
   )
 }
