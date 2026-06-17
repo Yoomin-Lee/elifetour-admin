@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, RotateCcw, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
   fetchMnSections,
+  fetchDeletedMnSections,
   upsertMnSection,
-  deleteMnSection,
+  softDeleteMnSection,
+  restoreMnSection,
+  hardDeleteMnSection,
 } from '@/lib/queries/mnSections'
 import type { MnSection, MnRow } from '@/lib/queries/mnSections'
 import { Button } from '@/components/ui/button'
@@ -19,8 +23,6 @@ const CATEGORY_LABELS: Record<Category, string> = {
   '팁': '선내 팁 규정 (1박당 / 인당)',
 }
 
-// ── 빈 폼 ──────────────────────────────────────────────────────────────────
-
 const EMPTY_RULE_ROW: MnRow = { d: '', fee: '', note: '' }
 const EMPTY_TIP_ROW: MnRow = { room: '', amount: '' }
 
@@ -33,6 +35,61 @@ function emptySection(category: Category): Omit<MnSection, 'id'> {
     rows: category === '팁' ? [{ ...EMPTY_TIP_ROW }] : [{ ...EMPTY_RULE_ROW }],
     sort_order: 99,
   }
+}
+
+// ── 삭제 확인 모달 ─────────────────────────────────────────────────────────
+
+function DeleteConfirmModal({
+  title,
+  onConfirm,
+  onCancel,
+  isPending,
+}: {
+  title: string
+  onConfirm: () => void
+  onCancel: () => void
+  isPending: boolean
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-red-50">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-slate-800">섹션을 삭제하시겠습니까?</h3>
+              <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                <span className="font-medium text-slate-700">"{title}"</span> 섹션이 삭제됩니다.
+                <br />
+                삭제 후에도 하단의 '삭제된 항목'에서 복원할 수 있습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="px-6 pb-5 flex gap-2 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isPending}
+            className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition disabled:opacity-40"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPending}
+            className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-40"
+          >
+            {isPending ? '삭제 중…' : '삭제'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── 행 편집 테이블 ─────────────────────────────────────────────────────────
@@ -255,7 +312,7 @@ function CategoryGroup({
   onEdit,
   onCancelEdit,
   onSave,
-  onDelete,
+  onDeleteRequest,
   savePending,
   newOpen,
   onNewOpen,
@@ -269,7 +326,7 @@ function CategoryGroup({
   onEdit: (s: MnSection) => void
   onCancelEdit: () => void
   onSave: (s: Omit<MnSection, 'id'> & { id?: string }) => void
-  onDelete: (id: string) => void
+  onDeleteRequest: (s: MnSection) => void
   savePending: boolean
   newOpen: boolean
   onNewOpen: () => void
@@ -324,7 +381,7 @@ function CategoryGroup({
                 section={s}
                 canWrite={canWrite}
                 onEdit={() => handleEdit(s)}
-                onDelete={() => onDelete(s.id)}
+                onDelete={() => onDeleteRequest(s)}
               />
             )
           )}
@@ -344,6 +401,120 @@ function CategoryGroup({
   )
 }
 
+// ── 삭제된 항목 패널 ───────────────────────────────────────────────────────
+
+function DeletedPanel({
+  canWrite,
+  restorePending,
+  hardDeletePending,
+  onRestore,
+  onHardDelete,
+}: {
+  canWrite: boolean
+  restorePending: boolean
+  hardDeletePending: boolean
+  onRestore: (id: string) => void
+  onHardDelete: (id: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [confirmHardDelete, setConfirmHardDelete] = useState<MnSection | null>(null)
+
+  const { data: deleted = [] } = useQuery({
+    queryKey: ['mn-sections-deleted'],
+    queryFn: fetchDeletedMnSections,
+    enabled: canWrite,
+  })
+
+  if (!canWrite || deleted.length === 0) return null
+
+  return (
+    <>
+      <div className="border-t border-slate-200 pt-6">
+        <button
+          type="button"
+          onClick={() => setOpen(v => !v)}
+          className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-600 transition"
+        >
+          {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          삭제된 항목 ({deleted.length})
+        </button>
+
+        {open && (
+          <div className="mt-3 space-y-2">
+            {deleted.map(s => (
+              <div key={s.id}
+                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 gap-2">
+                <div className="min-w-0">
+                  <span className="text-xs font-medium text-slate-500 line-through truncate block">{s.title}</span>
+                  <span className="text-[10px] text-slate-400">{s.category}</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onRestore(s.id)}
+                    disabled={restorePending}
+                    className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium text-brand bg-brand/10 hover:bg-brand/20 transition disabled:opacity-40"
+                  >
+                    <RotateCcw className="h-3 w-3" /> 복원
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmHardDelete(s)}
+                    disabled={hardDeletePending}
+                    className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium text-red-500 bg-red-50 hover:bg-red-100 transition disabled:opacity-40"
+                  >
+                    <Trash2 className="h-3 w-3" /> 영구 삭제
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {confirmHardDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmHardDelete(null)} />
+          <div className="relative z-10 w-full max-w-sm mx-4 rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="px-6 pt-6 pb-4">
+              <div className="flex items-start gap-3">
+                <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-red-50">
+                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-slate-800">영구 삭제하시겠습니까?</h3>
+                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                    <span className="font-medium text-slate-700">"{confirmHardDelete.title}"</span>이 영구적으로 삭제됩니다.
+                    <br />이 작업은 되돌릴 수 없습니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 pb-5 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmHardDelete(null)}
+                disabled={hardDeletePending}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition disabled:opacity-40"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => { onHardDelete(confirmHardDelete.id); setConfirmHardDelete(null) }}
+                disabled={hardDeletePending}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-40"
+              >
+                {hardDeletePending ? '삭제 중…' : '영구 삭제'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ── 메인 ──────────────────────────────────────────────────────────────────
 
 export default function MNTab() {
@@ -351,6 +522,7 @@ export default function MNTab() {
   const { canWrite } = useAuth() as { canWrite: boolean }
   const [editingId, setEditingId] = useState<string | null>(null)
   const [newCategory, setNewCategory] = useState<Category | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<MnSection | null>(null)
 
   const { data: sections = [], isLoading } = useQuery({
     queryKey: ['mn-sections'],
@@ -363,12 +535,39 @@ export default function MNTab() {
       qc.invalidateQueries({ queryKey: ['mn-sections'] })
       setEditingId(null)
       setNewCategory(null)
+      toast.success('저장됐습니다')
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
-  const deleteMut = useMutation({
-    mutationFn: deleteMnSection,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['mn-sections'] }),
+  const softDeleteMut = useMutation({
+    mutationFn: softDeleteMnSection,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mn-sections'] })
+      qc.invalidateQueries({ queryKey: ['mn-sections-deleted'] })
+      setDeleteTarget(null)
+      toast.success('삭제됐습니다', { description: '하단 삭제된 항목에서 복원할 수 있습니다' })
+    },
+    onError: () => toast.error('삭제에 실패했습니다'),
+  })
+
+  const restoreMut = useMutation({
+    mutationFn: restoreMnSection,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mn-sections'] })
+      qc.invalidateQueries({ queryKey: ['mn-sections-deleted'] })
+      toast.success('복원됐습니다')
+    },
+    onError: () => toast.error('복원에 실패했습니다'),
+  })
+
+  const hardDeleteMut = useMutation({
+    mutationFn: hardDeleteMnSection,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mn-sections-deleted'] })
+      toast.success('영구 삭제됐습니다')
+    },
+    onError: () => toast.error('영구 삭제에 실패했습니다'),
   })
 
   if (isLoading) {
@@ -381,30 +580,49 @@ export default function MNTab() {
   }
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-lg font-bold text-slate-800">MN 참고 자료</h1>
+    <>
+      <div className="space-y-8">
+        <h1 className="text-lg font-bold text-slate-800">MN 참고 자료</h1>
 
-      {CATEGORIES.map(cat => {
-        const catSections = sections.filter(s => s.category === cat)
-        return (
-          <CategoryGroup
-            key={cat}
-            category={cat}
-            sections={catSections}
-            canWrite={canWrite}
-            editingId={editingId}
-            onEdit={s => setEditingId(s.id)}
-            onCancelEdit={() => setEditingId(null)}
-            onSave={s => saveMut.mutate(s)}
-            onDelete={id => deleteMut.mutate(id)}
-            savePending={saveMut.isPending}
-            newOpen={newCategory === cat}
-            onNewOpen={() => setNewCategory(cat)}
-            onNewClose={() => setNewCategory(null)}
-            onNewSave={s => saveMut.mutate(s)}
-          />
-        )
-      })}
-    </div>
+        {CATEGORIES.map(cat => {
+          const catSections = sections.filter(s => s.category === cat)
+          return (
+            <CategoryGroup
+              key={cat}
+              category={cat}
+              sections={catSections}
+              canWrite={canWrite}
+              editingId={editingId}
+              onEdit={s => setEditingId(s.id)}
+              onCancelEdit={() => setEditingId(null)}
+              onSave={s => saveMut.mutate(s)}
+              onDeleteRequest={s => setDeleteTarget(s)}
+              savePending={saveMut.isPending}
+              newOpen={newCategory === cat}
+              onNewOpen={() => setNewCategory(cat)}
+              onNewClose={() => setNewCategory(null)}
+              onNewSave={s => saveMut.mutate(s)}
+            />
+          )
+        })}
+
+        <DeletedPanel
+          canWrite={canWrite}
+          restorePending={restoreMut.isPending}
+          hardDeletePending={hardDeleteMut.isPending}
+          onRestore={id => restoreMut.mutate(id)}
+          onHardDelete={id => hardDeleteMut.mutate(id)}
+        />
+      </div>
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={deleteTarget.title}
+          onConfirm={() => softDeleteMut.mutate(deleteTarget.id)}
+          onCancel={() => setDeleteTarget(null)}
+          isPending={softDeleteMut.isPending}
+        />
+      )}
+    </>
   )
 }

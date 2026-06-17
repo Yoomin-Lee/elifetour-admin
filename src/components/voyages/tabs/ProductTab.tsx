@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
 import { Search, Plus, Eye, Copy, Pencil, Check, X } from 'lucide-react'
 import { fetchVoyages, duplicateVoyage, updateVoyage } from '@/lib/queries/voyages'
@@ -66,9 +67,18 @@ export default function ProductTab() {
     onSuccess: (newVoyage) => {
       qc.invalidateQueries({ queryKey: ['voyages'] })
       setDuplicatingId(null)
-      navigate(`/voyages?tab=항차검색&voyage=${newVoyage.id}`)
+      toast.success('행사가 복제됐습니다', {
+        description: newVoyage.region ?? '새 행사를 목록에서 확인하세요',
+        action: {
+          label: '바로 보기',
+          onClick: () => navigate(`/voyages?tab=항차검색&voyage=${newVoyage.id}`),
+        },
+      })
     },
-    onError: () => setDuplicatingId(null),
+    onError: () => {
+      setDuplicatingId(null)
+      toast.error('복제에 실패했습니다')
+    },
   })
 
   const saveMut = useMutation({
@@ -80,7 +90,9 @@ export default function ProductTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['voyages'] })
       setEditingId(null)
+      toast.success('저장됐습니다')
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
   function startEdit(v: Voyage) {

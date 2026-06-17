@@ -16,6 +16,7 @@ export type MnSection = {
   row_type: 'rule' | 'tip'
   rows: MnRow[]
   sort_order: number
+  deleted_at?: string | null
 }
 
 function sb() {
@@ -27,7 +28,18 @@ export async function fetchMnSections(): Promise<MnSection[]> {
   const { data, error } = await sb()
     .from('mn_sections')
     .select('*')
+    .is('deleted_at', null)
     .order('sort_order')
+  if (error) throw error
+  return data as MnSection[]
+}
+
+export async function fetchDeletedMnSections(): Promise<MnSection[]> {
+  const { data, error } = await sb()
+    .from('mn_sections')
+    .select('*')
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false })
   if (error) throw error
   return data as MnSection[]
 }
@@ -42,7 +54,23 @@ export async function upsertMnSection(section: Omit<MnSection, 'id'> & { id?: st
   return data as MnSection
 }
 
-export async function deleteMnSection(id: string): Promise<void> {
+export async function softDeleteMnSection(id: string): Promise<void> {
+  const { error } = await sb()
+    .from('mn_sections')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function restoreMnSection(id: string): Promise<void> {
+  const { error } = await sb()
+    .from('mn_sections')
+    .update({ deleted_at: null })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function hardDeleteMnSection(id: string): Promise<void> {
   const { error } = await sb().from('mn_sections').delete().eq('id', id)
   if (error) throw error
 }
