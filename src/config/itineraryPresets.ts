@@ -13,16 +13,16 @@ export type ItineraryPreset = {
 
 export const ITINERARY_PRESETS: Record<string, ItineraryPreset> = {
   // ── 싱가포르 ──────────────────────────────────────────────────────────────
-  '싱가포르_4박': {
-    label: '싱가포르 4박 (싱가포르 왕복)',
-    nights: 4,
+  '싱가포르_5박': {
+    label: '싱가포르 5박6일 (싱가포르 왕복)',
+    nights: 5,
     ports: [
-      { port: '싱가포르',  arrival_time: '',      departure_time: '16:30', summary: '출발' },
-      { port: '싱가포르',  arrival_time: '',      departure_time: '',      summary: '' },
+      { port: '싱가포르',  arrival_time: '14:25', departure_time: '',      summary: '도착' },
+      { port: '싱가포르',  arrival_time: '',      departure_time: '16:00', summary: '크루즈 승선' },
       { port: '페낭',      arrival_time: '14:30', departure_time: '21:00', summary: '' },
       { port: '푸켓',      arrival_time: '08:00', departure_time: '20:00', summary: '' },
       { port: '해상',      arrival_time: '',      departure_time: '',      summary: '' },
-      { port: '싱가포르',  arrival_time: '07:00', departure_time: '',      summary: '귀항' },
+      { port: '싱가포르',  arrival_time: '07:00', departure_time: '',      summary: '하선·귀국' },
     ],
   },
 
@@ -71,15 +71,19 @@ export const ITINERARY_PRESETS: Record<string, ItineraryPreset> = {
   },
 
   // ── 미서부 ────────────────────────────────────────────────────────────────
-  '미서부_크루즈_4박': {
-    label: '미서부 크루즈 4박 (LA 왕복)',
-    nights: 4,
+  '미서부_8박': {
+    label: '미서부 8박9일 (LA 왕복)',
+    nights: 8,
     ports: [
-      { port: 'LA',        arrival_time: '',      departure_time: '16:00', summary: '출발' },
+      { port: 'LA',        arrival_time: '',      departure_time: '',      summary: '도착' },
+      { port: '페이지',    arrival_time: '',      departure_time: '',      summary: '' },
+      { port: '라스베가스',arrival_time: '',      departure_time: '',      summary: '' },
+      { port: 'LA',        arrival_time: '',      departure_time: '16:00', summary: '크루즈 승선' },
       { port: '해상',      arrival_time: '',      departure_time: '',      summary: '' },
-      { port: '카탈리나',  arrival_time: '08:00', departure_time: '18:00', summary: '' },
-      { port: '앤세나다',  arrival_time: '07:00', departure_time: '17:00', summary: '' },
-      { port: 'LA',        arrival_time: '07:00', departure_time: '',      summary: '귀항' },
+      { port: '카탈리나',  arrival_time: '07:00', departure_time: '18:00', summary: '' },
+      { port: '앤세나다',  arrival_time: '08:00', departure_time: '17:00', summary: '' },
+      { port: 'LA',        arrival_time: '07:00', departure_time: '',      summary: '하선' },
+      { port: 'LA',        arrival_time: '',      departure_time: '',      summary: '귀국' },
     ],
   },
 
