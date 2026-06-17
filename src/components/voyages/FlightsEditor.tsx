@@ -4,6 +4,7 @@ import { Plus, Trash2, Upload, Download } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { parseFlightsExcel, downloadFlightsTemplate } from '@/lib/excel'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
@@ -113,7 +114,13 @@ export default function FlightsEditor() {
                 </div>
                 <div>
                   <label className="label">출발일</label>
-                  <Input type="date" {...register(`flights.${i}.departure_date`)} />
+                  <Controller
+                    name={`flights.${i}.departure_date`}
+                    control={control}
+                    render={({ field }) => (
+                      <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="출발일" />
+                    )}
+                  />
                 </div>
                 <div>
                   <label className="label">출발 시간</label>
@@ -127,7 +134,13 @@ export default function FlightsEditor() {
                 </div>
                 <div>
                   <label className="label">도착일</label>
-                  <Input type="date" {...register(`flights.${i}.arrival_date`)} />
+                  <Controller
+                    name={`flights.${i}.arrival_date`}
+                    control={control}
+                    render={({ field }) => (
+                      <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="도착일" />
+                    )}
+                  />
                 </div>
                 <div>
                   <label className="label">도착 시간</label>

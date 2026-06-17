@@ -4,6 +4,7 @@ import { Plus, Trash2, Upload, Download, MapPin, ChevronDown } from 'lucide-reac
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { parseItineraryExcel, downloadItineraryTemplate } from '@/lib/excel'
 import { ITINERARY_PRESETS, PRESET_OPTIONS } from '@/config/itineraryPresets'
@@ -194,7 +195,13 @@ export default function ItineraryEditor() {
                   <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-5">
                     <div>
                       <label className="label">날짜 *</label>
-                      <Input type="date" {...register(`itinerary.${i}.date`)} />
+                      <Controller
+                        name={`itinerary.${i}.date`}
+                        control={control}
+                        render={({ field }) => (
+                          <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="날짜 선택" />
+                        )}
+                      />
                       {dayErrors?.date && (
                         <p className="mt-0.5 text-xs text-red-500">{dayErrors.date.message}</p>
                       )}
