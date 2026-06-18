@@ -373,7 +373,7 @@ export async function saveCabinGrades(
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
 
-type OnSaleVoyage = Pick<Voyage, 'id' | 'region' | 'departure_date' | 'ship_name' | 'cabin_remaining' | 'cabin_total' | 'customer_count' | 'status'>
+type OnSaleVoyage = Pick<Voyage, 'id' | 'region' | 'departure_date' | 'return_date' | 'ship_name' | 'cruise_line' | 'airline' | 'tour_leader' | 'cabin_remaining' | 'cabin_total' | 'customer_count' | 'status'>
 type DepartureVoyage = Pick<Voyage, 'id' | 'region' | 'departure_date' | 'ship_name' | 'cabin_remaining' | 'cabin_total' | 'status'>
 type PaymentRow = PaymentSchedule & { voyages: Pick<Voyage, 'region' | 'departure_date'> }
 
@@ -392,7 +392,7 @@ export async function fetchVoyageDashboardData(): Promise<VoyageDashboardData> {
 
   const [onSaleRes, departuresRes, paymentsRes] = await Promise.all([
     sb().from('voyages')
-      .select('id, region, departure_date, ship_name, cabin_remaining, cabin_total, customer_count, status')
+      .select('id, region, departure_date, return_date, ship_name, cruise_line, airline, tour_leader, cabin_remaining, cabin_total, customer_count, status')
       .eq('status', '판매중')
       .order('departure_date'),
     sb().from('voyages')
