@@ -373,10 +373,14 @@ export async function saveCabinGrades(
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
 
+type OnSaleVoyage = Pick<Voyage, 'id' | 'region' | 'departure_date' | 'ship_name' | 'cabin_remaining' | 'cabin_total' | 'customer_count' | 'status'>
+type DepartureVoyage = Pick<Voyage, 'id' | 'region' | 'departure_date' | 'ship_name' | 'cabin_remaining' | 'cabin_total' | 'status'>
+type PaymentRow = PaymentSchedule & { voyages: Pick<Voyage, 'region' | 'departure_date'> }
+
 export interface VoyageDashboardData {
-  onSaleCount: number
-  thisMonthDepartures: Pick<Voyage, 'id' | 'region' | 'departure_date' | 'ship_name' | 'cabin_remaining' | 'cabin_total' | 'status'>[]
-  thisMonthPayments: Array<PaymentSchedule & { voyages: Pick<Voyage, 'region' | 'departure_date'> }>
+  onSaleVoyages: OnSaleVoyage[]
+  thisMonthDepartures: DepartureVoyage[]
+  thisMonthPayments: PaymentRow[]
 }
 
 export async function fetchVoyageDashboardData(): Promise<VoyageDashboardData> {
@@ -387,11 +391,15 @@ export async function fetchVoyageDashboardData(): Promise<VoyageDashboardData> {
   const lastDay = `${y}-${m}-${String(new Date(y, today.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
 
   const [onSaleRes, departuresRes, paymentsRes] = await Promise.all([
-    sb().from('voyages').select('*', { count: 'exact', head: true }).eq('status', '판매중'),
+    sb().from('voyages')
+      .select('id, region, departure_date, ship_name, cabin_remaining, cabin_total, customer_count, status')
+      .eq('status', '판매중')
+      .order('departure_date'),
     sb().from('voyages')
       .select('id, region, departure_date, ship_name, cabin_remaining, cabin_total, status')
       .gte('departure_date', firstDay)
       .lte('departure_date', lastDay)
+      .neq('status', '취소')
       .order('departure_date'),
     sb().from('payment_schedules')
       .select('*, voyages(region, departure_date)')
@@ -406,9 +414,9 @@ export async function fetchVoyageDashboardData(): Promise<VoyageDashboardData> {
   if (paymentsRes.error) throw paymentsRes.error
 
   return {
-    onSaleCount: onSaleRes.count ?? 0,
-    thisMonthDepartures: (departuresRes.data ?? []) as Pick<Voyage, 'id' | 'region' | 'departure_date' | 'ship_name' | 'cabin_remaining' | 'cabin_total' | 'status'>[],
-    thisMonthPayments: (paymentsRes.data ?? []) as Array<PaymentSchedule & { voyages: Pick<Voyage, 'region' | 'departure_date'> }>,
+    onSaleVoyages: (onSaleRes.data ?? []) as OnSaleVoyage[],
+    thisMonthDepartures: (departuresRes.data ?? []) as DepartureVoyage[],
+    thisMonthPayments: (paymentsRes.data ?? []) as PaymentRow[],
   }
 }
 
