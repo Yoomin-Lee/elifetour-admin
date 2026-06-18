@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
+import Pending from './pages/Pending'
 import Dashboard from './pages/Dashboard'
 import Trips from './pages/Trips'
 import TripDetail from './pages/TripDetail'
@@ -24,10 +25,11 @@ function Spinner() {
 const DEV_MODE = false
 
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth()
+  const { user, isPending, loading } = useAuth()
   if (DEV_MODE) return children
   if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
+  if (isPending) return <Navigate to="/pending" replace />
   return children
 }
 
@@ -46,6 +48,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/pending" element={<Pending />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="trips" element={<Trips />} />

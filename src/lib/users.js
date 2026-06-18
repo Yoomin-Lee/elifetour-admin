@@ -19,3 +19,25 @@ export async function updateProfileRole(id, role) {
   if (error) throw error
   return data
 }
+
+export async function updateProfile(id, fields) {
+  const { data, error } = await supabase
+    .from('eli_profiles')
+    .update(fields)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function approveProfile(id, role = 'staff') {
+  const { data, error } = await supabase
+    .from('eli_profiles')
+    .update({ status: 'approved', role })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}

@@ -60,13 +60,15 @@ export function AuthProvider({ children }) {
   }
 
   const role = profile?.role ?? 'staff'
+  const status = profile?.status ?? 'pending'
   const isAdmin = role === 'admin'
   const isEscort = role === 'escort'
   const canWrite = !isEscort
+  const isPending = profile !== null && status !== 'approved'
 
   return (
     <AuthContext.Provider value={{
-      user, profile, role, isAdmin, isEscort, canWrite,
+      user, profile, role, status, isAdmin, isEscort, canWrite, isPending,
       loading, signInWith, signOut, isSupabaseReady,
     }}>
       {children}

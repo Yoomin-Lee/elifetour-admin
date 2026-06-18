@@ -9,7 +9,8 @@ create table if not exists eli_profiles (
   email text,
   display_name text,
   avatar_url text,
-  role text default 'staff',     -- staff | admin
+  role text default 'staff',     -- staff | admin | escort
+  status text not null default 'pending',  -- pending | approved
   created_at timestamptz default now()
 );
 
@@ -58,6 +59,13 @@ alter table eli_trips      enable row level security;
 alter table eli_passengers enable row level security;
 
 create policy "own profile"          on eli_profiles   for all using (auth.uid() = id) with check (auth.uid() = id);
+
+-- 관리자 전체 프로필 접근 (security definer 함수로 재귀 RLS 방지)
+create or replace function eli_is_admin()
+returns boolean language sql security definer stable as $$
+  select exists(select 1 from eli_profiles where id = auth.uid() and role = 'admin');
+$$;
+create policy "admin all profiles"   on eli_profiles   for all using (eli_is_admin()) with check (eli_is_admin());
 create policy "staff read trips"     on eli_trips      for select using (auth.role() = 'authenticated');
 create policy "staff write trips"    on eli_trips      for all   using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "staff read pax"       on eli_passengers for select using (auth.role() = 'authenticated');
