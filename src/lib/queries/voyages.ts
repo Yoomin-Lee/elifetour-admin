@@ -381,6 +381,7 @@ export interface VoyageDashboardData {
   onSaleVoyages: OnSaleVoyage[]
   thisMonthDepartures: DepartureVoyage[]
   thisMonthPayments: PaymentRow[]
+  statusCounts: Record<string, number>
 }
 
 export async function fetchVoyageDashboardData(): Promise<VoyageDashboardData> {
@@ -390,7 +391,7 @@ export async function fetchVoyageDashboardData(): Promise<VoyageDashboardData> {
   const firstDay = `${y}-${m}-01`
   const lastDay = `${y}-${m}-${String(new Date(y, today.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
 
-  const [onSaleRes, departuresRes, paymentsRes] = await Promise.all([
+  const [onSaleRes, departuresRes, paymentsRes, statusRes] = await Promise.all([
     sb().from('voyages')
       .select('id, region, departure_date, return_date, ship_name, cruise_line, airline, tour_leader, cabin_remaining, cabin_total, customer_count, status')
       .eq('status', '판매중')
@@ -407,16 +408,24 @@ export async function fetchVoyageDashboardData(): Promise<VoyageDashboardData> {
       .lte('due_date', lastDay)
       .eq('is_completed', false)
       .order('due_date'),
+    sb().from('voyages').select('status').neq('status', '취소'),
   ])
 
   if (onSaleRes.error) throw onSaleRes.error
   if (departuresRes.error) throw departuresRes.error
   if (paymentsRes.error) throw paymentsRes.error
+  if (statusRes.error) throw statusRes.error
+
+  const statusCounts: Record<string, number> = {}
+  for (const v of (statusRes.data ?? [])) {
+    statusCounts[v.status] = (statusCounts[v.status] ?? 0) + 1
+  }
 
   return {
     onSaleVoyages: (onSaleRes.data ?? []) as OnSaleVoyage[],
     thisMonthDepartures: (departuresRes.data ?? []) as DepartureVoyage[],
     thisMonthPayments: (paymentsRes.data ?? []) as PaymentRow[],
+    statusCounts,
   }
 }
 

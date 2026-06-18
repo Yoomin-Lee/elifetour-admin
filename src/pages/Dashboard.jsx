@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom'
 import { Ship, Anchor, Users, CreditCard, ChevronDown } from 'lucide-react'
 import { fetchVoyageDashboardData } from '../lib/queries/voyages'
 
-const CATEGORY_LABEL     = { CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔' }
-const PAYMENT_TYPE_LABEL = { DEPOSIT_1ST: '1차계약금', DEPOSIT_2ND: '2차계약금', BALANCE: '잔금' }
+const STATUS_ITEMS = [
+  { key: '미오픈',   label: '미오픈',   dot: 'bg-slate-400' },
+  { key: '판매중',   label: '판매중',   dot: 'bg-blue-500'  },
+  { key: '마감',     label: '마감',     dot: 'bg-orange-500'},
+  { key: '출발완료', label: '출발완료', dot: 'bg-green-500' },
+]
 
-function StatCard({ label, value, icon: Icon, color, sub }) {
+function StatCard({ label, value, icon: Icon, color, sub, link }) {
   const colors = {
     blue:   'bg-blue-50 text-blue-600',
     orange: 'bg-orange-50 text-orange-600',
@@ -14,7 +18,7 @@ function StatCard({ label, value, icon: Icon, color, sub }) {
     cyan:   'bg-cyan-50 text-cyan-600',
     red:    'bg-red-50 text-red-600',
   }
-  return (
+  const inner = (
     <div className="card flex items-center gap-4 p-5">
       <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${colors[color]}`}>
         <Icon className="h-6 w-6" />
@@ -26,6 +30,7 @@ function StatCard({ label, value, icon: Icon, color, sub }) {
       </div>
     </div>
   )
+  return link ? <Link to={link} className="block hover:opacity-90 transition">{inner}</Link> : inner
 }
 
 function SectionHeader({ title, badge, link, linkLabel }) {
@@ -64,12 +69,6 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
 }
 
-function voyageLabel(region, departure_date) {
-  if (!departure_date) return region ?? '-'
-  const d = departure_date
-  return `${d.slice(2, 4)}/${d.slice(5, 7)}/${d.slice(8, 10)} ${region}`
-}
-
 function formatAmount(amount, currency) {
   if (!amount) return '-'
   if (currency === 'KRW') return `${Number(amount).toLocaleString('ko-KR')} 원`
@@ -90,8 +89,8 @@ function isOverdue(dateStr) {
 }
 
 export default function Dashboard() {
-  const [dash, setDash]       = useState({ onSaleVoyages: [], thisMonthDepartures: [], thisMonthPayments: [] })
-  const [loading, setLoading] = useState(true)
+  const [dash, setDash]         = useState({ onSaleVoyages: [], thisMonthDepartures: [], thisMonthPayments: [], statusCounts: {} })
+  const [loading, setLoading]   = useState(true)
   const [expandedId, setExpandedId] = useState(null)
 
   useEffect(() => {
@@ -101,7 +100,7 @@ export default function Dashboard() {
       .finally(() => setLoading(false))
   }, [])
 
-  const { onSaleVoyages, thisMonthDepartures, thisMonthPayments } = dash
+  const { onSaleVoyages, thisMonthDepartures, thisMonthPayments, statusCounts } = dash
   const totalCustomers = onSaleVoyages.reduce((s, v) => s + (v.customer_count || 0), 0)
   const overdueCount   = thisMonthPayments.filter(p => isOverdue(p.due_date)).length
 
@@ -142,6 +141,7 @@ export default function Dashboard() {
           icon={CreditCard}
           color={overdueCount > 0 ? 'red' : 'orange'}
           sub={overdueCount > 0 ? `연체 ${overdueCount}건` : null}
+          link="/voyages?tab=결제"
         />
       </div>
 
@@ -158,37 +158,38 @@ export default function Dashboard() {
           ) : (
             <div className="divide-y divide-slate-100">
               {onSaleVoyages.map((v) => {
-                const cb      = cabinBadge(v.cabin_remaining, v.cabin_total)
-                const isOpen  = expandedId === v.id
+                const cb     = cabinBadge(v.cabin_remaining, v.cabin_total)
+                const isOpen = expandedId === v.id
                 return (
                   <div key={v.id}>
-                    {/* 요약 행 */}
-                    <button
-                      onClick={() => toggle(v.id)}
-                      className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/60 transition text-left"
-                    >
-                      {/* 지역 + 출발일 */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-800 truncate">{v.region}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">{v.ship_name ?? '-'}</p>
-                      </div>
-                      {/* 출발일 */}
-                      <span className="shrink-0 text-sm text-slate-600 w-16 text-right">
-                        {formatDate(v.departure_date)}
-                      </span>
-                      {/* 예약인원 */}
-                      <span className="shrink-0 text-sm text-slate-600 w-12 text-right">
-                        {(v.customer_count || 0)}명
-                      </span>
-                      {/* 잔여 캐빈 */}
-                      <span className={`shrink-0 text-sm w-20 text-right ${cb.cls}`}>
-                        {cb.text}
-                      </span>
-                      {/* 토글 아이콘 */}
-                      <ChevronDown
-                        className={`shrink-0 h-4 w-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                      />
-                    </button>
+                    {/* 요약 행: 클릭 → 항차 마스터 바로가기 / 화살표 → 아코디언 */}
+                    <div className="flex items-center hover:bg-slate-50/60 transition">
+                      <Link
+                        to={`/voyages?tab=항차검색&voyage=${v.id}`}
+                        className="flex flex-1 items-center gap-3 px-5 py-3.5 min-w-0"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-800 truncate">{v.region}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{v.ship_name ?? '-'}</p>
+                        </div>
+                        <span className="shrink-0 text-sm text-slate-600 w-14 text-right">
+                          {formatDate(v.departure_date)}
+                        </span>
+                        <span className="shrink-0 text-sm text-slate-600 w-10 text-right">
+                          {v.customer_count || 0}명
+                        </span>
+                        <span className={`shrink-0 text-sm w-20 text-right ${cb.cls}`}>
+                          {cb.text}
+                        </span>
+                      </Link>
+                      <button
+                        onClick={() => toggle(v.id)}
+                        className="shrink-0 px-4 py-3.5 text-slate-400 hover:text-slate-600 transition"
+                        aria-label="상세 펼치기"
+                      >
+                        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
 
                     {/* 펼침 상세 */}
                     {isOpen && (
@@ -209,55 +210,24 @@ export default function Dashboard() {
         {/* ── 우측 컬럼 ── */}
         <div className="flex flex-col gap-4 lg:col-span-2">
 
-          {/* 이번달 결제 마감 */}
+          {/* 전체 항차 현황 요약 */}
           <div className="card overflow-hidden">
-            <SectionHeader
-              title="이번달 결제 마감"
-              badge={
-                overdueCount > 0 && (
-                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
-                    연체 {overdueCount}
-                  </span>
-                )
-              }
-              link="/voyages?tab=결제"
-              linkLabel="결제 탭"
-            />
+            <SectionHeader title="전체 항차 현황" link="/voyages" linkLabel="항차 관리" />
             {loading ? (
               <div className="flex items-center justify-center py-8 text-slate-400 text-sm">불러오는 중...</div>
-            ) : thisMonthPayments.length === 0 ? (
-              <Empty message="이번달 결제 마감이 없습니다" />
             ) : (
               <div className="divide-y divide-slate-50">
-                {thisMonthPayments.map((p) => {
-                  const overdue = isOverdue(p.due_date)
-                  return (
-                    <div
-                      key={p.id}
-                      className={`flex items-center justify-between gap-2 px-5 py-3 ${overdue ? 'bg-red-50/50' : ''}`}
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="rounded px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600">
-                            {CATEGORY_LABEL[p.category] ?? p.category}
-                          </span>
-                          <span className="text-xs text-slate-500">
-                            {PAYMENT_TYPE_LABEL[p.payment_type] ?? p.payment_type}
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-700 truncate">
-                          {p.voyages ? voyageLabel(p.voyages.region, p.voyages.departure_date) : '-'}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className={`text-sm font-medium ${overdue ? 'text-red-600' : 'text-slate-800'}`}>
-                          {formatDate(p.due_date)}{overdue ? ' ⚠' : ''}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-0.5">{formatAmount(p.amount, p.currency)}</p>
-                      </div>
+                {STATUS_ITEMS.map(({ key, label, dot }) => (
+                  <div key={key} className="flex items-center justify-between px-5 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${dot}`} />
+                      <span className="text-sm text-slate-700">{label}</span>
                     </div>
-                  )
-                })}
+                    <span className="text-sm font-semibold text-slate-800">
+                      {statusCounts[key] ?? 0}건
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -274,7 +244,11 @@ export default function Dashboard() {
                 {thisMonthDepartures.map((v) => {
                   const cb = cabinBadge(v.cabin_remaining, v.cabin_total)
                   return (
-                    <div key={v.id} className="flex items-center justify-between gap-2 px-5 py-3">
+                    <Link
+                      key={v.id}
+                      to={`/voyages?tab=항차검색&voyage=${v.id}`}
+                      className="flex items-center justify-between gap-2 px-5 py-3 hover:bg-slate-50/60 transition"
+                    >
                       <div className="min-w-0">
                         <p className="font-medium text-slate-800 truncate">{v.region}</p>
                         <p className="text-xs text-slate-400 mt-0.5">{v.ship_name ?? '-'}</p>
@@ -283,7 +257,7 @@ export default function Dashboard() {
                         <p className="text-sm text-slate-600">{formatDate(v.departure_date)}</p>
                         <p className={`text-xs mt-0.5 ${cb.cls}`}>{cb.text}</p>
                       </div>
-                    </div>
+                    </Link>
                   )
                 })}
               </div>
