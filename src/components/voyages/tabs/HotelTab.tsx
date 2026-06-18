@@ -9,6 +9,7 @@ import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { YearSelect } from '@/components/ui/year-select'
 import type { Hotel } from '@/types/database'
@@ -85,7 +86,7 @@ function HotelFormFields({
       )}
       <div>
         <label className="label">투숙일</label>
-        <Input type="date" value={form.stay_date} onChange={set('stay_date')} className="h-7 text-sm" />
+        <DatePicker value={form.stay_date} onChange={v => setForm(prev => ({ ...prev, stay_date: v }))} placeholder="투숙일" />
       </div>
       <div className="sm:col-span-2">
         <label className="label">호텔명</label>

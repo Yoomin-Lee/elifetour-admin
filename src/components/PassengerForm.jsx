@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DatePicker } from './ui/date-picker'
 import { statusOptions } from '../config/site'
 
 const emptyForm = {
@@ -29,7 +30,7 @@ export default function PassengerForm({ initial = {}, onSubmit, onCancel, loadin
         </div>
         <div>
           <label className="label">생년월일</label>
-          <input type="date" className="input" value={form.birth_date} onChange={set('birth_date')} />
+          <DatePicker value={form.birth_date || ''} onChange={v => setForm(f => ({ ...f, birth_date: v }))} placeholder="생년월일" />
         </div>
         <div>
           <label className="label">성별</label>
@@ -52,7 +53,7 @@ export default function PassengerForm({ initial = {}, onSubmit, onCancel, loadin
         </div>
         <div>
           <label className="label">여권만료일</label>
-          <input type="date" className="input" value={form.passport_expire} onChange={set('passport_expire')} />
+          <DatePicker value={form.passport_expire || ''} onChange={v => setForm(f => ({ ...f, passport_expire: v }))} placeholder="여권만료일" />
         </div>
         <div>
           <label className="label">국적</label>

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { DatePicker } from './ui/date-picker'
 import { statusOptions } from '../config/site'
 
 const emptyForm = {
@@ -34,19 +36,22 @@ export default function TripForm({ initial = {}, onSubmit, onCancel, loading }) 
         </div>
         <div>
           <label className="label">상태</label>
-          <select className="select" value={form.status} onChange={set('status')}>
-            {statusOptions.trip.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select className="select appearance-none pr-9" value={form.status} onChange={set('status')}>
+              {statusOptions.trip.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          </div>
         </div>
         <div>
           <label className="label">출발일 *</label>
-          <input type="date" className="input" value={form.depart_date} onChange={set('depart_date')} required />
+          <DatePicker value={form.depart_date || ''} onChange={v => setForm(f => ({ ...f, depart_date: v }))} placeholder="출발일" />
         </div>
         <div>
           <label className="label">귀국일 *</label>
-          <input type="date" className="input" value={form.return_date} onChange={set('return_date')} required />
+          <DatePicker value={form.return_date || ''} onChange={v => setForm(f => ({ ...f, return_date: v }))} placeholder="귀국일" />
         </div>
         <div>
           <label className="label">최대 인원</label>

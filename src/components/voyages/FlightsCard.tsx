@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { TimePicker } from '@/components/ui/time-picker'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatTime } from '@/lib/utils'
 import { saveFlight, deleteFlightRow } from '@/lib/queries/voyages'
@@ -180,7 +181,7 @@ export default function FlightsCard({
                     </div>
                     <div>
                       <label className="label">출발일</label>
-                      <Input type="date" value={r.departure_date} onChange={e => upd(r._key, 'departure_date', e.target.value)} className="h-7 text-sm" />
+                      <DatePicker value={r.departure_date} onChange={v => upd(r._key, 'departure_date', v)} placeholder="출발일" />
                     </div>
                     <div>
                       <label className="label">출발 시간</label>
@@ -188,7 +189,7 @@ export default function FlightsCard({
                     </div>
                     <div>
                       <label className="label">도착일</label>
-                      <Input type="date" value={r.arrival_date} onChange={e => upd(r._key, 'arrival_date', e.target.value)} className="h-7 text-sm" />
+                      <DatePicker value={r.arrival_date} onChange={v => upd(r._key, 'arrival_date', v)} placeholder="도착일" />
                     </div>
                     <div>
                       <label className="label">도착 시간</label>

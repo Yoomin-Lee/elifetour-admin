@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { DatePicker } from '@/components/ui/date-picker'
 import { formatDate, calcNights } from '@/lib/utils'
 import { voyageTitle } from '@/types/database'
 import { updateVoyage } from '@/lib/queries/voyages'
@@ -143,10 +144,10 @@ export default function OverviewCard({ voyage, canWrite = true }: { voyage: Voya
               </Select>
             </ERow>
             <ERow label="출발일">
-              <Input type="date" value={f.departure_date} onChange={set('departure_date')} className="h-7 text-sm" />
+              <DatePicker value={f.departure_date} onChange={v => setF(p => ({ ...p, departure_date: v }))} placeholder="출발일" />
             </ERow>
             <ERow label="귀국일">
-              <Input type="date" value={f.return_date} onChange={set('return_date')} className="h-7 text-sm" />
+              <DatePicker value={f.return_date} onChange={v => setF(p => ({ ...p, return_date: v }))} placeholder="귀국일" />
             </ERow>
             <ERow label="항공사">
               <Input value={f.airline} onChange={set('airline')} placeholder="대한항공" className="h-7 text-sm" />

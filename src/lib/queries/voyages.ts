@@ -387,6 +387,15 @@ export async function saveCabinGrades(
   }
 }
 
+export async function fetchAllCabinGrades(): Promise<CabinGrade[]> {
+  const { data, error } = await sb()
+    .from('cabin_grades')
+    .select('*')
+    .order('sort_order')
+  if (error) throw error
+  return data as CabinGrade[]
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────
 
 type OnSaleVoyage = Pick<Voyage, 'id' | 'region' | 'departure_date' | 'return_date' | 'ship_name' | 'cruise_line' | 'airline' | 'tour_leader' | 'cabin_remaining' | 'cabin_total' | 'customer_count' | 'status'>

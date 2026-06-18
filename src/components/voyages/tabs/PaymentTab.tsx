@@ -101,7 +101,8 @@ export default function PaymentTab() {
   }, [voyages])
 
   const filteredVoyages = useMemo(() => {
-    const sorted = [...voyages].sort((a, b) => b.departure_date.localeCompare(a.departure_date))
+    const sorted = [...voyages]
+      .sort((a, b) => (b.departure_date ?? '').localeCompare(a.departure_date ?? ''))
     if (yearFilter === 'ALL') return sorted
     return sorted.filter(v => v.departure_date?.startsWith(yearFilter))
   }, [voyages, yearFilter])

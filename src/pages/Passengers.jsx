@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Phone, BookOpen, Users } from 'lucide-react'
-import { searchPassengers, getPassengersByTrip } from '../lib/passengers'
-import { getTrips } from '../lib/trips'
+import { Search, Phone, BookOpen, Users, ChevronDown } from 'lucide-react'
+import { searchPassengers, getPassengersByVoyage } from '../lib/passengers'
+import { fetchVoyages } from '../lib/queries/voyages'
+import { voyageTitle } from '../types/database'
 import StatusBadge from '../components/StatusBadge'
 
 function formatMoney(n) {
@@ -11,50 +12,50 @@ function formatMoney(n) {
 }
 
 export default function Passengers() {
-  const [allTrips, setAllTrips]       = useState([])
-  const [yearFilter, setYearFilter]   = useState('ALL')
-  const [selectedTripId, setSelectedTripId] = useState('')
-  const [query, setQuery]             = useState('')
-  const [results, setResults]         = useState([])
-  const [mode, setMode]               = useState(null) // 'trip' | 'search'
-  const [loading, setLoading]         = useState(false)
+  const [allVoyages, setAllVoyages]       = useState([])
+  const [yearFilter, setYearFilter]       = useState('ALL')
+  const [selectedVoyageId, setSelectedVoyageId] = useState('')
+  const [query, setQuery]                 = useState('')
+  const [results, setResults]             = useState([])
+  const [mode, setMode]                   = useState(null) // 'voyage' | 'search'
+  const [loading, setLoading]             = useState(false)
 
   useEffect(() => {
-    getTrips().then(setAllTrips).catch(() => {})
+    fetchVoyages().then(setAllVoyages).catch(() => {})
   }, [])
 
   const years = useMemo(() => {
     const ys = new Set()
-    allTrips.forEach(tr => {
-      const y = tr.depart_date?.slice(0, 4)
+    allVoyages.forEach(v => {
+      const y = v.departure_date?.slice(0, 4)
       if (y) ys.add(y)
     })
     return Array.from(ys).sort().reverse()
-  }, [allTrips])
+  }, [allVoyages])
 
-  const filteredTrips = useMemo(() =>
+  const filteredVoyages = useMemo(() =>
     yearFilter === 'ALL'
-      ? allTrips
-      : allTrips.filter(tr => tr.depart_date?.startsWith(yearFilter)),
-    [allTrips, yearFilter]
+      ? allVoyages
+      : allVoyages.filter(v => v.departure_date?.startsWith(yearFilter)),
+    [allVoyages, yearFilter]
   )
 
-  const selectedTrip = allTrips.find(tr => tr.id === selectedTripId)
+  const selectedVoyage = allVoyages.find(v => v.id === selectedVoyageId)
 
   function handleYearChange(y) {
     setYearFilter(y)
-    setSelectedTripId('')
+    setSelectedVoyageId('')
     setResults([])
     setMode(null)
   }
 
-  function handleTripChange(id) {
-    setSelectedTripId(id)
+  function handleVoyageChange(id) {
+    setSelectedVoyageId(id)
     setQuery('')
     if (!id) { setResults([]); setMode(null); return }
     setLoading(true)
-    getPassengersByTrip(id)
-      .then(data => { setResults(data); setMode('trip') })
+    getPassengersByVoyage(id)
+      .then(data => { setResults(data); setMode('voyage') })
       .catch(() => setResults([]))
       .finally(() => setLoading(false))
   }
@@ -63,7 +64,7 @@ export default function Passengers() {
     e.preventDefault()
     if (!query.trim()) return
     setLoading(true)
-    setSelectedTripId('')
+    setSelectedVoyageId('')
     try {
       const data = await searchPassengers(query.trim())
       setResults(data)
@@ -71,7 +72,7 @@ export default function Passengers() {
     } catch { setResults([]) } finally { setLoading(false) }
   }, [query])
 
-  const isTripMode   = mode === 'trip'
+  const isVoyageMode = mode === 'voyage'
   const isSearchMode = mode === 'search'
 
   return (
@@ -84,30 +85,34 @@ export default function Passengers() {
       {/* 필터 영역 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
         {/* 연도 드롭다운 */}
-        <select
-          value={yearFilter}
-          onChange={e => handleYearChange(e.target.value)}
-          className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/30"
-        >
-          <option value="ALL">전체 연도</option>
-          {years.map(y => (
-            <option key={y} value={y}>{y}년</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={yearFilter}
+            onChange={e => handleYearChange(e.target.value)}
+            className="h-9 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-sm text-slate-700 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/30"
+          >
+            <option value="ALL">전체 연도</option>
+            {years.map(y => (
+              <option key={y} value={y}>{y}년</option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        </div>
 
         {/* 행사 드롭다운 */}
-        <select
-          value={selectedTripId}
-          onChange={e => handleTripChange(e.target.value)}
-          className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/30 sm:w-64"
-        >
-          <option value="">행사 선택…</option>
-          {filteredTrips.map(tr => (
-            <option key={tr.id} value={tr.id}>
-              {tr.depart_date ? `${tr.depart_date.slice(0, 7)} ` : ''}{tr.title}
-            </option>
-          ))}
-        </select>
+        <div className="relative sm:w-64">
+          <select
+            value={selectedVoyageId}
+            onChange={e => handleVoyageChange(e.target.value)}
+            className="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-sm text-slate-700 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/30"
+          >
+            <option value="">행사 선택…</option>
+            {filteredVoyages.map(v => (
+              <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        </div>
 
         <div className="h-5 w-px bg-slate-200 hidden sm:block" />
 
@@ -129,11 +134,11 @@ export default function Passengers() {
       {(mode || loading) && (
         <div className="card overflow-hidden">
           <div className="border-b border-slate-100 px-5 py-3">
-            {isTripMode && selectedTrip ? (
+            {isVoyageMode && selectedVoyage ? (
               <div className="flex items-center gap-3">
-                <p className="text-sm font-semibold text-slate-800">{selectedTrip.title}</p>
-                {selectedTrip.depart_date && (
-                  <span className="text-xs text-slate-400">{selectedTrip.depart_date} 출발</span>
+                <p className="text-sm font-semibold text-slate-800">{voyageTitle(selectedVoyage)}</p>
+                {selectedVoyage.departure_date && (
+                  <span className="text-xs text-slate-400">{selectedVoyage.departure_date} 출발</span>
                 )}
                 <span className="text-xs text-slate-500 ml-auto">{results.length}명</span>
               </div>
@@ -147,7 +152,7 @@ export default function Passengers() {
           ) : results.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-12 text-slate-400">
               <Search className="h-8 w-8" />
-              <p>{isTripMode ? '해당 행사에 고객이 없습니다' : '검색 결과가 없습니다'}</p>
+              <p>{isVoyageMode ? '해당 행사에 고객이 없습니다' : '검색 결과가 없습니다'}</p>
             </div>
           ) : (
             <>

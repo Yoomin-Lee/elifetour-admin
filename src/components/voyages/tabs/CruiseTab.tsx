@@ -1,20 +1,111 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Fragment } from 'react'
 import { YearSelect } from '@/components/ui/year-select'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Search, Pencil, Check, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades } from '@/lib/queries/voyages'
+import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades, fetchAllCabinGrades } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import type { Voyage, CabinGrade } from '@/types/database'
 
-// ── 선실 편집 폼 (cruise_line / ship_name / cabin totals) ─────────────────
+// ── 선사/선박명 프리셋 ────────────────────────────────────────────────────
+const CRUISE_LINES: Record<string, string[]> = {
+  'MSC': [
+    'MSC World Europa', 'MSC World America', 'MSC Splendida', 'MSC Bellissima',
+    'MSC Magnifica', 'MSC Musica', 'MSC Orchestra', 'MSC Virtuosa', 'MSC Seashore',
+    'MSC Seascape', 'MSC Grandiosa', 'MSC Preziosa', 'MSC Poesia', 'MSC Armonia',
+    'MSC Sinfonia', 'MSC Opera', 'MSC Meraviglia',
+  ],
+  'Royal Caribbean': [
+    'Spectrum of the Seas', 'Wonder of the Seas', 'Harmony of the Seas',
+    'Anthem of the Seas', 'Mariner of the Seas', 'Voyager of the Seas',
+    'Quantum of the Seas', 'Ovation of the Seas',
+  ],
+  'Costa Cruises': [
+    'Costa Smeralda', 'Costa Firenze', 'Costa Fascinosa', 'Costa Fortuna',
+    'Costa Serena', 'Costa Diadema', 'Costa Luminosa', 'Costa Toscana',
+  ],
+  'Norwegian (NCL)': [
+    'Norwegian Bliss', 'Norwegian Joy', 'Norwegian Prima',
+    'Norwegian Encore', 'Norwegian Epic', 'Norwegian Viva',
+  ],
+  'Celebrity Cruises': [
+    'Celebrity Solstice', 'Celebrity Millennium', 'Celebrity Beyond',
+    'Celebrity Apex', 'Celebrity Edge', 'Celebrity Equinox',
+  ],
+  'Princess Cruises': [
+    'Majestic Princess', 'Diamond Princess', 'Discovery Princess',
+    'Ruby Princess', 'Sapphire Princess', 'Crown Princess',
+  ],
+  'Holland America': [
+    'Eurodam', 'Nieuw Statendam', 'Rotterdam', 'Koningsdam', 'Volendam', 'Veendam',
+  ],
+  'Carnival': ['Carnival Jubilee', 'Carnival Celebration', 'Carnival Luminosa'],
+}
+const ALL_SHIPS = Object.values(CRUISE_LINES).flat()
 
+// ── SelectOrInput ─────────────────────────────────────────────────────────
+function SelectOrInput({
+  value,
+  onChange,
+  options,
+  placeholder = '선택…',
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: string[]
+  placeholder?: string
+}) {
+  const CUSTOM = '__CUSTOM__'
+  const [isCustom, setIsCustom] = useState(() => value !== '' && !options.includes(value))
+
+  if (isCustom) {
+    return (
+      <div className="flex gap-1">
+        <input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="직접 입력"
+          autoFocus
+          className="input h-7 text-sm flex-1 min-w-0"
+        />
+        <button
+          type="button"
+          onClick={() => { setIsCustom(false); onChange('') }}
+          className="shrink-0 flex h-7 items-center rounded border border-slate-200 px-2 text-xs text-slate-400 hover:bg-slate-100 transition"
+        >
+          목록
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={e => {
+          if (e.target.value === CUSTOM) { setIsCustom(true); onChange('') }
+          else onChange(e.target.value)
+        }}
+        className="select h-7 py-0 text-sm appearance-none pr-7 w-full"
+      >
+        <option value="">{placeholder}</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+        <option value={CUSTOM}>✏ 직접 입력</option>
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+    </div>
+  )
+}
+
+// ── 선실 편집 폼 ─────────────────────────────────────────────────────────
 type CruiseForm = {
   cruise_line: string
   ship_name: string
+  agent: string
   cabin_total: string
   cabin_remaining: string
 }
@@ -22,28 +113,19 @@ function toForm(v: Voyage): CruiseForm {
   return {
     cruise_line: v.cruise_line ?? '',
     ship_name: v.ship_name ?? '',
+    agent: v.agent ?? '',
     cabin_total: String(v.cabin_total ?? ''),
     cabin_remaining: String(v.cabin_remaining ?? ''),
   }
 }
 
 // ── 등급 드래프트 ─────────────────────────────────────────────────────────
-
 type DraftGrade = {
-  _key: string
-  _isNew: boolean
-  _deleted: boolean
-  id: string
-  grade: string
-  total: number
-  reserved: number
-  price_per_person: number | null
-  currency: string
-  sort_order: number
+  _key: string; _isNew: boolean; _deleted: boolean
+  id: string; grade: string; total: number; reserved: number
+  price_per_person: number | null; currency: string; sort_order: number
 }
-
 const DEFAULT_GRADES = ['내측', '오션뷰', '발코니', '스위트']
-
 
 function formatPrice(price: number | null, currency: string): string {
   if (price == null) return '—'
@@ -53,14 +135,7 @@ function formatPrice(price: number | null, currency: string): string {
 }
 
 // ── 등급 현황 서브 패널 ───────────────────────────────────────────────────
-
-function GradesPanel({
-  voyageId,
-  canWrite,
-}: {
-  voyageId: string
-  canWrite: boolean
-}) {
+function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boolean }) {
   const qc = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState<DraftGrade | null>(null)
@@ -69,7 +144,6 @@ function GradesPanel({
     queryKey: ['cabin-grades', voyageId],
     queryFn: () => fetchCabinGrades(voyageId),
   })
-
   const grade = grades[0] ?? null
 
   const saveMut = useMutation({
@@ -83,6 +157,7 @@ function GradesPanel({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['cabin-grades', voyageId] })
       qc.invalidateQueries({ queryKey: ['voyages'] })
+      qc.invalidateQueries({ queryKey: ['all-cabin-grades'] })
       setIsEditing(false)
       toast.success('저장됐습니다')
     },
@@ -109,9 +184,7 @@ function GradesPanel({
     setDraft(prev => prev ? { ...prev, [field]: value } : prev)
   }
 
-  if (isLoading) {
-    return <div className="px-6 py-4 text-xs text-slate-400">불러오는 중…</div>
-  }
+  if (isLoading) return <div className="px-6 py-4 text-xs text-slate-400">불러오는 중…</div>
 
   return (
     <div className="bg-slate-50/70 border-t border-slate-200 px-4 py-3">
@@ -120,35 +193,22 @@ function GradesPanel({
         <div className="flex items-center gap-2">
           {isEditing ? (
             <>
-              <button
-                onClick={() => saveMut.mutate()}
-                disabled={saveMut.isPending}
-                className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-100 rounded px-2 py-1 transition disabled:opacity-40"
-              >
+              <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}
+                className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-100 rounded px-2 py-1 transition disabled:opacity-40">
                 <Check className="h-3 w-3" />{saveMut.isPending ? '저장 중…' : '저장'}
               </button>
-              <button
-                onClick={() => setIsEditing(false)}
-                disabled={saveMut.isPending}
-                className="flex items-center gap-1 text-xs text-slate-400 hover:bg-slate-200 rounded px-2 py-1 transition"
-              >
+              <button onClick={() => setIsEditing(false)} disabled={saveMut.isPending}
+                className="flex items-center gap-1 text-xs text-slate-400 hover:bg-slate-200 rounded px-2 py-1 transition">
                 <X className="h-3 w-3" />취소
               </button>
             </>
           ) : canWrite && (
-            <button
-              onClick={startEdit}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition"
-            >
+            <button onClick={startEdit} className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition">
               <Pencil className="h-3 w-3" />편집
             </button>
           )}
         </div>
       </div>
-
-      {saveMut.isError && (
-        <p className="mb-2 text-xs text-red-500">저장에 실패했습니다.</p>
-      )}
 
       {!isEditing && !grade ? (
         <p className="text-xs text-slate-400 py-2">
@@ -173,55 +233,37 @@ function GradesPanel({
               {isEditing && draft ? (
                 <tr>
                   <td className="py-1">
-                    <input
-                      value={draft.grade}
-                      onChange={e => setField('grade', e.target.value)}
-                      placeholder="내측, 오션뷰…"
-                      list="grade-suggestions"
-                      className="input h-6 text-xs w-full"
-                    />
+                    <input value={draft.grade} onChange={e => setField('grade', e.target.value)}
+                      placeholder="내측, 오션뷰…" list="grade-suggestions"
+                      className="input h-6 text-xs w-full" />
                     <datalist id="grade-suggestions">
                       {DEFAULT_GRADES.map(s => <option key={s} value={s} />)}
                     </datalist>
                   </td>
                   <td className="py-1 pr-1">
-                    <input
-                      type="number" min={0}
-                      value={draft.total}
-                      onChange={e => setField('total', Number(e.target.value))}
-                      className="input h-6 text-xs text-right w-full"
-                    />
+                    <input type="number" min={0} value={draft.total} onChange={e => setField('total', Number(e.target.value))}
+                      className="input h-6 text-xs text-right w-full" />
                   </td>
                   <td className="py-1 pr-1">
-                    <input
-                      type="number" min={0}
-                      value={draft.reserved}
-                      onChange={e => setField('reserved', Number(e.target.value))}
-                      className="input h-6 text-xs text-right w-full"
-                    />
+                    <input type="number" min={0} value={draft.reserved} onChange={e => setField('reserved', Number(e.target.value))}
+                      className="input h-6 text-xs text-right w-full" />
                   </td>
-                  <td className="py-1 text-right text-slate-500">
-                    {draft.total - draft.reserved}
-                  </td>
+                  <td className="py-1 text-right text-slate-500">{draft.total - draft.reserved}</td>
                   <td className="py-1 pr-1">
-                    <input
-                      type="number" min={0}
-                      value={draft.price_per_person ?? ''}
+                    <input type="number" min={0} value={draft.price_per_person ?? ''}
                       onChange={e => setField('price_per_person', e.target.value ? Number(e.target.value) : null)}
-                      placeholder="—"
-                      className="input h-6 text-xs text-right w-full"
-                    />
+                      placeholder="—" className="input h-6 text-xs text-right w-full" />
                   </td>
                   <td className="py-1 pr-1">
-                    <select
-                      value={draft.currency}
-                      onChange={e => setField('currency', e.target.value)}
-                      className="select h-6 text-xs w-full"
-                    >
-                      <option value="KRW">KRW</option>
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                    </select>
+                    <div className="relative">
+                      <select value={draft.currency} onChange={e => setField('currency', e.target.value)}
+                        className="select h-6 text-xs w-full appearance-none pr-5">
+                        <option value="KRW">KRW</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                    </div>
                   </td>
                 </tr>
               ) : grade && (
@@ -234,9 +276,7 @@ function GradesPanel({
                       {grade.total - grade.reserved}
                     </span>
                   </td>
-                  <td className="py-1.5 text-right text-slate-600">
-                    {formatPrice(grade.price_per_person, grade.currency)}
-                  </td>
+                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.price_per_person, grade.currency)}</td>
                   <td className="py-1.5 text-right text-slate-400">{grade.currency}</td>
                 </tr>
               )}
@@ -249,12 +289,13 @@ function GradesPanel({
 }
 
 // ── 메인 CruiseTab ────────────────────────────────────────────────────────
-
 export default function CruiseTab() {
   const [filter, setFilter] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState<CruiseForm>({ cruise_line: '', ship_name: '', cabin_total: '', cabin_remaining: '' })
+  const [editForm, setEditForm] = useState<CruiseForm>({
+    cruise_line: '', ship_name: '', agent: '', cabin_total: '', cabin_remaining: '',
+  })
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const qc = useQueryClient()
   const { canWrite } = useAuth() as { canWrite: boolean }
@@ -264,10 +305,25 @@ export default function CruiseTab() {
     queryFn: fetchVoyages,
   })
 
+  const { data: allGrades = [] } = useQuery({
+    queryKey: ['all-cabin-grades'],
+    queryFn: fetchAllCabinGrades,
+  })
+
+  const gradeMap = useMemo(() => {
+    const map: Record<string, CabinGrade[]> = {}
+    allGrades.forEach(g => {
+      if (!map[g.voyage_id]) map[g.voyage_id] = []
+      map[g.voyage_id].push(g)
+    })
+    return map
+  }, [allGrades])
+
   const saveMut = useMutation({
     mutationFn: (id: string) => updateVoyage(id, {
       cruise_line: editForm.cruise_line || null,
       ship_name: editForm.ship_name || null,
+      agent: editForm.agent || null,
       cabin_total: Number(editForm.cabin_total) || 0,
       cabin_remaining: Number(editForm.cabin_remaining) || 0,
     }),
@@ -290,28 +346,44 @@ export default function CruiseTab() {
       setEditForm(prev => ({ ...prev, [field]: e.target.value }))
   }
 
+  function setField(field: keyof CruiseForm, value: string) {
+    setEditForm(prev => ({ ...prev, [field]: value }))
+  }
+
   function toggleExpand(id: string) {
     setExpandedId(prev => prev === id ? null : id)
   }
 
   const years = useMemo(() => {
     const ys = new Set<string>()
-    voyages.forEach(v => ys.add(v.departure_date.slice(0, 4)))
+    voyages.forEach(v => { if (v.departure_date) ys.add(v.departure_date.slice(0, 4)) })
     return Array.from(ys).sort().reverse()
   }, [voyages])
 
   const filtered = voyages.filter(v => {
-    if (yearFilter !== 'ALL' && !v.departure_date.startsWith(yearFilter)) return false
+    if (yearFilter !== 'ALL' && !v.departure_date?.startsWith(yearFilter)) return false
     if (!filter) return true
     return (
       voyageTitle(v).toLowerCase().includes(filter.toLowerCase()) ||
       (v.cruise_line ?? '').toLowerCase().includes(filter.toLowerCase()) ||
-      (v.ship_name ?? '').toLowerCase().includes(filter.toLowerCase())
+      (v.ship_name ?? '').toLowerCase().includes(filter.toLowerCase()) ||
+      (v.agent ?? '').toLowerCase().includes(filter.toLowerCase())
     )
   })
   const active    = filtered.filter(v => v.status !== '취소')
   const cancelled = filtered.filter(v => v.status === '취소')
   const ordered   = [...active, ...cancelled]
+
+  // 선사 변경 시 선박명이 새 선사 목록에 없으면 초기화
+  function handleCruiseLineChange(v: string) {
+    const ships = CRUISE_LINES[v] ?? ALL_SHIPS
+    const keepShip = ships.includes(editForm.ship_name)
+    setEditForm(prev => ({
+      ...prev,
+      cruise_line: v,
+      ship_name: keepShip ? prev.ship_name : '',
+    }))
+  }
 
   return (
     <div className="space-y-4">
@@ -335,38 +407,43 @@ export default function CruiseTab() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[940px] w-full text-xs">
+        <table className="min-w-[1200px] w-full text-xs">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="px-3 py-2.5 w-8" />
+              <th className="px-2 py-2.5 w-8" />
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">승선일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">하선일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">선사</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">크루즈</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-16">보유</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-16">예약</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-16">잔여</th>
-              <th className="px-3 py-2.5 w-14" />
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">에이전트</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">캐빈등급</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">보유캐빈</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">예약캐빈</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">잔여캐빈</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-24">캐빈가</th>
+              <th className="px-3 py-2.5 w-12" />
             </tr>
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={10} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
+              <tr><td colSpan={13} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
             )}
             {!isLoading && ordered.length === 0 && (
-              <tr><td colSpan={10} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
+              <tr><td colSpan={13} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
             {ordered.map(v => {
-              const reserved   = v.cabin_total - v.cabin_remaining
+              const primaryGrade = gradeMap[v.id]?.[0] ?? null
+              const reserved   = primaryGrade ? primaryGrade.reserved : (v.cabin_total - v.cabin_remaining)
+              const remaining  = primaryGrade ? (primaryGrade.total - primaryGrade.reserved) : v.cabin_remaining
+              const total      = primaryGrade ? primaryGrade.total : v.cabin_total
               const isCancelled = v.status === '취소'
               const isEdit     = editingId === v.id
               const isExpanded = expandedId === v.id
 
               return (
-                <>
+                <Fragment key={v.id}>
                   <tr
-                    key={v.id}
                     className={[
                       'border-b border-slate-100 hover:bg-slate-50 transition-colors',
                       isCancelled ? 'opacity-50' : '',
@@ -375,11 +452,9 @@ export default function CruiseTab() {
                   >
                     {/* 펼치기 버튼 */}
                     <td className="px-2 py-2 text-center">
-                      <button
-                        onClick={() => toggleExpand(v.id)}
+                      <button onClick={() => toggleExpand(v.id)}
                         className="p-1 rounded text-slate-400 hover:text-brand hover:bg-slate-100 transition"
-                        title="등급별 현황"
-                      >
+                        title="등급별 현황">
                         {isExpanded
                           ? <ChevronDown className="h-3.5 w-3.5" />
                           : <ChevronRight className="h-3.5 w-3.5" />}
@@ -392,22 +467,25 @@ export default function CruiseTab() {
                     </td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
-                    <td className="px-3 py-2 text-slate-600">{v.cruise_line ?? '—'}</td>
-                    <td className="px-3 py-2 text-slate-600">{v.ship_name ?? '—'}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">{v.cabin_total}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">{reserved}</td>
+                    <td className="px-3 py-2 text-slate-600 truncate max-w-[80px]">{v.cruise_line ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 truncate max-w-[112px]">{v.ship_name ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 truncate max-w-[96px]">{v.agent ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600">{primaryGrade?.grade ?? '—'}</td>
+                    <td className="px-3 py-2 text-right text-slate-700">{total || '—'}</td>
+                    <td className="px-3 py-2 text-right text-slate-700">{primaryGrade ? reserved : (v.cabin_total - v.cabin_remaining) || '—'}</td>
                     <td className="px-3 py-2 text-right">
-                      <span className={v.cabin_remaining === 0 ? 'text-red-500 font-medium' : 'text-slate-700'}>
-                        {v.cabin_remaining}
+                      <span className={remaining === 0 ? 'text-red-500 font-medium' : 'text-slate-700'}>
+                        {remaining}
                       </span>
+                    </td>
+                    <td className="px-3 py-2 text-right text-slate-700">
+                      {primaryGrade ? formatPrice(primaryGrade.price_per_person, primaryGrade.currency) : '—'}
                     </td>
                     <td className="px-3 py-2 text-right">
                       {!isEdit && canWrite && (
-                        <button
-                          onClick={() => startEdit(v)}
+                        <button onClick={() => startEdit(v)}
                           className="rounded p-1 text-slate-400 hover:text-brand hover:bg-slate-100 transition"
-                          title="편집"
-                        >
+                          title="편집">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                       )}
@@ -416,19 +494,37 @@ export default function CruiseTab() {
 
                   {/* 인라인 편집 행 */}
                   {isEdit && (
-                    <tr key={`${v.id}-edit`} className="border-b border-slate-100">
-                      <td colSpan={10} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
+                    <tr className="border-b border-slate-100">
+                      <td colSpan={13} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
                         {saveMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mb-2">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 mb-2">
                           <div>
                             <label className="label">선사</label>
-                            <Input value={editForm.cruise_line} onChange={set('cruise_line')} placeholder="MSC" className="h-7 text-sm" />
+                            <SelectOrInput
+                              key={`${editingId}-cl`}
+                              value={editForm.cruise_line}
+                              onChange={handleCruiseLineChange}
+                              options={Object.keys(CRUISE_LINES)}
+                              placeholder="선사 선택…"
+                            />
                           </div>
                           <div>
                             <label className="label">크루즈 선박명</label>
-                            <Input value={editForm.ship_name} onChange={set('ship_name')} placeholder="WORLD EUROPA" className="h-7 text-sm" />
+                            <SelectOrInput
+                              key={`${editingId}-sn`}
+                              value={editForm.ship_name}
+                              onChange={v => setField('ship_name', v)}
+                              options={editForm.cruise_line && CRUISE_LINES[editForm.cruise_line]
+                                ? CRUISE_LINES[editForm.cruise_line]
+                                : ALL_SHIPS}
+                              placeholder="선박명 선택…"
+                            />
+                          </div>
+                          <div>
+                            <label className="label">에이전트</label>
+                            <Input value={editForm.agent} onChange={set('agent')} placeholder="현지 파트너" className="h-7 text-sm" />
                           </div>
                           <div>
                             <label className="label">보유 캐빈</label>
@@ -461,13 +557,13 @@ export default function CruiseTab() {
 
                   {/* 등급별 현황 패널 */}
                   {isExpanded && !isEdit && (
-                    <tr key={`${v.id}-grades`} className="border-b border-slate-200">
-                      <td colSpan={10} className="p-0">
+                    <tr className="border-b border-slate-200">
+                      <td colSpan={13} className="p-0">
                         <GradesPanel voyageId={v.id} canWrite={canWrite} />
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               )
             })}
           </tbody>

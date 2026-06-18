@@ -91,18 +91,20 @@ export default function HistoryTab() {
       (prev ?? []).filter(row => row.id !== r.id)
     )
     deleteMutation.mutate(r.id)
-    toast('히스토리가 삭제됐습니다.', {
-      position: 'bottom-center',
-      duration: 3500,
-      action: {
-        label: '복원',
-        onClick: () => {
-          addHistoryLog(r.voyage_id, r.content, r.author ?? '')
-            .then(() => qc.invalidateQueries({ queryKey: ['all-history'] }))
-            .catch(() => toast.error('복원에 실패했습니다'))
-        },
-      },
-    })
+    const restore = () => addHistoryLog(r.voyage_id, r.content, r.author ?? '')
+      .then(() => qc.invalidateQueries({ queryKey: ['all-history'] }))
+      .catch(() => toast.error('복원에 실패했습니다'))
+    toast.custom(id => (
+      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg shadow-slate-200/60 text-sm min-w-[260px]">
+        <span className="text-slate-700 flex-1">히스토리가 삭제됐습니다.</span>
+        <button
+          onClick={() => { toast.dismiss(id); restore() }}
+          className="shrink-0 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark transition"
+        >
+          복원
+        </button>
+      </div>
+    ), { position: 'bottom-center', duration: 3500 })
   }
 
   return (

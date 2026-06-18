@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { TimePicker } from '@/components/ui/time-picker'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatTime } from '@/lib/utils'
 import { saveItineraryDay, deleteItineraryDay } from '@/lib/queries/voyages'
@@ -156,7 +157,7 @@ export default function ItineraryCard({
                   <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-5">
                     <div>
                       <label className="label">날짜</label>
-                      <Input type="date" value={r.date} onChange={e => upd(r._key, 'date', e.target.value)} className="h-7 text-sm" />
+                      <DatePicker value={r.date} onChange={v => upd(r._key, 'date', v)} placeholder="날짜" />
                     </div>
                     <div className="sm:col-span-2">
                       <label className="label">기항지</label>

@@ -15,6 +15,7 @@ export interface Voyage {
   customer_count: number
   tour_leader: string | null
   hotel: string | null
+  agent: string | null
   created_at: string
   updated_at: string
 }
@@ -155,6 +156,7 @@ export const PARTNER_TYPE_LABEL: Record<PartnerType, string> = {
 /** 항차 표시명: "27/09/10 서부지중해" */
 export function voyageTitle(v: Pick<Voyage, 'departure_date' | 'region'>): string {
   const d = v.departure_date
+  if (!d) return v.region ?? '알 수 없음'
   const yy = d.slice(2, 4)
   const mm = d.slice(5, 7)
   const dd = d.slice(8, 10)
