@@ -150,22 +150,6 @@ export const ITINERARY_PRESETS: Record<string, ItineraryPreset> = {
       { port: '베니스 (이탈리아)',         arrival_time: '08:00', departure_time: '',      summary: '하선·귀국' },
     ],
   },
-  '동부지중해_8박_이스탄불': {
-    label: '동부지중해 8박9일 (이스탄불 왕복)',
-    nights: 8,
-    ports: [
-      { port: '이스탄불',  arrival_time: '',      departure_time: '',      summary: '도착' },
-      { port: '이스탄불',  arrival_time: '',      departure_time: '17:30', summary: '크루즈 승선' },
-      { port: '이즈미르',  arrival_time: '13:00', departure_time: '19:00', summary: '' },
-      { port: '볼로스',    arrival_time: '09:00', departure_time: '18:00', summary: '' },
-      { port: '산토리니',  arrival_time: '10:00', departure_time: '20:00', summary: '' },
-      { port: '나플리오',  arrival_time: '09:00', departure_time: '19:00', summary: '' },
-      { port: '아테네',    arrival_time: '05:00', departure_time: '23:00', summary: '' },
-      { port: '해상',      arrival_time: '',      departure_time: '',      summary: '' },
-      { port: '이스탄불',  arrival_time: '07:00', departure_time: '',      summary: '하선·귀국' },
-    ],
-  },
-
   // ── 북유럽 ────────────────────────────────────────────────────────────────
   '북유럽_8박_로테르담': {
     label: '북유럽 8박 (로테르담 왕복)',
