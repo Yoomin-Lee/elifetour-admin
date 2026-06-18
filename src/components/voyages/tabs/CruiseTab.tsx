@@ -407,7 +407,7 @@ export default function CruiseTab() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[1200px] w-full text-xs">
+        <table className="min-w-[1280px] w-full text-xs">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-2 py-2.5 w-8" />
@@ -418,9 +418,9 @@ export default function CruiseTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">크루즈</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">에이전트</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">캐빈등급</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">보유캐빈</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">예약캐빈</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">잔여캐빈</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-20 whitespace-nowrap">보유캐빈</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-20 whitespace-nowrap">예약캐빈</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-20 whitespace-nowrap">잔여캐빈</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-24">캐빈가</th>
               <th className="px-3 py-2.5 w-12" />
             </tr>
