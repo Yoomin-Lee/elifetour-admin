@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
-import { Search, Plus, Eye, Copy, Pencil, Check, X } from 'lucide-react'
+import { Search, Plus, Eye, Copy, Pencil, Check, X, ChevronDown } from 'lucide-react'
 import { fetchVoyages, duplicateVoyage, updateVoyage } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import type { Voyage, VoyageStatus } from '@/types/database'
@@ -265,9 +265,12 @@ export default function ProductTab() {
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mb-2">
                           <div>
                             <label className="label">상태</label>
-                            <Select value={editForm.status} onChange={set('status')} className="h-7 py-0 text-sm">
-                              {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                            </Select>
+                            <div className="relative">
+                              <Select value={editForm.status} onChange={set('status')} className="h-8 py-0 text-sm appearance-none pr-7">
+                                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                              </Select>
+                              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                            </div>
                           </div>
                           <div>
                             <label className="label">고객 수</label>
