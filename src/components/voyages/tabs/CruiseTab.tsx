@@ -12,20 +12,26 @@ import type { Voyage, CabinGrade } from '@/types/database'
 
 // ── 선사/선박명 프리셋 ────────────────────────────────────────────────────
 const CRUISE_LINES: Record<string, string[]> = {
-  'MSC': [
-    'MSC World Europa', 'MSC World America', 'MSC Splendida', 'MSC Bellissima',
-    'MSC Magnifica', 'MSC Musica', 'MSC Orchestra', 'MSC Virtuosa', 'MSC Seashore',
-    'MSC Seascape', 'MSC Grandiosa', 'MSC Preziosa', 'MSC Poesia', 'MSC Armonia',
-    'MSC Sinfonia', 'MSC Opera', 'MSC Meraviglia',
-  ],
   'Royal Caribbean': [
-    'Spectrum of the Seas', 'Wonder of the Seas', 'Harmony of the Seas',
-    'Anthem of the Seas', 'Mariner of the Seas', 'Voyager of the Seas',
-    'Quantum of the Seas', 'Ovation of the Seas',
+    'Ovation of the Seas', 'Navigator of the Seas', 'Spectrum of the Seas',
+    'Anthem of the Seas', 'Odyssey of the Seas', 'Allure of the Seas',
+    'Voyager of the Seas', 'Quantum of the Seas', 'Oasis of the Seas',
+    'Wonder of the Seas', 'Harmony of the Seas', 'Mariner of the Seas',
   ],
   'Costa Cruises': [
-    'Costa Smeralda', 'Costa Firenze', 'Costa Fascinosa', 'Costa Fortuna',
-    'Costa Serena', 'Costa Diadema', 'Costa Luminosa', 'Costa Toscana',
+    'Costa Smeralda', 'Costa Toscana', 'Costa Firenze',
+    'Costa Fascinosa', 'Costa Fortuna', 'Costa Serena',
+    'Costa Diadema', 'Costa Luminosa',
+  ],
+  'MSC': [
+    'MSC Bellissima', 'MSC World Europa', 'MSC World America',
+    'MSC Splendida', 'MSC Magnifica', 'MSC Musica', 'MSC Orchestra',
+    'MSC Virtuosa', 'MSC Seashore', 'MSC Seascape', 'MSC Grandiosa',
+    'MSC Preziosa', 'MSC Poesia', 'MSC Meraviglia',
+  ],
+  'Holland America': [
+    'Westerdam', 'Eurodam', 'Nieuw Statendam', 'Rotterdam',
+    'Koningsdam', 'Volendam', 'Veendam',
   ],
   'Norwegian (NCL)': [
     'Norwegian Bliss', 'Norwegian Joy', 'Norwegian Prima',
@@ -39,12 +45,10 @@ const CRUISE_LINES: Record<string, string[]> = {
     'Majestic Princess', 'Diamond Princess', 'Discovery Princess',
     'Ruby Princess', 'Sapphire Princess', 'Crown Princess',
   ],
-  'Holland America': [
-    'Eurodam', 'Nieuw Statendam', 'Rotterdam', 'Koningsdam', 'Volendam', 'Veendam',
-  ],
   'Carnival': ['Carnival Jubilee', 'Carnival Celebration', 'Carnival Luminosa'],
 }
 const ALL_SHIPS = Object.values(CRUISE_LINES).flat()
+const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', 'BM1', 'VD', '4U', '3D', '1D', 'VC']
 
 // ── SelectOrInput ─────────────────────────────────────────────────────────
 function SelectOrInput({
@@ -108,6 +112,7 @@ type CruiseForm = {
   agent: string
   cabin_total: string
   cabin_remaining: string
+  cabin_grade: string
 }
 function toForm(v: Voyage): CruiseForm {
   return {
@@ -116,6 +121,7 @@ function toForm(v: Voyage): CruiseForm {
     agent: v.agent ?? '',
     cabin_total: String(v.cabin_total ?? ''),
     cabin_remaining: String(v.cabin_remaining ?? ''),
+    cabin_grade: '',
   }
 }
 
@@ -294,7 +300,7 @@ export default function CruiseTab() {
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<CruiseForm>({
-    cruise_line: '', ship_name: '', agent: '', cabin_total: '', cabin_remaining: '',
+    cruise_line: '', ship_name: '', agent: '', cabin_total: '', cabin_remaining: '', cabin_grade: '',
   })
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const qc = useQueryClient()
@@ -320,13 +326,31 @@ export default function CruiseTab() {
   }, [allGrades])
 
   const saveMut = useMutation({
-    mutationFn: (id: string) => updateVoyage(id, {
-      cruise_line: editForm.cruise_line || null,
-      ship_name: editForm.ship_name || null,
-      agent: editForm.agent || null,
-      cabin_total: Number(editForm.cabin_total) || 0,
-      cabin_remaining: Number(editForm.cabin_remaining) || 0,
-    }),
+    mutationFn: async (id: string) => {
+      await updateVoyage(id, {
+        cruise_line: editForm.cruise_line || null,
+        ship_name: editForm.ship_name || null,
+        agent: editForm.agent || null,
+        cabin_total: Number(editForm.cabin_total) || 0,
+        cabin_remaining: Number(editForm.cabin_remaining) || 0,
+      })
+      if (editForm.cabin_grade) {
+        const existing = gradeMap[id]?.[0]
+        if (existing) {
+          await saveCabinGrades(id, [{
+            id: existing.id, grade: editForm.cabin_grade,
+            total: existing.total, reserved: existing.reserved,
+            price_per_person: existing.price_per_person,
+            currency: existing.currency, sort_order: 0,
+          }], [])
+        } else {
+          await saveCabinGrades(id, [{
+            grade: editForm.cabin_grade, total: 0, reserved: 0,
+            price_per_person: null, currency: 'KRW', sort_order: 0,
+          }], [])
+        }
+      }
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['voyages'] })
       setEditingId(null)
@@ -336,7 +360,7 @@ export default function CruiseTab() {
   })
 
   function startEdit(v: Voyage) {
-    setEditForm(toForm(v))
+    setEditForm({ ...toForm(v), cabin_grade: gradeMap[v.id]?.[0]?.grade ?? '' })
     setEditingId(v.id)
     saveMut.reset()
   }
@@ -407,7 +431,7 @@ export default function CruiseTab() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[1280px] w-full text-xs">
+        <table className="min-w-[1280px] w-full text-xs table-fixed">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-2 py-2.5 w-8" />
@@ -418,9 +442,9 @@ export default function CruiseTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">크루즈</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">에이전트</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">캐빈등급</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-20 whitespace-nowrap">보유캐빈</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-20 whitespace-nowrap">예약캐빈</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-20 whitespace-nowrap">잔여캐빈</th>
+              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-16 whitespace-nowrap">보유캐빈</th>
+              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-16 whitespace-nowrap">예약캐빈</th>
+              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-16 whitespace-nowrap">잔여캐빈</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-24">캐빈가</th>
               <th className="px-3 py-2.5 w-12" />
             </tr>
@@ -467,13 +491,13 @@ export default function CruiseTab() {
                     </td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
-                    <td className="px-3 py-2 text-slate-600 truncate max-w-[80px]">{v.cruise_line ?? '—'}</td>
-                    <td className="px-3 py-2 text-slate-600 truncate max-w-[112px]">{v.ship_name ?? '—'}</td>
-                    <td className="px-3 py-2 text-slate-600 truncate max-w-[96px]">{v.agent ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 truncate">{v.cruise_line ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 truncate">{v.ship_name ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 truncate">{v.agent ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-600">{primaryGrade?.grade ?? '—'}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">{total || '—'}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">{primaryGrade ? reserved : (v.cabin_total - v.cabin_remaining) || '—'}</td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-2 py-2 text-right text-slate-700">{total || '—'}</td>
+                    <td className="px-2 py-2 text-right text-slate-700">{primaryGrade ? reserved : (v.cabin_total - v.cabin_remaining) || '—'}</td>
+                    <td className="px-2 py-2 text-right">
                       <span className={remaining === 0 ? 'text-red-500 font-medium' : 'text-slate-700'}>
                         {remaining}
                       </span>
@@ -499,7 +523,7 @@ export default function CruiseTab() {
                         {saveMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 mb-2">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 mb-2">
                           <div>
                             <label className="label">선사</label>
                             <SelectOrInput
@@ -525,6 +549,16 @@ export default function CruiseTab() {
                           <div>
                             <label className="label">에이전트</label>
                             <Input value={editForm.agent} onChange={set('agent')} placeholder="현지 파트너" className="h-7 text-sm" />
+                          </div>
+                          <div>
+                            <label className="label">캐빈등급</label>
+                            <SelectOrInput
+                              key={`${editingId}-cg`}
+                              value={editForm.cabin_grade}
+                              onChange={v => setField('cabin_grade', v)}
+                              options={CABIN_GRADES}
+                              placeholder="등급 선택…"
+                            />
                           </div>
                           <div>
                             <label className="label">보유 캐빈</label>

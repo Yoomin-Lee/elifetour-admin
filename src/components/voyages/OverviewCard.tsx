@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Check, X } from 'lucide-react'
+import { Pencil, Check, X, ChevronDown } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -139,9 +139,12 @@ export default function OverviewCard({ voyage, canWrite = true }: { voyage: Voya
               <Input value={f.region} onChange={set('region')} className="h-7 text-sm" />
             </ERow>
             <ERow label="상태">
-              <Select value={f.status} onChange={set('status')} className="h-7 py-0 text-sm">
-                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-              </Select>
+              <div className="relative">
+                <Select value={f.status} onChange={set('status')} className="h-7 py-0 text-sm appearance-none pr-7">
+                  {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                </Select>
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              </div>
             </ERow>
             <ERow label="출발일">
               <DatePicker value={f.departure_date} onChange={v => setF(p => ({ ...p, departure_date: v }))} placeholder="출발일" />

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Map } from 'lucide-react'
+import { Map, ChevronDown } from 'lucide-react'
 import { getTrips, createTrip, deleteTrip } from '../lib/trips'
 import { useAuth } from '../context/AuthContext'
 import StatusBadge from '../components/StatusBadge'
@@ -81,12 +81,15 @@ export default function Trips() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select className="select w-auto" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">전체 상태</option>
-          {statusOptions.trip.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select className="select w-auto appearance-none pr-9" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">전체 상태</option>
+            {statusOptions.trip.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+        </div>
       </div>
 
       {/* 여행 목록 */}

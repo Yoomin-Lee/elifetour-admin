@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { DatePicker } from './ui/date-picker'
 import { statusOptions } from '../config/site'
 
@@ -34,12 +35,15 @@ export default function PassengerForm({ initial = {}, onSubmit, onCancel, loadin
         </div>
         <div>
           <label className="label">성별</label>
-          <select className="select" value={form.gender} onChange={set('gender')}>
-            <option value="">선택</option>
-            {statusOptions.gender.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select className="select appearance-none pr-9" value={form.gender} onChange={set('gender')}>
+              <option value="">선택</option>
+              {statusOptions.gender.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          </div>
         </div>
         <div className="col-span-2">
           <label className="label">연락처</label>
@@ -61,29 +65,38 @@ export default function PassengerForm({ initial = {}, onSubmit, onCancel, loadin
         </div>
         <div>
           <label className="label">객실</label>
-          <select className="select" value={form.room_type} onChange={set('room_type')}>
-            {statusOptions.roomType.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select className="select appearance-none pr-9" value={form.room_type} onChange={set('room_type')}>
+              {statusOptions.roomType.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          </div>
         </div>
 
         {/* 예약 단계 + 결제 */}
         <div>
           <label className="label">예약 단계</label>
-          <select className="select" value={form.booking_status} onChange={set('booking_status')}>
-            {statusOptions.booking.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select className="select appearance-none pr-9" value={form.booking_status} onChange={set('booking_status')}>
+              {statusOptions.booking.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          </div>
         </div>
         <div>
           <label className="label">결제상태</label>
-          <select className="select" value={form.payment_status} onChange={set('payment_status')}>
-            {statusOptions.payment.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select className="select appearance-none pr-9" value={form.payment_status} onChange={set('payment_status')}>
+              {statusOptions.payment.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          </div>
         </div>
         <div>
           <label className="label">입금액 (원)</label>

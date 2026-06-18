@@ -179,20 +179,26 @@ function SectionForm({
         </div>
         <div>
           <label className="label">카테고리</label>
-          <select value={form.category}
-            onChange={e => setForm(s => ({ ...s, category: e.target.value }))}
-            className="select text-sm">
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <div className="relative">
+            <select value={form.category}
+              onChange={e => setForm(s => ({ ...s, category: e.target.value }))}
+              className="select text-sm appearance-none pr-9">
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          </div>
         </div>
         <div>
           <label className="label">행 유형</label>
-          <select value={form.row_type}
-            onChange={e => setForm(s => ({ ...s, row_type: e.target.value as 'rule' | 'tip' }))}
-            className="select text-sm">
-            <option value="rule">취소료 (D-day / 취소료 / 비고)</option>
-            <option value="tip">팁 (객실 / 금액)</option>
-          </select>
+          <div className="relative">
+            <select value={form.row_type}
+              onChange={e => setForm(s => ({ ...s, row_type: e.target.value as 'rule' | 'tip' }))}
+              className="select text-sm appearance-none pr-9">
+              <option value="rule">취소료 (D-day / 취소료 / 비고)</option>
+              <option value="tip">팁 (객실 / 금액)</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          </div>
         </div>
         <div className="col-span-2">
           <label className="label">설명 / 부제목</label>

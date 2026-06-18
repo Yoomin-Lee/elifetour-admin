@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, Save, Trash2 } from 'lucide-react'
+import { Check, Save, Trash2, ChevronDown } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { fetchVoyages } from '@/lib/queries/voyages'
 import {
@@ -277,14 +277,18 @@ export default function PaymentTab() {
                                 </div>
                                 <div>
                                   <label className="label">통화</label>
-                                  <Select
-                                    value={cell.currency}
-                                    onChange={e => updateCell(key, { currency: e.target.value })}
-                                  >
-                                    {CURRENCIES.map(cur => (
-                                      <option key={cur} value={cur}>{cur}</option>
-                                    ))}
-                                  </Select>
+                                  <div className="relative">
+                                    <Select
+                                      value={cell.currency}
+                                      onChange={e => updateCell(key, { currency: e.target.value })}
+                                      className="appearance-none pr-7"
+                                    >
+                                      {CURRENCIES.map(cur => (
+                                        <option key={cur} value={cur}>{cur}</option>
+                                      ))}
+                                    </Select>
+                                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                                  </div>
                                 </div>
                               </div>
                               <div>

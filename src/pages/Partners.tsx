@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Check, X, Search, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, Search, ToggleLeft, ToggleRight, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
   fetchPartners,
@@ -115,11 +115,14 @@ function PartnerModal({
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="label">유형</label>
-              <Select value={form.type} onChange={set('type') as React.ChangeEventHandler<HTMLSelectElement>} className="h-8 text-sm">
-                {(Object.keys(PARTNER_TYPE_LABEL) as PartnerType[]).map(t => (
-                  <option key={t} value={t}>{PARTNER_TYPE_LABEL[t]}</option>
-                ))}
-              </Select>
+              <div className="relative">
+                <Select value={form.type} onChange={set('type') as React.ChangeEventHandler<HTMLSelectElement>} className="h-8 text-sm appearance-none pr-7">
+                  {(Object.keys(PARTNER_TYPE_LABEL) as PartnerType[]).map(t => (
+                    <option key={t} value={t}>{PARTNER_TYPE_LABEL[t]}</option>
+                  ))}
+                </Select>
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              </div>
             </div>
             <div className="col-span-2">
               <label className="label">업체명 <span className="text-red-400">*</span></label>

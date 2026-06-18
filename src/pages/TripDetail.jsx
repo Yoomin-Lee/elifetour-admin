@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Phone, BookOpen, BedDouble, Banknote, AlertTriangle } from 'lucide-react'
+import { Phone, BookOpen, BedDouble, Banknote, AlertTriangle, ChevronDown } from 'lucide-react'
 import { getTripById, updateTrip, deleteTrip } from '../lib/trips'
 import { getPassengers, createPassenger, updatePassenger, deletePassenger } from '../lib/passengers'
 import StatusBadge from '../components/StatusBadge'
@@ -268,16 +268,19 @@ export default function TripDetail() {
                   </td>
                   <td className="px-4 py-2.5">
                     {canWrite ? (
-                      <select
-                        value={p.booking_status || 'inquiry'}
-                        onChange={(e) => handleBookingStatus(p.id, e.target.value)}
-                        disabled={updatingBooking === p.id}
-                        className="text-xs rounded px-1.5 py-0.5 border border-slate-200 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-50"
-                      >
-                        {statusOptions.booking.map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                      </select>
+                      <div className="relative inline-block">
+                        <select
+                          value={p.booking_status || 'inquiry'}
+                          onChange={(e) => handleBookingStatus(p.id, e.target.value)}
+                          disabled={updatingBooking === p.id}
+                          className="text-xs rounded px-1.5 py-0.5 pr-5 border border-slate-200 bg-white cursor-pointer appearance-none focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-50"
+                        >
+                          {statusOptions.booking.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                      </div>
                     ) : (
                       <StatusBadge type="booking" value={p.booking_status || 'inquiry'} />
                     )}

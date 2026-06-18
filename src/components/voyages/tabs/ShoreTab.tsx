@@ -9,6 +9,7 @@ import { voyageTitle } from '@/types/database'
 import { formatDate, formatTime } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { DatePicker } from '@/components/ui/date-picker'
+import { TimePicker } from '@/components/ui/time-picker'
 import { Button } from '@/components/ui/button'
 import { YearSelect } from '@/components/ui/year-select'
 import type { ItineraryDay } from '@/types/database'
@@ -141,11 +142,11 @@ function ShoreFormFields({
       </div>
       <div>
         <label className="label">입항</label>
-        <Input type="time" value={form.arrival_time} onChange={set('arrival_time')} className="h-7 text-sm" />
+        <TimePicker size="sm" value={form.arrival_time} onChange={v => setForm(prev => ({ ...prev, arrival_time: v }))} />
       </div>
       <div>
         <label className="label">출항</label>
-        <Input type="time" value={form.departure_time} onChange={set('departure_time')} className="h-7 text-sm" />
+        <TimePicker size="sm" value={form.departure_time} onChange={v => setForm(prev => ({ ...prev, departure_time: v }))} />
       </div>
       <div>
         <SelectField label="통화" value={form.cost_currency} onChange={set('cost_currency')}>

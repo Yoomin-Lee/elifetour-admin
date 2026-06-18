@@ -1,5 +1,5 @@
 import { useFieldArray, useFormContext } from 'react-hook-form'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, ChevronDown } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -59,12 +59,15 @@ export default function CancellationEditor() {
                 </div>
                 <div>
                   <label className="label">유형</label>
-                  <Select {...register(`policies.${i}.fee_type`)}>
-                    <option value="">-</option>
-                    <option value="percent">퍼센트</option>
-                    <option value="fixed">정액</option>
-                    <option value="free">무료</option>
-                  </Select>
+                  <div className="relative">
+                    <Select {...register(`policies.${i}.fee_type`)} className="appearance-none pr-7">
+                      <option value="">-</option>
+                      <option value="percent">퍼센트</option>
+                      <option value="fixed">정액</option>
+                      <option value="free">무료</option>
+                    </Select>
+                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </div>
                 <div>
                   <label className="label">값</label>

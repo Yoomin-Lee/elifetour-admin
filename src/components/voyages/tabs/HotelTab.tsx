@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Check, X, ChevronDown } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { useAuth } from '@/context/AuthContext'
 import { fetchAllHotels, addHotel, updateHotel, deleteHotel, fetchVoyages } from '@/lib/queries/voyages'
@@ -76,12 +76,15 @@ function HotelFormFields({
       {showVoyageSelect && (
         <div className="col-span-2 sm:col-span-4">
           <label className="label">행사</label>
-          <Select value={form.voyage_id} onChange={set('voyage_id')} className="h-7 py-0 text-sm">
-            <option value="">행사를 선택하세요</option>
-            {voyages.map(v => (
-              <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
-            ))}
-          </Select>
+          <div className="relative">
+            <Select value={form.voyage_id} onChange={set('voyage_id')} className="h-7 py-0 text-sm appearance-none pr-7">
+              <option value="">행사를 선택하세요</option>
+              {voyages.map(v => (
+                <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
+              ))}
+            </Select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          </div>
         </div>
       )}
       <div>
@@ -94,9 +97,12 @@ function HotelFormFields({
       </div>
       <div>
         <label className="label">통화</label>
-        <Select value={form.currency} onChange={set('currency')} className="h-7 py-0 text-sm">
-          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </Select>
+        <div className="relative">
+          <Select value={form.currency} onChange={set('currency')} className="h-7 py-0 text-sm appearance-none pr-7">
+            {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </Select>
+          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+        </div>
       </div>
       <div>
         <label className="label">객실요금</label>
