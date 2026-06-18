@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Ship, Anchor, Users, CreditCard } from 'lucide-react'
 import { fetchVoyageDashboardData } from '../lib/queries/voyages'
 
-const CATEGORY_LABEL   = { CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔' }
+const CATEGORY_LABEL    = { CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔' }
 const PAYMENT_TYPE_LABEL = { DEPOSIT_1ST: '1차계약금', DEPOSIT_2ND: '2차계약금', BALANCE: '잔금' }
 
 function StatCard({ label, value, icon: Icon, color, sub }) {
@@ -59,9 +59,16 @@ function isOverdue(dateStr) {
   return new Date(dateStr) < today
 }
 
+const TABS = [
+  { key: 'on-sale',   label: '판매중 항차 현황' },
+  { key: 'payment',   label: '이번달 결제 마감' },
+  { key: 'departure', label: '이번달 출발 항차' },
+]
+
 export default function Dashboard() {
-  const [dash, setDash] = useState({ onSaleVoyages: [], thisMonthDepartures: [], thisMonthPayments: [] })
+  const [dash, setDash]   = useState({ onSaleVoyages: [], thisMonthDepartures: [], thisMonthPayments: [] })
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('on-sale')
 
   useEffect(() => {
     fetchVoyageDashboardData()
@@ -71,8 +78,8 @@ export default function Dashboard() {
   }, [])
 
   const { onSaleVoyages, thisMonthDepartures, thisMonthPayments } = dash
-  const totalCustomers   = onSaleVoyages.reduce((s, v) => s + (v.customer_count || 0), 0)
-  const overdueCount     = thisMonthPayments.filter(p => isOverdue(p.due_date)).length
+  const totalCustomers = onSaleVoyages.reduce((s, v) => s + (v.customer_count || 0), 0)
+  const overdueCount   = thisMonthPayments.filter(p => isOverdue(p.due_date)).length
 
   return (
     <div className="space-y-6">
@@ -110,140 +117,166 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* 판매중 항차 현황 */}
+      {/* 탭 패널 */}
       <div className="card overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 className="font-semibold text-slate-800">판매중 항차 현황</h2>
-          <Link to="/voyages" className="text-sm font-medium text-brand hover:underline">
-            항차 관리 →
-          </Link>
-        </div>
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-slate-400 text-sm">불러오는 중...</div>
-        ) : onSaleVoyages.length === 0 ? (
-          <div className="flex items-center justify-center py-12 text-slate-400 text-sm">판매중인 항차가 없습니다</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                <tr>
-                  <th className="px-5 py-3 text-left">지역</th>
-                  <th className="px-5 py-3 text-left">선박</th>
-                  <th className="px-5 py-3 text-left">출발일</th>
-                  <th className="px-5 py-3 text-right">예약인원</th>
-                  <th className="px-5 py-3 text-right">잔여 캐빈</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {onSaleVoyages.map((v) => {
-                  const cb = cabinBadge(v.cabin_remaining, v.cabin_total)
-                  return (
-                    <tr key={v.id} className="hover:bg-slate-50/50 transition">
-                      <td className="px-5 py-3.5 font-medium text-slate-800">{v.region}</td>
-                      <td className="px-5 py-3.5 text-slate-500">{v.ship_name ?? '-'}</td>
-                      <td className="px-5 py-3.5 text-slate-600">{formatDate(v.departure_date)}</td>
-                      <td className="px-5 py-3.5 text-right text-slate-700">
-                        {(v.customer_count || 0).toLocaleString('ko-KR')}명
-                      </td>
-                      <td className={`px-5 py-3.5 text-right ${cb.cls}`}>{cb.text}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* 이번달 그리드 */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-        {/* 이번달 결제 마감 */}
-        <div className="card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-slate-800">이번달 결제 마감</h2>
-              {overdueCount > 0 && (
-                <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">
-                  연체 {overdueCount}건
+        {/* 탭 헤더 */}
+        <div className="flex border-b border-slate-200">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`relative flex-1 py-3 text-sm font-medium transition-colors
+                ${activeTab === t.key
+                  ? 'text-brand'
+                  : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              {t.label}
+              {t.key === 'payment' && overdueCount > 0 && (
+                <span className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {overdueCount}
                 </span>
               )}
-            </div>
-            <Link to="/voyages?tab=결제" className="text-sm font-medium text-brand hover:underline">
-              결제 탭 →
-            </Link>
-          </div>
-          {loading ? (
-            <div className="flex items-center justify-center py-8 text-slate-400 text-sm">불러오는 중...</div>
-          ) : thisMonthPayments.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-slate-400 text-sm">이번달 결제 마감이 없습니다</div>
-          ) : (
-            <div className="divide-y divide-slate-50">
-              {thisMonthPayments.map((p) => {
-                const overdue = isOverdue(p.due_date)
-                return (
-                  <div
-                    key={p.id}
-                    className={`flex items-center justify-between gap-3 px-5 py-3.5 ${overdue ? 'bg-red-50/50' : ''}`}
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="rounded px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600">
-                          {CATEGORY_LABEL[p.category] ?? p.category}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {PAYMENT_TYPE_LABEL[p.payment_type] ?? p.payment_type}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-700 truncate">
-                        {p.voyages ? voyageLabel(p.voyages.region, p.voyages.departure_date) : '-'}
-                      </p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className={`text-sm font-medium ${overdue ? 'text-red-600' : 'text-slate-800'}`}>
-                        {formatDate(p.due_date)}{overdue ? ' ⚠' : ''}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5">{formatAmount(p.amount, p.currency)}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+              {activeTab === t.key && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand rounded-t" />
+              )}
+            </button>
+          ))}
         </div>
 
-        {/* 이번달 출발 항차 */}
-        <div className="card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <h2 className="font-semibold text-slate-800">이번달 출발 항차</h2>
-            <Link to="/voyages?tab=달력" className="text-sm font-medium text-brand hover:underline">
-              전체 보기 →
-            </Link>
-          </div>
-          {loading ? (
-            <div className="flex items-center justify-center py-8 text-slate-400 text-sm">불러오는 중...</div>
-          ) : thisMonthDepartures.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-slate-400 text-sm">이번달 출발 항차가 없습니다</div>
-          ) : (
-            <div className="divide-y divide-slate-50">
-              {thisMonthDepartures.map((v) => {
-                const cb = cabinBadge(v.cabin_remaining, v.cabin_total)
-                return (
-                  <div key={v.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
-                    <div className="min-w-0">
-                      <p className="font-medium text-slate-800 truncate">{v.region}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{v.ship_name ?? '-'}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-sm text-slate-600">{formatDate(v.departure_date)}</p>
-                      <p className={`text-xs mt-0.5 ${cb.cls}`}>{cb.text}</p>
-                    </div>
+        {/* 탭 콘텐츠 */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-slate-400 text-sm">불러오는 중...</div>
+        ) : (
+          <>
+            {/* ── 판매중 항차 현황 ── */}
+            {activeTab === 'on-sale' && (
+              <div>
+                <div className="flex items-center justify-end px-5 py-3 border-b border-slate-100">
+                  <Link to="/voyages" className="text-sm font-medium text-brand hover:underline">
+                    항차 관리 →
+                  </Link>
+                </div>
+                {onSaleVoyages.length === 0 ? (
+                  <div className="flex items-center justify-center py-16 text-slate-400 text-sm">
+                    판매중인 항차가 없습니다
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        <tr>
+                          <th className="px-5 py-3 text-left">지역</th>
+                          <th className="px-5 py-3 text-left">선박</th>
+                          <th className="px-5 py-3 text-left">출발일</th>
+                          <th className="px-5 py-3 text-right">예약인원</th>
+                          <th className="px-5 py-3 text-right">잔여 캐빈</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {onSaleVoyages.map((v) => {
+                          const cb = cabinBadge(v.cabin_remaining, v.cabin_total)
+                          return (
+                            <tr key={v.id} className="hover:bg-slate-50/50 transition">
+                              <td className="px-5 py-3.5 font-medium text-slate-800">{v.region}</td>
+                              <td className="px-5 py-3.5 text-slate-500">{v.ship_name ?? '-'}</td>
+                              <td className="px-5 py-3.5 text-slate-600">{formatDate(v.departure_date)}</td>
+                              <td className="px-5 py-3.5 text-right text-slate-700">
+                                {(v.customer_count || 0).toLocaleString('ko-KR')}명
+                              </td>
+                              <td className={`px-5 py-3.5 text-right ${cb.cls}`}>{cb.text}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── 이번달 결제 마감 ── */}
+            {activeTab === 'payment' && (
+              <div>
+                <div className="flex items-center justify-end px-5 py-3 border-b border-slate-100">
+                  <Link to="/voyages?tab=결제" className="text-sm font-medium text-brand hover:underline">
+                    결제 탭 →
+                  </Link>
+                </div>
+                {thisMonthPayments.length === 0 ? (
+                  <div className="flex items-center justify-center py-16 text-slate-400 text-sm">
+                    이번달 결제 마감이 없습니다
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-50">
+                    {thisMonthPayments.map((p) => {
+                      const overdue = isOverdue(p.due_date)
+                      return (
+                        <div
+                          key={p.id}
+                          className={`flex items-center justify-between gap-3 px-5 py-3.5 ${overdue ? 'bg-red-50/50' : ''}`}
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className="rounded px-1.5 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600">
+                                {CATEGORY_LABEL[p.category] ?? p.category}
+                              </span>
+                              <span className="text-xs text-slate-500">
+                                {PAYMENT_TYPE_LABEL[p.payment_type] ?? p.payment_type}
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-700 truncate">
+                              {p.voyages ? voyageLabel(p.voyages.region, p.voyages.departure_date) : '-'}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className={`text-sm font-medium ${overdue ? 'text-red-600' : 'text-slate-800'}`}>
+                              {formatDate(p.due_date)}{overdue ? ' ⚠' : ''}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5">{formatAmount(p.amount, p.currency)}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── 이번달 출발 항차 ── */}
+            {activeTab === 'departure' && (
+              <div>
+                <div className="flex items-center justify-end px-5 py-3 border-b border-slate-100">
+                  <Link to="/voyages?tab=달력" className="text-sm font-medium text-brand hover:underline">
+                    달력 보기 →
+                  </Link>
+                </div>
+                {thisMonthDepartures.length === 0 ? (
+                  <div className="flex items-center justify-center py-16 text-slate-400 text-sm">
+                    이번달 출발 항차가 없습니다
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-50">
+                    {thisMonthDepartures.map((v) => {
+                      const cb = cabinBadge(v.cabin_remaining, v.cabin_total)
+                      return (
+                        <div key={v.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-800 truncate">{v.region}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{v.ship_name ?? '-'}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-sm text-slate-600">{formatDate(v.departure_date)}</p>
+                            <p className={`text-xs mt-0.5 ${cb.cls}`}>{cb.text}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
