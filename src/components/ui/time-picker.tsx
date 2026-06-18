@@ -65,7 +65,7 @@ export function TimePicker({
         ].join(' ')}
       >
         <span className={value ? 'font-medium text-slate-800 tabular-nums' : 'text-slate-400'}>
-          {value || placeholder}
+          {value ? value.slice(0, 5) : placeholder}
         </span>
         <Clock className={`shrink-0 transition-colors ${sm ? 'h-3 w-3' : 'h-4 w-4'} ${open ? 'text-brand' : 'text-slate-300'}`} />
       </button>

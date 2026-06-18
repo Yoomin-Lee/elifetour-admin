@@ -181,7 +181,7 @@ export default function FlightsCard({
                     </div>
                     <div>
                       <label className="label">출발일</label>
-                      <DatePicker value={r.departure_date} onChange={v => upd(r._key, 'departure_date', v)} placeholder="출발일" />
+                      <DatePicker size="sm" value={r.departure_date} onChange={v => upd(r._key, 'departure_date', v)} placeholder="출발일" />
                     </div>
                     <div>
                       <label className="label">출발 시간</label>
@@ -189,7 +189,7 @@ export default function FlightsCard({
                     </div>
                     <div>
                       <label className="label">도착일</label>
-                      <DatePicker value={r.arrival_date} onChange={v => upd(r._key, 'arrival_date', v)} placeholder="도착일" />
+                      <DatePicker size="sm" value={r.arrival_date} onChange={v => upd(r._key, 'arrival_date', v)} placeholder="도착일" />
                     </div>
                     <div>
                       <label className="label">도착 시간</label>

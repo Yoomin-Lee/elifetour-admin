@@ -12,12 +12,13 @@ interface DatePickerProps {
   onChange: (val: string) => void
   placeholder?: string
   disabled?: boolean
+  size?: 'default' | 'sm'
 }
 
 const WEEK_DAYS = ['일','월','화','수','목','금','토']
 const YEARS_PER_PAGE = 12
 
-export function DatePicker({ value, onChange, placeholder = '날짜 선택', disabled }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = '날짜 선택', disabled, size = 'default' }: DatePickerProps) {
   const [open, setOpen] = useState(false)
   const [viewDate, setViewDate] = useState(() => value ? parseISO(value) : new Date())
   const [yearMode, setYearMode] = useState(false)
@@ -40,8 +41,9 @@ export function DatePicker({ value, onChange, placeholder = '날짜 선택', dis
     if (!open) setYearMode(false)
   }, [open])
 
+  const sm = size === 'sm'
   const displayDate = value
-    ? format(parseISO(value), 'yyyy년 M월 d일 (EEE)', { locale: ko })
+    ? (sm ? format(parseISO(value), 'yy/MM/dd') : format(parseISO(value), 'yyyy년 M월 d일 (EEE)', { locale: ko }))
     : ''
 
   const monthStart = startOfMonth(viewDate)
@@ -79,16 +81,17 @@ export function DatePicker({ value, onChange, placeholder = '날짜 선택', dis
         disabled={disabled}
         onClick={() => !disabled && setOpen(v => !v)}
         className={[
-          'flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm transition-all',
+          'flex w-full items-center justify-between rounded-md border transition-all',
           'border-slate-200 bg-white text-left',
+          sm ? 'gap-1 px-2 py-1 text-xs min-h-[28px]' : 'gap-2 px-3 py-2 text-sm',
           disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-slate-300 hover:shadow-sm',
           open ? 'border-brand ring-1 ring-brand shadow-sm' : '',
         ].join(' ')}
       >
-        <span className={value ? 'font-medium text-slate-800' : 'text-slate-400'}>
+        <span className={value ? 'font-medium text-slate-800 tabular-nums' : 'text-slate-400'}>
           {displayDate || placeholder}
         </span>
-        <Calendar className={`h-4 w-4 shrink-0 transition-colors ${open ? 'text-brand' : 'text-slate-300'}`} />
+        <Calendar className={`shrink-0 transition-colors ${sm ? 'h-3 w-3' : 'h-4 w-4'} ${open ? 'text-brand' : 'text-slate-300'}`} />
       </button>
 
       {/* 달력 팝오버 */}
