@@ -135,21 +135,6 @@ export const ITINERARY_PRESETS: Record<string, ItineraryPreset> = {
   },
 
   // ── 동부지중해 ────────────────────────────────────────────────────────────
-  '동부지중해_7박_로마': {
-    label: '동부지중해 7박 (로마 왕복) — 데이터 미확인',
-    nights: 7,
-    ports: [
-      { port: '로마',      arrival_time: '',      departure_time: '',      summary: '도착' },
-      { port: '로마',      arrival_time: '',      departure_time: '17:00', summary: '크루즈 승선' },
-      { port: '해상',      arrival_time: '',      departure_time: '',      summary: '' },
-      { port: '산토리니',  arrival_time: '11:00', departure_time: '22:00', summary: '' },
-      { port: '쿠사다시',  arrival_time: '09:00', departure_time: '18:00', summary: '에페소' },
-      { port: '미코노스',  arrival_time: '07:00', departure_time: '18:00', summary: '' },
-      { port: '해상',      arrival_time: '',      departure_time: '',      summary: '' },
-      { port: '나폴리',    arrival_time: '07:00', departure_time: '18:00', summary: '폼페이' },
-      { port: '로마',      arrival_time: '05:00', departure_time: '',      summary: '하선·귀국' },
-    ],
-  },
   '동부지중해_8박_베니스': {
     label: '동부지중해 8박 (베니스 왕복)',
     nights: 8,
@@ -198,21 +183,6 @@ export const ITINERARY_PRESETS: Record<string, ItineraryPreset> = {
     ],
   },
 
-  // ── 카리브해 ──────────────────────────────────────────────────────────────
-  '카리브해_6박': {
-    label: '카리브해 6박 (포트로더데일 왕복) — 데이터 미확인',
-    nights: 6,
-    ports: [
-      { port: '포트로더데일', arrival_time: '',      departure_time: '',      summary: '도착' },
-      { port: '포트로더데일', arrival_time: '',      departure_time: '16:00', summary: '크루즈 승선' },
-      { port: '나소',         arrival_time: '08:00', departure_time: '17:00', summary: '' },
-      { port: '해상',         arrival_time: '',      departure_time: '',      summary: '' },
-      { port: '팔머스',       arrival_time: '07:00', departure_time: '15:30', summary: '' },
-      { port: '라바디',       arrival_time: '09:00', departure_time: '17:00', summary: '' },
-      { port: '해상',         arrival_time: '',      departure_time: '',      summary: '' },
-      { port: '포트로더데일', arrival_time: '06:00', departure_time: '',      summary: '하선·귀국' },
-    ],
-  },
 }
 
 export const PRESET_OPTIONS = Object.entries(ITINERARY_PRESETS).map(([key, preset]) => ({
