@@ -91,6 +91,22 @@ export async function addHistoryLog(
   return data as HistoryLog
 }
 
+export async function updateHistoryLog(id: string, content: string): Promise<HistoryLog> {
+  const { data, error } = await sb()
+    .from('history_logs')
+    .update({ content })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as HistoryLog
+}
+
+export async function deleteHistoryLog(id: string): Promise<void> {
+  const { error } = await sb().from('history_logs').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ── Create ────────────────────────────────────────────────────────────────
 
 export async function createVoyageWithChildren(values: VoyageFormValues): Promise<Voyage> {

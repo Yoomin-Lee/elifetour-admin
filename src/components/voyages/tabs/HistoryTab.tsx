@@ -1,7 +1,14 @@
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Search } from 'lucide-react'
-import { fetchAllHistoryLogs } from '@/lib/queries/voyages'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { Search, Pencil, Trash2, Check, X } from 'lucide-react'
+import {
+  fetchAllHistoryLogs,
+  updateHistoryLog,
+  deleteHistoryLog,
+  addHistoryLog,
+  type HistoryRow,
+} from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import { YearSelect } from '@/components/ui/year-select'
 
@@ -18,6 +25,10 @@ function formatDateTime(iso: string): string {
 export default function HistoryTab() {
   const [filter, setFilter] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('ALL')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const qc = useQueryClient()
+
   const { data = [], isLoading } = useQuery({
     queryKey: ['all-history'],
     queryFn: fetchAllHistoryLogs,
@@ -39,6 +50,60 @@ export default function HistoryTab() {
       (r.author ?? '').includes(filter) ||
       r.content.includes(filter)
   })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string }) =>
+      updateHistoryLog(id, content),
+    onSuccess: () => {
+      setEditingId(null)
+      setEditText('')
+      qc.invalidateQueries({ queryKey: ['all-history'] })
+      toast.success('수정됐습니다')
+    },
+    onError: () => toast.error('수정에 실패했습니다'),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteHistoryLog(id),
+    onError: () => {
+      qc.invalidateQueries({ queryKey: ['all-history'] })
+      toast.error('삭제에 실패했습니다')
+    },
+  })
+
+  function startEdit(r: HistoryRow) {
+    setEditingId(r.id)
+    setEditText(r.content)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditText('')
+  }
+
+  function saveEdit(id: string) {
+    if (!editText.trim()) return
+    updateMutation.mutate({ id, content: editText.trim() })
+  }
+
+  function handleDelete(r: HistoryRow) {
+    qc.setQueryData<HistoryRow[]>(['all-history'], prev =>
+      (prev ?? []).filter(row => row.id !== r.id)
+    )
+    deleteMutation.mutate(r.id)
+    toast('히스토리가 삭제됐습니다.', {
+      position: 'bottom-center',
+      duration: 3500,
+      action: {
+        label: '복원',
+        onClick: () => {
+          addHistoryLog(r.voyage_id, r.content, r.author ?? '')
+            .then(() => qc.invalidateQueries({ queryKey: ['all-history'] }))
+            .catch(() => toast.error('복원에 실패했습니다'))
+        },
+      },
+    })
+  }
 
   return (
     <div className="space-y-4">
@@ -62,24 +127,25 @@ export default function HistoryTab() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[700px] w-full text-xs">
+        <table className="min-w-[760px] w-full text-xs">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-32">일시</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">작성자</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500">내용</th>
+              <th className="px-3 py-2.5 w-16" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading && (
-              <tr><td colSpan={4} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
+              <tr><td colSpan={5} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
             )}
             {!isLoading && filtered.length === 0 && (
-              <tr><td colSpan={4} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
+              <tr><td colSpan={5} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
             {filtered.map(r => (
-              <tr key={r.id} className="hover:bg-slate-50">
+              <tr key={r.id} className="group hover:bg-slate-50">
                 <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
                   {r.voyages ? voyageTitle(r.voyages) : '—'}
                 </td>
@@ -87,7 +153,61 @@ export default function HistoryTab() {
                   {formatDateTime(r.logged_at)}
                 </td>
                 <td className="px-3 py-2 text-slate-600">{r.author ?? '—'}</td>
-                <td className="px-3 py-2 text-slate-700 leading-relaxed">{r.content}</td>
+                <td className="px-3 py-2 text-slate-700 leading-relaxed">
+                  {editingId === r.id ? (
+                    <textarea
+                      value={editText}
+                      onChange={e => setEditText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(r.id)
+                        if (e.key === 'Escape') cancelEdit()
+                      }}
+                      rows={2}
+                      autoFocus
+                      className="w-full resize-none rounded border border-brand px-2 py-1 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand/30"
+                    />
+                  ) : (
+                    r.content
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {editingId === r.id ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => saveEdit(r.id)}
+                        disabled={!editText.trim() || updateMutation.isPending}
+                        className="p-1 rounded text-brand hover:bg-brand/10 transition disabled:opacity-40"
+                        aria-label="저장"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="p-1 rounded text-slate-400 hover:bg-slate-100 transition"
+                        aria-label="취소"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => startEdit(r)}
+                        className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                        aria-label="수정"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(r)}
+                        className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition"
+                        aria-label="삭제"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -100,9 +100,14 @@ export default function Dashboard() {
       .finally(() => setLoading(false))
   }, [])
 
-  const { onSaleVoyages, thisMonthDepartures, thisMonthPayments, statusCounts } = dash
+  const { onSaleVoyages, thisMonthDepartures, thisMonthPayments } = dash
   const totalCustomers = onSaleVoyages.reduce((s, v) => s + (v.customer_count || 0), 0)
   const overdueCount   = thisMonthPayments.filter(p => isOverdue(p.due_date)).length
+
+  const thisMonthStatusCounts = {}
+  for (const v of thisMonthDepartures) {
+    thisMonthStatusCounts[v.status] = (thisMonthStatusCounts[v.status] ?? 0) + 1
+  }
 
   function toggle(id) {
     setExpandedId(prev => prev === id ? null : id)
@@ -210,9 +215,9 @@ export default function Dashboard() {
         {/* ── 우측 컬럼 ── */}
         <div className="flex flex-col gap-4 lg:col-span-2">
 
-          {/* 전체 항차 현황 요약 */}
+          {/* 이번달 항차 현황 요약 */}
           <div className="card overflow-hidden">
-            <SectionHeader title="전체 항차 현황" link="/voyages" linkLabel="항차 관리" />
+            <SectionHeader title="이번달 항차 현황" link="/voyages" linkLabel="항차 관리" />
             {loading ? (
               <div className="flex items-center justify-center py-8 text-slate-400 text-sm">불러오는 중...</div>
             ) : (
@@ -224,7 +229,7 @@ export default function Dashboard() {
                       <span className="text-sm text-slate-700">{label}</span>
                     </div>
                     <span className="text-sm font-semibold text-slate-800">
-                      {statusCounts[key] ?? 0}건
+                      {thisMonthStatusCounts[key] ?? 0}건
                     </span>
                   </div>
                 ))}

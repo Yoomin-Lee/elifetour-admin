@@ -1,7 +1,7 @@
 import { useState, useMemo, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Check, X, ChevronDown } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { useAuth } from '@/context/AuthContext'
 import { format } from 'date-fns'
@@ -18,6 +18,7 @@ import { voyageTitle } from '@/types/database'
 import { Input } from '@/components/ui/input'
 import { TimePicker } from '@/components/ui/time-picker'
 import { Select } from '@/components/ui/select'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { YearSelect } from '@/components/ui/year-select'
 import type { VoyageFlight } from '@/lib/queries/voyageFlights'
@@ -124,7 +125,7 @@ function FlightFormFields({
       </div>
       <div>
         <label className="label">출발일 (현지)</label>
-        <Input type="date" value={form.departureDate} onChange={set('departureDate')} className="h-7 text-sm" />
+        <DatePicker value={form.departureDate} onChange={v => setForm(prev => ({ ...prev, departureDate: v }))} placeholder="출발일" />
       </div>
       <div>
         <label className="label">출발시간 (현지)</label>
@@ -132,7 +133,7 @@ function FlightFormFields({
       </div>
       <div>
         <label className="label">도착일 (현지)</label>
-        <Input type="date" value={form.arrivalDate} onChange={set('arrivalDate')} className="h-7 text-sm" />
+        <DatePicker value={form.arrivalDate} onChange={v => setForm(prev => ({ ...prev, arrivalDate: v }))} placeholder="도착일" />
       </div>
       <div>
         <label className="label">도착시간 (현지)</label>
@@ -144,9 +145,12 @@ function FlightFormFields({
       </div>
       <div>
         <label className="label">통화</label>
-        <Select value={form.currency_code} onChange={set('currency_code')} className="h-7 py-0 text-sm">
-          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </Select>
+        <div className="relative">
+          <Select value={form.currency_code} onChange={set('currency_code')} className="h-8 py-0 text-sm appearance-none pr-7">
+            {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </Select>
+          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+        </div>
       </div>
     </div>
   )

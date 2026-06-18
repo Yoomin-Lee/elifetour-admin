@@ -10,6 +10,16 @@ export async function getPassengers(tripId) {
   return data
 }
 
+export async function getPassengersByTrip(tripId) {
+  const { data, error } = await supabase
+    .from(t('passengers'))
+    .select(`*, ${t('trips')}(title, depart_date, destination)`)
+    .eq('trip_id', tripId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
 export async function searchPassengers(query) {
   const { data, error } = await supabase
     .from(t('passengers'))
