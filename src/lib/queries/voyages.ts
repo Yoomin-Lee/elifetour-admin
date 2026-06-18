@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, Hotel, CabinGrade } from '../../types/database'
+import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, Hotel, CabinGrade, PaymentSchedule } from '../../types/database'
 import type { VoyageFormValues } from '../schemas/voyage'
 
 type VoyageRef = Pick<Voyage, 'region' | 'departure_date'>
@@ -368,6 +368,47 @@ export async function saveCabinGrades(
       cabin_total: cabinTotal,
       cabin_remaining: cabinTotal - cabinReserved,
     })
+  }
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────
+
+export interface VoyageDashboardData {
+  onSaleCount: number
+  thisMonthDepartures: Pick<Voyage, 'id' | 'region' | 'departure_date' | 'ship_name' | 'cabin_remaining' | 'cabin_total' | 'status'>[]
+  thisMonthPayments: Array<PaymentSchedule & { voyages: Pick<Voyage, 'region' | 'departure_date'> }>
+}
+
+export async function fetchVoyageDashboardData(): Promise<VoyageDashboardData> {
+  const today = new Date()
+  const y = today.getFullYear()
+  const m = String(today.getMonth() + 1).padStart(2, '0')
+  const firstDay = `${y}-${m}-01`
+  const lastDay = `${y}-${m}-${String(new Date(y, today.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+
+  const [onSaleRes, departuresRes, paymentsRes] = await Promise.all([
+    sb().from('voyages').select('*', { count: 'exact', head: true }).eq('status', '판매중'),
+    sb().from('voyages')
+      .select('id, region, departure_date, ship_name, cabin_remaining, cabin_total, status')
+      .gte('departure_date', firstDay)
+      .lte('departure_date', lastDay)
+      .order('departure_date'),
+    sb().from('payment_schedules')
+      .select('*, voyages(region, departure_date)')
+      .gte('due_date', firstDay)
+      .lte('due_date', lastDay)
+      .eq('is_completed', false)
+      .order('due_date'),
+  ])
+
+  if (onSaleRes.error) throw onSaleRes.error
+  if (departuresRes.error) throw departuresRes.error
+  if (paymentsRes.error) throw paymentsRes.error
+
+  return {
+    onSaleCount: onSaleRes.count ?? 0,
+    thisMonthDepartures: (departuresRes.data ?? []) as Pick<Voyage, 'id' | 'region' | 'departure_date' | 'ship_name' | 'cabin_remaining' | 'cabin_total' | 'status'>[],
+    thisMonthPayments: (paymentsRes.data ?? []) as Array<PaymentSchedule & { voyages: Pick<Voyage, 'region' | 'departure_date'> }>,
   }
 }
 
