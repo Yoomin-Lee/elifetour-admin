@@ -66,6 +66,11 @@ function normalizeDate(raw: string): string {
   return raw
 }
 
+/** 'HH:MM:SS' 또는 'HH:MM' → 'HH:MM' (PostgreSQL TIME 타입이 초를 포함해 반환함) */
+function normalizeTime(raw: string): string {
+  return raw.slice(0, 5)
+}
+
 export function getAirportTimezone(iataCode: string): string {
   return AIRPORT_TZ[iataCode.toUpperCase()] ?? 'UTC'
 }
@@ -80,8 +85,8 @@ export function calcFlightDuration(params: FlightCalculationParams): FlightCalcu
   const depTz = getAirportTimezone(departureAirport)
   const arrTz = getAirportTimezone(arrivalAirport)
 
-  const depLocal = `${normalizeDate(departureDate)}T${departureTime}:00`
-  const arrLocal = `${normalizeDate(arrivalDate)}T${arrivalTime}:00`
+  const depLocal = `${normalizeDate(departureDate)}T${normalizeTime(departureTime)}:00`
+  const arrLocal = `${normalizeDate(arrivalDate)}T${normalizeTime(arrivalTime)}:00`
 
   // 현지 시각 → UTC (DST 자동 반영)
   const depUtc = fromZonedTime(depLocal, depTz)

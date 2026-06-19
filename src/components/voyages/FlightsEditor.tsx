@@ -25,7 +25,7 @@ function extractIata(str: string): string {
 
 /** 항공편 한 행 — 소요시간 자동 계산 포함 */
 function FlightRow({ index, onRemove }: { index: number; onRemove: () => void }) {
-  const { register, control, setValue, getValues } = useFormContext<VoyageFormValues>()
+  const { register, control, setValue } = useFormContext<VoyageFormValues>()
 
   const origin      = useWatch({ control, name: `flights.${index}.origin` })
   const destination = useWatch({ control, name: `flights.${index}.destination` })
@@ -43,18 +43,14 @@ function FlightRow({ index, onRemove }: { index: number; onRemove: () => void })
     arrivalTime:      arrTime ?? '',
   })
 
-  // 마지막으로 자동 입력한 값 추적 → 수동 수정 시 덮어쓰지 않음
+  // 마지막으로 자동 입력한 값 추적 → 동일 값 재입력 방지
   const lastAutoRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!isValid || !result) return
     const newText = result.durationText
     if (newText === lastAutoRef.current) return
-
-    const cur = getValues(`flights.${index}.duration`)
-    if (!cur || cur === lastAutoRef.current) {
-      setValue(`flights.${index}.duration`, newText, { shouldDirty: true })
-    }
+    setValue(`flights.${index}.duration`, newText, { shouldDirty: true })
     lastAutoRef.current = newText
   }, [result?.durationText, isValid])
 

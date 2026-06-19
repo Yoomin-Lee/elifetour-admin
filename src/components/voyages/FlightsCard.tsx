@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Plus, Trash2, Check, X } from 'lucide-react'
+import { Pencil, Plus, Trash2, Check, X, Zap } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatTime } from '@/lib/utils'
 import { saveFlight, deleteFlightRow } from '@/lib/queries/voyages'
+import { useFlightCalc } from '@/hooks/useFlightCalc'
 import type { Flight } from '@/types/database'
 
 type DraftFlight = {
@@ -48,6 +49,12 @@ const EMPTY: Omit<DraftFlight, '_key'> = {
   duration: '', fare: '', sort_order: 0,
 }
 
+/** "(ICN)" 또는 단순 공항코드 추출 */
+function extractIata(str: string): string {
+  const m = str?.match(/\(([A-Z]{3})\)/)
+  return m ? m[1] : (str?.trim().toUpperCase() ?? '')
+}
+
 function toInput(r: DraftFlight, voyageId: string, idx: number) {
   return {
     flight_no: r.flight_no || null,
@@ -61,6 +68,96 @@ function toInput(r: DraftFlight, voyageId: string, idx: number) {
     fare: r.fare ? Number(r.fare) : null,
     sort_order: r.sort_order || idx + 1,
   }
+}
+
+function FlightDraftRow({
+  r,
+  index,
+  onRemove,
+  onUpdate,
+}: {
+  r: DraftFlight
+  index: number
+  onRemove: () => void
+  onUpdate: (field: keyof DraftFlight, value: string) => void
+}) {
+  const { result, isValid } = useFlightCalc({
+    departureAirport: extractIata(r.origin),
+    arrivalAirport:   extractIata(r.destination),
+    departureDate:    r.departure_date,
+    departureTime:    r.departure_time,
+    arrivalDate:      r.arrival_date,
+    arrivalTime:      r.arrival_time,
+  })
+
+  const lastAutoRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!isValid || !result) return
+    const newText = result.durationText
+    if (newText === lastAutoRef.current) return
+    onUpdate('duration', newText)
+    lastAutoRef.current = newText
+  }, [result?.durationText, isValid])
+
+  return (
+    <div className="relative rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute right-2 top-2 rounded p-1 text-slate-400 hover:text-red-500 transition"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+      <span className="mb-2 block text-xs font-medium text-slate-400">{index + 1}편</span>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div>
+          <label className="label">편명</label>
+          <Input value={r.flight_no} onChange={e => onUpdate('flight_no', e.target.value)} placeholder="KE907" className="h-7 text-sm" />
+        </div>
+        <div>
+          <label className="label">출발지</label>
+          <Input value={r.origin} onChange={e => onUpdate('origin', e.target.value)} placeholder="인천(ICN)" className="h-7 text-sm" />
+        </div>
+        <div>
+          <label className="label">도착지</label>
+          <Input value={r.destination} onChange={e => onUpdate('destination', e.target.value)} placeholder="바르셀로나(BCN)" className="h-7 text-sm" />
+        </div>
+        <div>
+          <label className="label flex items-center gap-1">
+            소요 시간
+            {isValid && result && (
+              <span className="flex items-center gap-0.5 text-[10px] font-normal text-brand">
+                <Zap className="h-2.5 w-2.5" /> 자동
+              </span>
+            )}
+          </label>
+          <Input
+            value={r.duration}
+            onChange={e => { lastAutoRef.current = null; onUpdate('duration', e.target.value) }}
+            placeholder="자동 계산"
+            className={`h-7 text-sm ${isValid && result ? 'border-brand/40 bg-brand/5' : ''}`}
+          />
+        </div>
+        <div>
+          <label className="label">출발일</label>
+          <DatePicker size="sm" value={r.departure_date} onChange={v => onUpdate('departure_date', v)} placeholder="출발일" />
+        </div>
+        <div>
+          <label className="label">출발 시간</label>
+          <TimePicker size="sm" value={r.departure_time} onChange={v => onUpdate('departure_time', v)} />
+        </div>
+        <div>
+          <label className="label">도착일</label>
+          <DatePicker size="sm" value={r.arrival_date} onChange={v => onUpdate('arrival_date', v)} placeholder="도착일" />
+        </div>
+        <div>
+          <label className="label">도착 시간</label>
+          <TimePicker size="sm" value={r.arrival_time} onChange={v => onUpdate('arrival_time', v)} />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function FlightsCard({
@@ -153,50 +250,13 @@ export default function FlightsCard({
               <p className="py-4 text-center text-sm text-slate-400">행 추가를 눌러 항공편을 등록하세요</p>
             ) : (
               visible.map((r, i) => (
-                <div key={r._key} className="relative rounded-lg border border-slate-100 bg-slate-50/50 p-3">
-                  <button
-                    type="button"
-                    onClick={() => removeRow(r._key)}
-                    className="absolute right-2 top-2 rounded p-1 text-slate-400 hover:text-red-500 transition"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                  <span className="mb-2 block text-xs font-medium text-slate-400">{i + 1}편</span>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <div>
-                      <label className="label">편명</label>
-                      <Input value={r.flight_no} onChange={e => upd(r._key, 'flight_no', e.target.value)} placeholder="KE907" className="h-7 text-sm" />
-                    </div>
-                    <div>
-                      <label className="label">출발지</label>
-                      <Input value={r.origin} onChange={e => upd(r._key, 'origin', e.target.value)} placeholder="인천(ICN)" className="h-7 text-sm" />
-                    </div>
-                    <div>
-                      <label className="label">도착지</label>
-                      <Input value={r.destination} onChange={e => upd(r._key, 'destination', e.target.value)} placeholder="바르셀로나(BCN)" className="h-7 text-sm" />
-                    </div>
-                    <div>
-                      <label className="label">소요 시간</label>
-                      <Input value={r.duration} onChange={e => upd(r._key, 'duration', e.target.value)} placeholder="12h 40m" className="h-7 text-sm" />
-                    </div>
-                    <div>
-                      <label className="label">출발일</label>
-                      <DatePicker size="sm" value={r.departure_date} onChange={v => upd(r._key, 'departure_date', v)} placeholder="출발일" />
-                    </div>
-                    <div>
-                      <label className="label">출발 시간</label>
-                      <TimePicker size="sm" value={r.departure_time} onChange={v => upd(r._key, 'departure_time', v)} />
-                    </div>
-                    <div>
-                      <label className="label">도착일</label>
-                      <DatePicker size="sm" value={r.arrival_date} onChange={v => upd(r._key, 'arrival_date', v)} placeholder="도착일" />
-                    </div>
-                    <div>
-                      <label className="label">도착 시간</label>
-                      <TimePicker size="sm" value={r.arrival_time} onChange={v => upd(r._key, 'arrival_time', v)} />
-                    </div>
-                  </div>
-                </div>
+                <FlightDraftRow
+                  key={r._key}
+                  r={r}
+                  index={i}
+                  onRemove={() => removeRow(r._key)}
+                  onUpdate={(field, value) => upd(r._key, field, value)}
+                />
               ))
             )}
           </div>

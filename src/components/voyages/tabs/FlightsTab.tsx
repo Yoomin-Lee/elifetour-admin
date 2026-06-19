@@ -21,6 +21,7 @@ import { Select } from '@/components/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { YearSelect } from '@/components/ui/year-select'
+import { FieldSelect } from '@/components/ui/field-select'
 import type { VoyageFlight } from '@/lib/queries/voyageFlights'
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP'] as const
@@ -100,7 +101,11 @@ function FlightFormFields({
         <div className="col-span-2 sm:col-span-4">
           <label className="label">행사</label>
           <div className="relative">
-            <Select value={form.voyage_id} onChange={set('voyage_id')} className="h-7 py-0 text-sm appearance-none pr-7">
+            <Select
+              value={form.voyage_id}
+              onChange={set('voyage_id')}
+              className="h-7 py-0 text-sm appearance-none pr-7 hover:border-brand/50"
+            >
               <option value="">행사를 선택하세요</option>
               {voyages.map(v => (
                 <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
@@ -148,12 +153,12 @@ function FlightFormFields({
       </div>
       <div>
         <label className="label">통화</label>
-        <div className="relative">
-          <Select value={form.currency_code} onChange={set('currency_code')} className="h-8 py-0 text-sm appearance-none pr-7">
-            {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </Select>
-          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-        </div>
+        <FieldSelect
+          value={form.currency_code}
+          options={[...CURRENCIES]}
+          onChange={v => setForm(prev => ({ ...prev, currency_code: v }))}
+          className="h-7 text-sm px-2"
+        />
       </div>
     </div>
   )

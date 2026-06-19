@@ -8,6 +8,7 @@ import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades, fetchAll
 import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+import { FieldSelect } from '@/components/ui/field-select'
 import type { Voyage, CabinGrade } from '@/types/database'
 
 // ── 선사/선박명 프리셋 ────────────────────────────────────────────────────
@@ -113,6 +114,8 @@ type CruiseForm = {
   cabin_total: string
   cabin_remaining: string
   cabin_grade: string
+  cabin_price: string
+  cabin_currency: string
 }
 function toForm(v: Voyage): CruiseForm {
   return {
@@ -122,6 +125,8 @@ function toForm(v: Voyage): CruiseForm {
     cabin_total: String(v.cabin_total ?? ''),
     cabin_remaining: String(v.cabin_remaining ?? ''),
     cabin_grade: '',
+    cabin_price: '',
+    cabin_currency: 'KRW',
   }
 }
 
@@ -300,7 +305,8 @@ export default function CruiseTab() {
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<CruiseForm>({
-    cruise_line: '', ship_name: '', agent: '', cabin_total: '', cabin_remaining: '', cabin_grade: '',
+    cruise_line: '', ship_name: '', agent: '', cabin_total: '', cabin_remaining: '',
+    cabin_grade: '', cabin_price: '', cabin_currency: 'KRW',
   })
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const qc = useQueryClient()
@@ -334,25 +340,33 @@ export default function CruiseTab() {
         cabin_total: Number(editForm.cabin_total) || 0,
         cabin_remaining: Number(editForm.cabin_remaining) || 0,
       })
-      if (editForm.cabin_grade) {
-        const existing = gradeMap[id]?.[0]
+      const existing = gradeMap[id]?.[0]
+      const gradeToSave = editForm.cabin_grade || existing?.grade
+      if (gradeToSave) {
+        const priceToSave = editForm.cabin_price !== ''
+          ? Number(editForm.cabin_price)
+          : (existing?.price_per_person ?? null)
+        const currencyToSave = editForm.cabin_currency || existing?.currency || 'KRW'
         if (existing) {
           await saveCabinGrades(id, [{
-            id: existing.id, grade: editForm.cabin_grade,
+            id: existing.id, grade: gradeToSave,
             total: existing.total, reserved: existing.reserved,
-            price_per_person: existing.price_per_person,
-            currency: existing.currency, sort_order: 0,
+            price_per_person: priceToSave,
+            currency: currencyToSave, sort_order: 0,
           }], [])
         } else {
           await saveCabinGrades(id, [{
-            grade: editForm.cabin_grade, total: 0, reserved: 0,
-            price_per_person: null, currency: 'KRW', sort_order: 0,
+            grade: gradeToSave, total: 0, reserved: 0,
+            price_per_person: priceToSave,
+            currency: currencyToSave, sort_order: 0,
           }], [])
         }
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['voyages'] })
+      qc.invalidateQueries({ queryKey: ['all-cabin-grades'] })
+      qc.invalidateQueries({ queryKey: ['cabin-grades'] })
       setEditingId(null)
       toast.success('저장됐습니다')
     },
@@ -360,7 +374,13 @@ export default function CruiseTab() {
   })
 
   function startEdit(v: Voyage) {
-    setEditForm({ ...toForm(v), cabin_grade: gradeMap[v.id]?.[0]?.grade ?? '' })
+    const g = gradeMap[v.id]?.[0]
+    setEditForm({
+      ...toForm(v),
+      cabin_grade:    g?.grade    ?? '',
+      cabin_price:    g?.price_per_person != null ? String(g.price_per_person) : '',
+      cabin_currency: g?.currency ?? 'KRW',
+    })
     setEditingId(v.id)
     saveMut.reset()
   }
@@ -523,7 +543,7 @@ export default function CruiseTab() {
                         {saveMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 mb-2">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8 mb-2">
                           <div>
                             <label className="label">선사</label>
                             <SelectOrInput
@@ -567,6 +587,26 @@ export default function CruiseTab() {
                           <div>
                             <label className="label">잔여 캐빈</label>
                             <Input type="number" min={0} value={editForm.cabin_remaining} onChange={set('cabin_remaining')} className="h-7 text-sm" />
+                          </div>
+                          <div>
+                            <label className="label">캐빈가 (1인)</label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={editForm.cabin_price}
+                              onChange={set('cabin_price')}
+                              placeholder="가격 입력"
+                              className="h-7 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="label">통화</label>
+                            <FieldSelect
+                              value={editForm.cabin_currency}
+                              options={['KRW', 'USD', 'EUR']}
+                              onChange={v => setField('cabin_currency', v)}
+                              className="h-7 text-sm px-2"
+                            />
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
