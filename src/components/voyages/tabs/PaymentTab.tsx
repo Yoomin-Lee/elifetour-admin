@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, Save, Trash2, ChevronDown } from 'lucide-react'
+import { Check, Save, Trash2, ChevronDown, ExternalLink } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { fetchVoyages } from '@/lib/queries/voyages'
 import {
@@ -13,7 +14,6 @@ import {
 import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import VoyageCombobox from '@/components/voyages/VoyageCombobox'
 import { YearSelect } from '@/components/ui/year-select'
 import { voyageTitle } from '@/types/database'
 import type { PaymentCategory, PaymentType, PaymentSchedule } from '@/types/database'
@@ -82,6 +82,7 @@ function formatAmount(amount: string, currency: string): string {
 }
 
 export default function PaymentTab() {
+  const navigate = useNavigate()
   const [voyageId, setVoyageId] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editing, setEditing] = useState<DraftKey | null>(null)
@@ -188,23 +189,39 @@ export default function PaymentTab() {
       {/* 행사 선택 */}
       <div>
         <label className="label">행사 선택</label>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <YearSelect
             value={yearFilter}
             years={years}
             onChange={y => {
               setYearFilter(y)
-              const selected = voyages.find(v => v.id === voyageId)
-              if (selected && y !== 'ALL' && !selected.departure_date?.startsWith(y)) {
-                setVoyageId('')
-              }
+              const sel = voyages.find(v => v.id === voyageId)
+              if (sel && y !== 'ALL' && !sel.departure_date?.startsWith(y)) setVoyageId('')
             }}
           />
-          <VoyageCombobox
-            voyages={filteredVoyages}
-            selectedId={voyageId || null}
-            onSelect={id => setVoyageId(id)}
-          />
+          <div className="relative">
+            <Select
+              value={voyageId}
+              onChange={e => setVoyageId(e.target.value)}
+              className="h-9 py-0 text-sm appearance-none pr-7 w-72"
+            >
+              <option value="">행사를 선택하세요</option>
+              {filteredVoyages.map(v => (
+                <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
+              ))}
+            </Select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          </div>
+          {voyageId && (
+            <button
+              onClick={() => navigate(`/voyages?tab=항차검색&voyage=${voyageId}`)}
+              className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition"
+              title="항차 검색에서 보기"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              항차 검색
+            </button>
+          )}
         </div>
       </div>
 
