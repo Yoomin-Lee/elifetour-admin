@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>개발일지 2026-06-19 | elifetour-admin</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --brand: #6366f1;
+    --brand-light: #eef2ff;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--slate-50);
+    color: var(--slate-700);
+    line-height: 1.6;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    border-left: 4px solid var(--brand);
+    padding-left: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+  .header .date {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand);
+    margin-bottom: 0.25rem;
+  }
+  .header h1 { font-size: 1.6rem; font-weight: 800; color: var(--slate-800); }
+  .header .subtitle { font-size: 0.9rem; color: var(--slate-500); margin-top: 0.25rem; }
+
+  /* Summary chips */
+  .summary-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    margin-bottom: 2.5rem;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem; font-weight: 600;
+  }
+  .chip-fix    { background: var(--red-bg);   color: var(--red);   }
+  .chip-feat   { background: var(--green-bg); color: var(--green); }
+  .chip-refact { background: var(--amber-bg); color: var(--amber); }
+
+  /* Section */
+  .section { margin-bottom: 2.5rem; }
+  .section-title {
+    font-size: 1rem; font-weight: 700; color: var(--slate-800);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--slate-200);
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-title .tag {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+  }
+  .tag-fix    { background: var(--red-bg);   color: var(--red);   }
+  .tag-feat   { background: var(--green-bg); color: var(--green); }
+
+  /* Card */
+  .card {
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 0.9rem; font-weight: 700; color: var(--slate-800);
+    margin-bottom: 0.6rem;
+  }
+  .card p { font-size: 0.875rem; color: var(--slate-600); margin-bottom: 0.5rem; }
+  .card p:last-child { margin-bottom: 0; }
+
+  .label { font-size: 0.75rem; font-weight: 600; color: var(--slate-500); margin-bottom: 0.25rem; display: block; }
+
+  /* Code */
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    background: var(--slate-100);
+    color: var(--brand);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--slate-800);
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    margin: 0.75rem 0;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  pre .kw  { color: #93c5fd; }
+  pre .fn  { color: #6ee7b7; }
+  pre .str { color: #fde68a; }
+  pre .cm  { color: #6b7280; font-style: italic; }
+
+  /* File pill */
+  .file {
+    display: inline-block; font-size: 0.75rem; font-weight: 500;
+    background: var(--brand-light); color: var(--brand);
+    padding: 0.1rem 0.5rem; border-radius: 4px;
+    font-family: 'SF Mono', monospace;
+    margin: 0.1rem 0;
+  }
+
+  /* Commit list */
+  .commit-list { list-style: none; }
+  .commit-list li {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--slate-100);
+    font-size: 0.85rem;
+  }
+  .commit-list li:last-child { border-bottom: none; }
+  .commit-hash {
+    font-family: 'SF Mono', monospace;
+    font-size: 0.75rem; color: var(--brand);
+    background: var(--brand-light);
+    padding: 0.15rem 0.45rem; border-radius: 4px;
+    white-space: nowrap;
+  }
+  .commit-feat { color: var(--green); }
+  .commit-fix  { color: var(--red);   }
+
+  /* Arrow list */
+  .arrow-list { list-style: none; padding-left: 0; }
+  .arrow-list li {
+    padding: 0.3rem 0 0.3rem 1.25rem;
+    position: relative;
+    font-size: 0.875rem; color: var(--slate-600);
+  }
+  .arrow-list li::before {
+    content: '→';
+    position: absolute; left: 0;
+    color: var(--brand); font-weight: 700;
+  }
+
+  /* Two-col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  .note {
+    background: var(--amber-bg);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 6px 6px 0;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem; color: var(--slate-700);
+    margin-top: 0.75rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="date">2026-06-19 · elifetour-admin</div>
+    <h1>개발일지</h1>
+    <div class="subtitle">항공 소요시간 자동계산 개선 · 드롭다운 UI 통일 · 탭 간 바로가기 · 결제 탭 화이트 스크린 수정</div>
+  </div>
+
+  <!-- Summary chips -->
+  <div class="summary-row">
+    <span class="chip chip-fix">🐛 Bug Fix &times;3</span>
+    <span class="chip chip-feat">✨ Feature &times;4</span>
+    <span class="chip chip-refact">♻ Refactor &times;2</span>
+  </div>
+
+  <!-- 1. 항공 소요시간 자동계산 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="tag tag-fix">Fix</span>
+      항공 소요시간 자동 계산 3-레이어 수정
+    </div>
+
+    <div class="card">
+      <div class="card-title">Layer 1 — PostgreSQL TIME 포맷 파싱 오류</div>
+      <span class="file">src/lib/utils/flightCalc.ts</span>
+      <p style="margin-top:0.5rem">PostgreSQL <code>TIME</code> 컬럼이 <code>"HH:MM:SS"</code>를 반환하는데, <code>calcFlightDuration</code>이 <code>"2026-06-15T10:50:00:00"</code>처럼 잘못된 ISO 문자열을 생성 → <code>fromZonedTime</code>이 throw → 계산 불가.</p>
+      <pre><span class="cm">/** 'HH:MM:SS' 또는 'HH:MM' → 'HH:MM' */</span>
+<span class="kw">function</span> <span class="fn">normalizeTime</span>(raw: string): string {
+  <span class="kw">return</span> raw.slice(0, 5)   <span class="cm">// "10:50:00" → "10:50"</span>
+}</pre>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Layer 2 — FlightsEditor useEffect 가드 오류</div>
+      <span class="file">src/components/voyages/FlightsEditor.tsx</span>
+      <p style="margin-top:0.5rem">기존 항공편 로드 시 <code>lastAutoRef.current</code>가 null이어서 가드 조건이 false → <code>setValue</code> 미호출. 가드 단순화로 해결.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Layer 3 — FlightsCard 자동 계산 훅 미탑재</div>
+      <span class="file">src/components/voyages/FlightsCard.tsx</span>
+      <p style="margin-top:0.5rem">항차검색 경로에서 사용하는 <code>FlightsCard</code>에 <code>useFlightCalc</code>가 아예 없었음. <code>FlightDraftRow</code> 서브컴포넌트로 추출하고 훅 통합.</p>
+    </div>
+  </div>
+
+  <!-- 2. 수동 입력 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="tag tag-feat">Feat</span>
+      항공 소요시간 수동 입력 지원
+    </div>
+
+    <div class="card">
+      <p>자동 계산이 기본값이지만 사용자가 직접 수정 가능하도록 <code>isManual</code> state 추가. 수동 입력 후 시간을 변경해도 자동 값이 덮어쓰지 않음.</p>
+      <ul class="arrow-list" style="margin-top:0.75rem">
+        <li>자동 계산 중: <code>⚡ 자동</code> 배지 (파란색)</li>
+        <li>수동 입력 후: <code>⚡ 자동으로</code> 버튼 (회색, 클릭 시 자동 복귀)</li>
+        <li><span class="file">FlightsEditor.tsx</span> + <span class="file">FlightsCard.tsx</span> 동일 적용</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 3. 드롭다운 UI -->
+  <div class="section">
+    <div class="section-title">
+      <span class="tag tag-feat">Feat</span>
+      드롭다운 UI 통일 (FieldSelect)
+    </div>
+
+    <div class="card">
+      <p>앱 전반의 드롭다운 컴포넌트를 <code>FieldSelect</code> (버튼+패널, 체크마크) 스타일로 통일.</p>
+      <div class="two-col" style="margin-top:0.75rem">
+        <div>
+          <span class="label">변경 전</span>
+          <p><code>&lt;select&gt;</code> + <code>appearance-none</code> + <code>ChevronDown</code> 오버레이</p>
+        </div>
+        <div>
+          <span class="label">변경 후</span>
+          <p><code>&lt;FieldSelect&gt;</code> — 모든 탭에서 일관된 UX</p>
+        </div>
+      </div>
+      <ul class="arrow-list" style="margin-top:0.75rem">
+        <li>항공 탭 — 통화 드롭다운</li>
+        <li>상품등록 탭 — 상태 드롭다운</li>
+        <li>크루즈 탭 — 통화 드롭다운 (캐빈가 편집 폼)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 4. 크루즈 캐빈가 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="tag tag-feat">Feat</span>
+      크루즈 탭 캐빈가 편집 추가
+    </div>
+
+    <div class="card">
+      <span class="file">src/components/voyages/tabs/CruiseTab.tsx</span>
+      <p style="margin-top:0.5rem">인라인 편집 폼에 <strong>캐빈가(1인)</strong>와 <strong>통화</strong> 필드 추가. 기존 6컬럼 그리드 → 8컬럼.</p>
+      <ul class="arrow-list" style="margin-top:0.75rem">
+        <li><code>CruiseForm</code> 타입에 <code>cabin_price</code>, <code>cabin_currency</code> 추가</li>
+        <li><code>startEdit()</code>에서 기존 등급 데이터로 초기화</li>
+        <li><code>saveMut</code>에서 가격/통화 저장 + 캐시 무효화(<code>all-cabin-grades</code>) 보완</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 5. 행사명 바로가기 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="tag tag-feat">Feat</span>
+      전체 탭 행사명 → 항차검색 바로가기
+    </div>
+
+    <div class="card">
+      <p>모든 마스터 탭의 행사명 셀을 클릭하면 <code>/voyages?tab=항차검색&amp;voyage={id}</code>로 이동. 취소 상태 행사는 취소선 유지(링크 없음).</p>
+      <ul class="arrow-list" style="margin-top:0.75rem">
+        <li>항공, 호텔, 취소료, 지상, 히스토리 — 행사명 버튼 + <code>ExternalLink</code> 아이콘</li>
+        <li>상품등록, 크루즈 — 동일 패턴 (취소 행사 제외)</li>
+        <li>결제 탭 — 행사 선택 후 "↗ 항차 검색" 버튼</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 6. 결제 탭 버그 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="tag tag-fix">Fix</span>
+      결제 탭 화이트 스크린 수정
+    </div>
+
+    <div class="card">
+      <div class="card-title">원인</div>
+      <p><code>VoyageCombobox</code>가 <code>@radix-ui/react-popover</code>를 사용했고, 이 컴포넌트가 프로덕션 빌드(React 19 + Vite)에서 렌더링 시 오류를 발생시킴. <code>VoyageMaster</code>에 에러 바운더리가 없어 탭 전체가 언마운트 → 화이트 스크린.</p>
+      <div class="note">⚠ Radix UI Popover는 현재 React 19 프로덕션 환경에서 불안정. 필요 시 shadcn/ui의 최신 빌드로 교체 권장.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">해결</div>
+      <span class="file">src/components/voyages/tabs/PaymentTab.tsx</span>
+      <p style="margin-top:0.5rem"><code>VoyageCombobox</code> 제거, 단순 <code>&lt;select&gt;</code>로 교체. 동일 기능(연도 필터 + 행사 선택) 유지.</p>
+    </div>
+  </div>
+
+  <!-- 커밋 목록 -->
+  <div class="section">
+    <div class="section-title">커밋 이력 (이번 세션)</div>
+    <div class="card" style="padding: 0.75rem 1.25rem;">
+      <ul class="commit-list">
+        <li>
+          <span class="commit-hash">b9288df</span>
+          <span class="commit-fix">fix:</span>&nbsp;결제 탭 화이트 스크린 수정 + 행사명 바로가기 추가
+        </li>
+        <li>
+          <span class="commit-hash">836fefd</span>
+          <span class="commit-feat">feat:</span>&nbsp;상품등록·크루즈 탭 행사명 클릭 시 항차검색 바로가기
+        </li>
+        <li>
+          <span class="commit-hash">dd6284f</span>
+          <span class="commit-feat">feat:</span>&nbsp;호텔·취소료·지상·히스토리 탭 행사명 클릭 시 항차검색 바로가기
+        </li>
+        <li>
+          <span class="commit-hash">9f3a687</span>
+          <span class="commit-feat">feat:</span>&nbsp;항공 탭 행사명 클릭 시 항차검색으로 바로가기
+        </li>
+        <li>
+          <span class="commit-hash">6862fc7</span>
+          <span class="commit-fix">fix:</span>&nbsp;항공 소요시간 수동 입력 지원 — 자동/수동 전환
+        </li>
+        <li>
+          <span class="commit-hash">a382158</span>
+          <span class="commit-feat">feat:</span>&nbsp;항공 소요시간 자동계산 수정 및 드롭다운·캐빈가 UI 개선
+        </li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
