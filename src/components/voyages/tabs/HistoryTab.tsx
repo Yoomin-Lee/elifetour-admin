@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Search, Pencil, Trash2, Check, X, ExternalLink } from 'lucide-react'
 import {
   fetchAllHistoryLogs,
   updateHistoryLog,
@@ -23,6 +24,7 @@ function formatDateTime(iso: string): string {
 }
 
 export default function HistoryTab() {
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -148,8 +150,17 @@ export default function HistoryTab() {
             )}
             {filtered.map(r => (
               <tr key={r.id} className="group hover:bg-slate-50">
-                <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
-                  {r.voyages ? voyageTitle(r.voyages) : '—'}
+                <td className="px-3 py-2 whitespace-nowrap">
+                  {r.voyages ? (
+                    <button
+                      onClick={() => navigate(`/voyages?tab=항차검색&voyage=${r.voyage_id}`)}
+                      className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition"
+                      title="항차 검색에서 보기"
+                    >
+                      {voyageTitle(r.voyages)}
+                      <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
+                    </button>
+                  ) : '—'}
                 </td>
                 <td className="px-3 py-2 font-mono text-slate-500 whitespace-nowrap">
                   {formatDateTime(r.logged_at)}

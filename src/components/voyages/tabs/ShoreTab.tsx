@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Check, X, ChevronDown } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Check, X, ChevronDown, ExternalLink } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { useAuth } from '@/context/AuthContext'
 import { fetchAllItinerary, fetchVoyages, saveItineraryDay, deleteItineraryDay } from '@/lib/queries/voyages'
@@ -166,6 +167,7 @@ function ShoreFormFields({
 }
 
 export default function ShoreTab() {
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -361,8 +363,17 @@ export default function ShoreTab() {
                 return (
                   <>
                     <tr key={r.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
-                        {r.voyages ? voyageTitle(r.voyages) : '—'}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {r.voyages ? (
+                          <button
+                            onClick={() => navigate(`/voyages?tab=항차검색&voyage=${r.voyage_id}`)}
+                            className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition"
+                            title="항차 검색에서 보기"
+                          >
+                            {voyageTitle(r.voyages)}
+                            <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
+                          </button>
+                        ) : '—'}
                       </td>
                       <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(r.date)}</td>
                       <td className="px-3 py-2 text-slate-700 font-medium">{r.port}</td>
