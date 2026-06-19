@@ -90,15 +90,16 @@ function FlightDraftRow({
     arrivalTime:      r.arrival_time,
   })
 
+  const [isManual, setIsManual] = useState(false)
   const lastAutoRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!isValid || !result) return
+    if (!isValid || !result || isManual) return
     const newText = result.durationText
     if (newText === lastAutoRef.current) return
     onUpdate('duration', newText)
     lastAutoRef.current = newText
-  }, [result?.durationText, isValid])
+  }, [result?.durationText, isValid, isManual])
 
   return (
     <div className="relative rounded-lg border border-slate-100 bg-slate-50/50 p-3">
@@ -124,19 +125,30 @@ function FlightDraftRow({
           <Input value={r.destination} onChange={e => onUpdate('destination', e.target.value)} placeholder="바르셀로나(BCN)" className="h-7 text-sm" />
         </div>
         <div>
-          <label className="label flex items-center gap-1">
-            소요 시간
+          <div className="flex items-center justify-between mb-0.5">
+            <label className="label mb-0">소요 시간</label>
             {isValid && result && (
-              <span className="flex items-center gap-0.5 text-[10px] font-normal text-brand">
-                <Zap className="h-2.5 w-2.5" /> 자동
-              </span>
+              isManual ? (
+                <button
+                  type="button"
+                  onClick={() => { setIsManual(false); lastAutoRef.current = null }}
+                  className="flex items-center gap-0.5 text-[10px] text-slate-400 hover:text-brand transition"
+                  title="자동 계산으로 되돌리기"
+                >
+                  <Zap className="h-2.5 w-2.5" /> 자동으로
+                </button>
+              ) : (
+                <span className="flex items-center gap-0.5 text-[10px] text-brand">
+                  <Zap className="h-2.5 w-2.5" /> 자동
+                </span>
+              )
             )}
-          </label>
+          </div>
           <Input
             value={r.duration}
-            onChange={e => { lastAutoRef.current = null; onUpdate('duration', e.target.value) }}
+            onChange={e => { setIsManual(true); onUpdate('duration', e.target.value) }}
             placeholder="자동 계산"
-            className={`h-7 text-sm ${isValid && result ? 'border-brand/40 bg-brand/5' : ''}`}
+            className={`h-7 text-sm ${isValid && result && !isManual ? 'border-brand/40 bg-brand/5' : ''}`}
           />
         </div>
         <div>

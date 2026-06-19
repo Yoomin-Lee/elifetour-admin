@@ -43,16 +43,18 @@ function FlightRow({ index, onRemove }: { index: number; onRemove: () => void })
     arrivalTime:      arrTime ?? '',
   })
 
-  // 마지막으로 자동 입력한 값 추적 → 동일 값 재입력 방지
+  const [isManual, setIsManual] = useState(false)
   const lastAutoRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!isValid || !result) return
+    if (!isValid || !result || isManual) return
     const newText = result.durationText
     if (newText === lastAutoRef.current) return
     setValue(`flights.${index}.duration`, newText, { shouldDirty: true })
     lastAutoRef.current = newText
-  }, [result?.durationText, isValid])
+  }, [result?.durationText, isValid, isManual])
+
+  const durationReg = register(`flights.${index}.duration`)
 
   return (
     <div className="relative rounded-lg border border-slate-100 bg-white p-4">
@@ -78,18 +80,30 @@ function FlightRow({ index, onRemove }: { index: number; onRemove: () => void })
           <Input {...register(`flights.${index}.destination`)} placeholder="바르셀로나(BCN)" />
         </div>
         <div>
-          <label className="label flex items-center gap-1">
-            소요 시간
+          <div className="flex items-center justify-between mb-0.5">
+            <label className="label mb-0">소요 시간</label>
             {isValid && result && (
-              <span className="flex items-center gap-0.5 text-[10px] font-normal text-brand">
-                <Zap className="h-2.5 w-2.5" /> 자동
-              </span>
+              isManual ? (
+                <button
+                  type="button"
+                  onClick={() => { setIsManual(false); lastAutoRef.current = null }}
+                  className="flex items-center gap-0.5 text-[10px] text-slate-400 hover:text-brand transition"
+                  title="자동 계산으로 되돌리기"
+                >
+                  <Zap className="h-2.5 w-2.5" /> 자동으로
+                </button>
+              ) : (
+                <span className="flex items-center gap-0.5 text-[10px] text-brand">
+                  <Zap className="h-2.5 w-2.5" /> 자동
+                </span>
+              )
             )}
-          </label>
+          </div>
           <Input
-            {...register(`flights.${index}.duration`)}
+            {...durationReg}
+            onChange={e => { setIsManual(true); durationReg.onChange(e) }}
             placeholder="자동 계산"
-            className={isValid && result ? 'border-brand/40 bg-brand/5' : ''}
+            className={isValid && result && !isManual ? 'border-brand/40 bg-brand/5' : ''}
           />
         </div>
 
