@@ -1,8 +1,9 @@
 import { useState, useMemo, Fragment } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { YearSelect } from '@/components/ui/year-select'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Pencil, Check, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, Pencil, Check, X, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades, fetchAllCabinGrades } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
@@ -301,6 +302,7 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
 
 // ── 메인 CruiseTab ────────────────────────────────────────────────────────
 export default function CruiseTab() {
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -504,10 +506,19 @@ export default function CruiseTab() {
                           : <ChevronRight className="h-3.5 w-3.5" />}
                       </button>
                     </td>
-                    <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
-                      {isCancelled
-                        ? <span className="line-through text-slate-400">{voyageTitle(v)}</span>
-                        : voyageTitle(v)}
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {isCancelled ? (
+                        <span className="line-through text-slate-400">{voyageTitle(v)}</span>
+                      ) : (
+                        <button
+                          onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
+                          className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition"
+                          title="항차 검색에서 보기"
+                        >
+                          {voyageTitle(v)}
+                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
+                        </button>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>

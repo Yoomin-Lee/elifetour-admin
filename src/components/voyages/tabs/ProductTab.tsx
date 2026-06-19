@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
-import { Search, Plus, Eye, Copy, Pencil, Check, X } from 'lucide-react'
+import { Search, Plus, Eye, Copy, Pencil, Check, X, ExternalLink } from 'lucide-react'
 import { fetchVoyages, duplicateVoyage, updateVoyage } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import type { Voyage, VoyageStatus } from '@/types/database'
@@ -192,10 +192,19 @@ export default function ProductTab() {
                       isCancelled ? 'opacity-50' : '',
                     ].join(' ')}
                   >
-                    <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">
+                    <td className="px-3 py-2 whitespace-nowrap">
                       {isCancelled ? (
                         <span className="line-through text-slate-400">{voyageTitle(v)}</span>
-                      ) : voyageTitle(v)}
+                      ) : (
+                        <button
+                          onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
+                          className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition"
+                          title="항차 검색에서 보기"
+                        >
+                          {voyageTitle(v)}
+                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
+                        </button>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
