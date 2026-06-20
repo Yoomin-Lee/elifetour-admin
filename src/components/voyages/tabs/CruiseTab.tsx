@@ -67,7 +67,7 @@ function SelectOrInput({
   options: string[]
   placeholder?: string
 }) {
-  const [isCustom, setIsCustom] = useState(() => value !== '' && !options.includes(value))
+  const [isCustom, setIsCustom] = useState(false)
 
   if (isCustom) {
     return (
@@ -91,6 +91,11 @@ function SelectOrInput({
     )
   }
 
+  // 현재 값이 목록에 없으면 옵션에 동적으로 추가 (기존 DB 값 표시)
+  const allOptions = value !== '' && !options.includes(value)
+    ? [value, ...options]
+    : options
+
   return (
     <div className="relative">
       <select
@@ -102,7 +107,7 @@ function SelectOrInput({
         className="select h-7 py-0 text-sm appearance-none pr-7 w-full"
       >
         <option value="">{placeholder}</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
+        {allOptions.map(o => <option key={o} value={o}>{o}</option>)}
         <option value={CUSTOM}>✏ 직접 입력</option>
       </select>
       <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
