@@ -100,7 +100,6 @@ function SelectOrInput({
       }}
       placeholder={placeholder}
       className="h-7 text-sm"
-      defaultOpen={!value}
     />
   )
 }
