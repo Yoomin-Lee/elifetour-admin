@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
+import ScrollToTop from './components/ScrollToTop'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import Pending from './pages/Pending'
@@ -44,6 +45,7 @@ function RoleRoute({ allow, children }) {
 export default function App() {
   return (
     <AuthProvider>
+      <ScrollToTop />
       <Toaster position="top-right" richColors closeButton duration={3000} />
       <Routes>
         <Route path="/login" element={<Login />} />
