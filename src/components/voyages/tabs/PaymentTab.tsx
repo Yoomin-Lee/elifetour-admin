@@ -288,18 +288,11 @@ export default function PaymentTab() {
                                 </div>
                                 <div>
                                   <label className="label">통화</label>
-                                  <div className="relative">
-                                    <Select
-                                      value={cell.currency}
-                                      onChange={e => updateCell(key, { currency: e.target.value })}
-                                      className="appearance-none pr-7"
-                                    >
-                                      {CURRENCIES.map(cur => (
-                                        <option key={cur} value={cur}>{cur}</option>
-                                      ))}
-                                    </Select>
-                                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                                  </div>
+                                  <FieldSelect
+                                    value={cell.currency}
+                                    options={CURRENCIES.map(cur => ({ value: cur, label: cur }))}
+                                    onChange={v => updateCell(key, { currency: v })}
+                                  />
                                 </div>
                               </div>
                               <div>

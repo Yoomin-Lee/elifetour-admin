@@ -154,24 +154,24 @@ export default function ItineraryCard({
               visible.map((r, i) => (
                 <div key={r._key} className="relative flex gap-2 items-start rounded-lg border border-slate-100 bg-slate-50/50 p-3">
                   <span className="mt-2 w-5 shrink-0 text-center text-xs text-slate-400">{i + 1}</span>
-                  <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-5">
-                    <div>
+                  <div className="grid flex-1 grid-cols-4 gap-2 sm:grid-cols-5">
+                    <div className="col-span-1">
                       <label className="label">날짜</label>
                       <DatePicker size="sm" value={r.date} onChange={v => upd(r._key, 'date', v)} placeholder="날짜" />
                     </div>
-                    <div className="sm:col-span-2">
+                    <div className="col-span-3 sm:col-span-2">
                       <label className="label">기항지</label>
                       <Input value={r.port} onChange={e => upd(r._key, 'port', e.target.value)} placeholder="바르셀로나 (스페인)" className="h-7 text-sm" />
                     </div>
-                    <div>
+                    <div className="col-span-2 sm:col-span-1">
                       <label className="label">도착</label>
                       <TimePicker size="sm" value={r.arrival_time} onChange={v => upd(r._key, 'arrival_time', v)} />
                     </div>
-                    <div>
+                    <div className="col-span-2 sm:col-span-1">
                       <label className="label">출발</label>
                       <TimePicker size="sm" value={r.departure_time} onChange={v => upd(r._key, 'departure_time', v)} />
                     </div>
-                    <div className="col-span-2 sm:col-span-5">
+                    <div className="col-span-4 sm:col-span-5">
                       <label className="label">비고</label>
                       <Input value={r.summary} onChange={e => upd(r._key, 'summary', e.target.value)} placeholder="주요 관광지, 이동 정보 등" className="h-7 text-sm" />
                     </div>
@@ -213,36 +213,38 @@ export default function ItineraryCard({
         {days.length === 0 ? (
           <p className="py-8 text-center text-sm text-slate-400">등록된 일정이 없습니다</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8">#</TableHead>
-                <TableHead>날짜</TableHead>
-                <TableHead>기항지</TableHead>
-                <TableHead>도착</TableHead>
-                <TableHead>출발</TableHead>
-                <TableHead>비고</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {days.map((d, i) => {
-                const isSea = d.port.includes(SEA_DAY)
-                return (
-                  <TableRow
-                    key={d.id}
-                    className={isSea ? 'bg-slate-50/80 text-slate-400' : ''}
-                  >
-                    <TableCell className="text-slate-400 text-xs">{i + 1}</TableCell>
-                    <TableCell className="whitespace-nowrap font-medium">{formatDate(d.date)}</TableCell>
-                    <TableCell className={isSea ? 'italic' : 'font-medium'}>{d.port}</TableCell>
-                    <TableCell>{formatTime(d.arrival_time)}</TableCell>
-                    <TableCell>{formatTime(d.departure_time)}</TableCell>
-                    <TableCell className="text-slate-500 text-xs max-w-48 truncate">{d.summary ?? ''}</TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[480px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8">#</TableHead>
+                  <TableHead className="whitespace-nowrap">날짜</TableHead>
+                  <TableHead>기항지</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">도착</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">출발</TableHead>
+                  <TableHead className="hidden sm:table-cell">비고</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {days.map((d, i) => {
+                  const isSea = d.port.includes(SEA_DAY)
+                  return (
+                    <TableRow
+                      key={d.id}
+                      className={isSea ? 'bg-slate-50/80 text-slate-400' : ''}
+                    >
+                      <TableCell className="text-slate-400 text-xs">{i + 1}</TableCell>
+                      <TableCell className="whitespace-nowrap font-medium">{formatDate(d.date)}</TableCell>
+                      <TableCell className={isSea ? 'italic' : 'font-medium'}>{d.port}</TableCell>
+                      <TableCell className="whitespace-nowrap hidden sm:table-cell">{formatTime(d.arrival_time)}</TableCell>
+                      <TableCell className="whitespace-nowrap hidden sm:table-cell">{formatTime(d.departure_time)}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-slate-500 text-xs max-w-48 truncate">{d.summary ?? ''}</TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
