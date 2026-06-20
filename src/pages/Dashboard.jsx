@@ -254,6 +254,7 @@ export default function Dashboard() {
                 key={id}
                 className={[
                   'relative transition-all',
+                  editMode ? 'cursor-default' : '',
                   isDragging ? 'opacity-30 scale-95' : '',
                   isOver
                     ? 'ring-2 ring-brand/50 rounded-xl'
