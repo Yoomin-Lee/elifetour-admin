@@ -157,7 +157,7 @@ export default function ItineraryCard({
                   <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-5">
                     <div>
                       <label className="label">날짜</label>
-                      <DatePicker value={r.date} onChange={v => upd(r._key, 'date', v)} placeholder="날짜" />
+                      <DatePicker size="sm" value={r.date} onChange={v => upd(r._key, 'date', v)} placeholder="날짜" />
                     </div>
                     <div className="sm:col-span-2">
                       <label className="label">기항지</label>
