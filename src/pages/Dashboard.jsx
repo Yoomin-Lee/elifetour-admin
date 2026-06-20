@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Ship, Anchor, Users, CreditCard, ChevronDown } from 'lucide-react'
+import { Ship, Anchor, Users, CreditCard, ChevronDown, Settings, X, Plus, AlertCircle } from 'lucide-react'
 import { fetchVoyageDashboardData } from '../lib/queries/voyages'
 
 const STATUS_ITEMS = [
@@ -9,6 +9,51 @@ const STATUS_ITEMS = [
   { key: '마감',     label: '마감',     dot: 'bg-orange-500'},
   { key: '출발완료', label: '출발완료', dot: 'bg-green-500' },
 ]
+
+// 사용 가능한 카드 전체 목록
+const CARD_DEFS = [
+  { id: 'on-sale',            label: '판매중 항차',      icon: Ship,         color: 'purple'                           },
+  { id: 'total-customers',    label: '총 예약 인원',     icon: Users,        color: 'blue'                             },
+  { id: 'this-month-departs', label: '이번달 출발',      icon: Anchor,       color: 'cyan'                             },
+  { id: 'this-month-pay',     label: '이번달 결제 마감', icon: CreditCard,   color: 'orange', link: '/voyages?tab=결제' },
+  { id: 'overdue',            label: '연체 결제',        icon: AlertCircle,  color: 'red',    link: '/voyages?tab=결제' },
+]
+
+const DEFAULT_IDS = ['on-sale', 'total-customers', 'this-month-departs', 'this-month-pay']
+const STORAGE_KEY = 'elifetour_dashboard_cards'
+
+function loadSavedIds() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const ids = JSON.parse(raw)
+      const valid = ids.filter(id => CARD_DEFS.some(d => d.id === id))
+      if (valid.length > 0) return valid
+    }
+  } catch {}
+  return DEFAULT_IDS
+}
+
+function getCardProps(id, { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, loading }) {
+  switch (id) {
+    case 'on-sale':
+      return { value: loading ? '…' : onSaleVoyages.length }
+    case 'total-customers':
+      return { value: loading ? '…' : `${totalCustomers.toLocaleString('ko-KR')}명` }
+    case 'this-month-departs':
+      return { value: loading ? '…' : thisMonthDepartures.length }
+    case 'this-month-pay':
+      return {
+        value: loading ? '…' : thisMonthPayments.length,
+        color: overdueCount > 0 ? 'red' : undefined,
+        sub: overdueCount > 0 ? `연체 ${overdueCount}건` : null,
+      }
+    case 'overdue':
+      return { value: loading ? '…' : `${overdueCount}건` }
+    default:
+      return {}
+  }
+}
 
 function StatCard({ label, value, icon: Icon, color, sub, link }) {
   const colors = {
@@ -93,11 +138,27 @@ export default function Dashboard() {
   const [loading, setLoading]   = useState(true)
   const [expandedId, setExpandedId] = useState(null)
 
+  const [activeIds, setActiveIds] = useState(loadSavedIds)
+  const [editMode, setEditMode]   = useState(false)
+  const [showAddMenu, setShowAddMenu] = useState(false)
+  const addMenuRef = useRef(null)
+
   useEffect(() => {
     fetchVoyageDashboardData()
       .then(setDash)
       .catch(() => {})
       .finally(() => setLoading(false))
+  }, [])
+
+  // 외부 클릭 시 추가 메뉴 닫기
+  useEffect(() => {
+    function handleClick(e) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target)) {
+        setShowAddMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
   const { onSaleVoyages, thisMonthDepartures, thisMonthPayments } = dash
@@ -107,6 +168,28 @@ export default function Dashboard() {
   const thisMonthStatusCounts = {}
   for (const v of thisMonthDepartures) {
     thisMonthStatusCounts[v.status] = (thisMonthStatusCounts[v.status] ?? 0) + 1
+  }
+
+  const computed = { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, loading }
+
+  const inactiveIds = CARD_DEFS.filter(d => !activeIds.includes(d.id)).map(d => d.id)
+
+  function removeCard(id) {
+    const next = activeIds.filter(i => i !== id)
+    setActiveIds(next)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  }
+
+  function addCard(id) {
+    const next = [...activeIds, id]
+    setActiveIds(next)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    setShowAddMenu(false)
+  }
+
+  function exitEdit() {
+    setEditMode(false)
+    setShowAddMenu(false)
   }
 
   function toggle(id) {
@@ -121,33 +204,87 @@ export default function Dashboard() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard
-          label="판매중 항차"
-          value={loading ? '…' : onSaleVoyages.length}
-          icon={Ship}
-          color="purple"
-        />
-        <StatCard
-          label="총 예약 인원"
-          value={loading ? '…' : `${totalCustomers.toLocaleString('ko-KR')}명`}
-          icon={Users}
-          color="blue"
-        />
-        <StatCard
-          label="이번달 출발"
-          value={loading ? '…' : thisMonthDepartures.length}
-          icon={Anchor}
-          color="cyan"
-        />
-        <StatCard
-          label="이번달 결제 마감"
-          value={loading ? '…' : thisMonthPayments.length}
-          icon={CreditCard}
-          color={overdueCount > 0 ? 'red' : 'orange'}
-          sub={overdueCount > 0 ? `연체 ${overdueCount}건` : null}
-          link="/voyages?tab=결제"
-        />
+      <div>
+        <div className="flex items-center justify-between mb-2.5">
+          <span className="text-xs font-medium text-slate-400">통계 요약</span>
+          {editMode ? (
+            <button
+              onClick={exitEdit}
+              className="text-xs font-medium text-brand hover:underline"
+            >
+              완료
+            </button>
+          ) : (
+            <button
+              onClick={() => setEditMode(true)}
+              className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              편집
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {activeIds.map(id => {
+            const def = CARD_DEFS.find(d => d.id === id)
+            if (!def) return null
+            const props = getCardProps(id, computed)
+            return (
+              <div key={id} className="relative">
+                <StatCard
+                  label={def.label}
+                  icon={def.icon}
+                  color={props.color ?? def.color}
+                  value={props.value}
+                  sub={props.sub}
+                  link={editMode ? undefined : def.link}
+                />
+                {editMode && (
+                  <button
+                    onClick={() => removeCard(id)}
+                    className="absolute -top-1.5 -right-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-slate-600 text-white shadow hover:bg-red-500 transition"
+                    title="카드 제거"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            )
+          })}
+
+          {/* 편집 모드: 카드 추가 버튼 */}
+          {editMode && inactiveIds.length > 0 && (
+            <div className="relative" ref={addMenuRef}>
+              <button
+                onClick={() => setShowAddMenu(v => !v)}
+                className="flex h-full min-h-[80px] w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-sm text-slate-400 hover:border-brand/40 hover:text-brand transition"
+              >
+                <Plus className="h-4 w-4" />
+                카드 추가
+              </button>
+              {showAddMenu && (
+                <div className="absolute left-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                  {inactiveIds.map(id => {
+                    const def = CARD_DEFS.find(d => d.id === id)
+                    if (!def) return null
+                    const Icon = def.icon
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => addCard(id)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition"
+                      >
+                        <Icon className="h-4 w-4 text-slate-400" />
+                        {def.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 메인 그리드: 좌 3 / 우 2 */}
@@ -167,7 +304,6 @@ export default function Dashboard() {
                 const isOpen = expandedId === v.id
                 return (
                   <div key={v.id}>
-                    {/* 요약 행: 클릭 → 항차 마스터 바로가기 / 화살표 → 아코디언 */}
                     <div className="flex items-center hover:bg-slate-50/60 transition">
                       <Link
                         to={`/voyages?tab=항차검색&voyage=${v.id}`}
@@ -196,7 +332,6 @@ export default function Dashboard() {
                       </button>
                     </div>
 
-                    {/* 펼침 상세 */}
                     {isOpen && (
                       <div className="px-5 py-4 bg-slate-50/70 border-t border-slate-100 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
                         <DetailItem label="귀항일"   value={formatDate(v.return_date)} />
