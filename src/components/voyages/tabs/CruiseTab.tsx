@@ -51,6 +51,7 @@ const CRUISE_LINES: Record<string, string[]> = {
 }
 const ALL_SHIPS = Object.values(CRUISE_LINES).flat()
 const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
+const AGENTS = ['TMK', 'COSTA', 'ONLINE', 'DONGBO', 'VASCO', 'FLORENCE']
 
 // ── SelectOrInput ─────────────────────────────────────────────────────────
 const CUSTOM = '__CUSTOM__'
@@ -574,7 +575,13 @@ export default function CruiseTab() {
                           </div>
                           <div className="w-28">
                             <label className="label">에이전트</label>
-                            <Input value={editForm.agent} onChange={set('agent')} placeholder="현지 파트너" className="h-7 text-sm" />
+                            <SelectOrInput
+                              key={`${editingId}-ag`}
+                              value={editForm.agent}
+                              onChange={v => setField('agent', v)}
+                              options={AGENTS}
+                              placeholder="에이전트…"
+                            />
                           </div>
                           <div className="w-24">
                             <label className="label">캐빈등급</label>
