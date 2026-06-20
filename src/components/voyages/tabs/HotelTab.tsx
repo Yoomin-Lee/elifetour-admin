@@ -2,14 +2,13 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Check, X, ChevronDown, ExternalLink } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Check, X, ExternalLink } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { useAuth } from '@/context/AuthContext'
 import { fetchAllHotels, addHotel, updateHotel, deleteHotel, restoreHotel, fetchVoyages } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { FieldSelect } from '@/components/ui/field-select'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
@@ -96,12 +95,12 @@ function HotelFormFields({
       </div>
       <div>
         <label className="label">통화</label>
-        <div className="relative">
-          <Select value={form.currency} onChange={set('currency')} className="h-7 py-0 text-sm appearance-none pr-7">
-            {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </Select>
-          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-        </div>
+        <FieldSelect
+          value={form.currency}
+          options={[...CURRENCIES]}
+          onChange={v => setForm(prev => ({ ...prev, currency: v }))}
+          className="h-7 text-sm"
+        />
       </div>
       <div>
         <label className="label">객실요금</label>
