@@ -254,9 +254,10 @@ export default function Dashboard() {
                 key={id}
                 className={[
                   'relative transition-all',
-                  editMode ? 'cursor-grab active:cursor-grabbing' : '',
                   isDragging ? 'opacity-30 scale-95' : '',
-                  isOver ? 'ring-2 ring-brand/50 rounded-xl' : '',
+                  isOver
+                    ? 'ring-2 ring-brand/50 rounded-xl'
+                    : editMode ? 'hover:ring-2 hover:ring-slate-800 hover:rounded-xl' : '',
                 ].join(' ')}
                 draggable={editMode}
                 onDragStart={() => setDraggedId(id)}
