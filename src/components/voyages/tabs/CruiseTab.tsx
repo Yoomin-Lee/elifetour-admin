@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { YearSelect } from '@/components/ui/year-select'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Pencil, Check, X, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
+import { Search, Pencil, Check, X, ChevronRight, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades, fetchAllCabinGrades } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
@@ -53,6 +53,8 @@ const ALL_SHIPS = Object.values(CRUISE_LINES).flat()
 const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
 
 // ── SelectOrInput ─────────────────────────────────────────────────────────
+const CUSTOM = '__CUSTOM__'
+
 function SelectOrInput({
   value,
   onChange,
@@ -64,7 +66,6 @@ function SelectOrInput({
   options: string[]
   placeholder?: string
 }) {
-  const CUSTOM = '__CUSTOM__'
   const [isCustom, setIsCustom] = useState(() => value !== '' && !options.includes(value))
 
   if (isCustom) {
@@ -89,21 +90,16 @@ function SelectOrInput({
   }
 
   return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={e => {
-          if (e.target.value === CUSTOM) { setIsCustom(true); onChange('') }
-          else onChange(e.target.value)
-        }}
-        className="select h-7 py-0 text-sm appearance-none pr-7 w-full"
-      >
-        <option value="">{placeholder}</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-        <option value={CUSTOM}>✏ 직접 입력</option>
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-    </div>
+    <FieldSelect
+      value={value}
+      options={[...options, { value: CUSTOM, label: '✏ 직접 입력' }]}
+      onChange={v => {
+        if (v === CUSTOM) { setIsCustom(true); onChange('') }
+        else onChange(v)
+      }}
+      placeholder={placeholder}
+      className="h-7 text-sm"
+    />
   )
 }
 
@@ -267,15 +263,12 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
                       placeholder="—" className="input h-6 text-xs text-right w-full" />
                   </td>
                   <td className="py-1 pr-1">
-                    <div className="relative">
-                      <select value={draft.currency} onChange={e => setField('currency', e.target.value)}
-                        className="select h-6 text-xs w-full appearance-none pr-5">
-                        <option value="KRW">KRW</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
-                    </div>
+                    <FieldSelect
+                      value={draft.currency}
+                      options={['USD', 'EUR']}
+                      onChange={v => setField('currency', v)}
+                      className="h-6 text-xs"
+                    />
                   </td>
                 </tr>
               ) : grade && (
@@ -615,7 +608,7 @@ export default function CruiseTab() {
                             <label className="label">통화</label>
                             <FieldSelect
                               value={editForm.cabin_currency}
-                              options={['KRW', 'USD', 'EUR']}
+                              options={['USD', 'EUR']}
                               onChange={v => setField('cabin_currency', v)}
                               className="h-7 text-sm px-2"
                             />
