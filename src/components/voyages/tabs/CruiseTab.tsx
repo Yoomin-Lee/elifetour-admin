@@ -454,22 +454,22 @@ export default function CruiseTab() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[1280px] w-full text-xs table-fixed">
+        <table className="min-w-[920px] w-full text-xs table-fixed">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-2 py-2.5 w-8" />
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">승선일</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">하선일</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-32">행사명</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">승선일</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">하선일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">선사</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">크루즈</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">에이전트</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">캐빈등급</th>
-              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-16 whitespace-nowrap">보유캐빈</th>
-              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-16 whitespace-nowrap">예약캐빈</th>
-              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-16 whitespace-nowrap">잔여캐빈</th>
-              <th className="px-3 py-2.5 w-12" />
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">크루즈</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">에이전트</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-16">캐빈등급</th>
+              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-14 whitespace-nowrap">보유캐빈</th>
+              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-14 whitespace-nowrap">예약캐빈</th>
+              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-14 whitespace-nowrap">잔여캐빈</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-24">캐빈가</th>
+              <th className="px-3 py-2.5 w-10" />
             </tr>
           </thead>
           <tbody>
@@ -534,6 +534,9 @@ export default function CruiseTab() {
                         {remaining}
                       </span>
                     </td>
+                    <td className="px-3 py-2 text-right text-slate-700">
+                      {primaryGrade ? formatPrice(primaryGrade.price_per_person, primaryGrade.currency) : '—'}
+                    </td>
                     <td className="px-3 py-2 text-right">
                       {!isEdit && canWrite && (
                         <button onClick={() => startEdit(v)}
@@ -542,9 +545,6 @@ export default function CruiseTab() {
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                       )}
-                    </td>
-                    <td className="px-3 py-2 text-right text-slate-700">
-                      {primaryGrade ? formatPrice(primaryGrade.price_per_person, primaryGrade.currency) : '—'}
                     </td>
                   </tr>
 
