@@ -50,7 +50,7 @@ const CRUISE_LINES: Record<string, string[]> = {
   'Carnival': ['Carnival Jubilee', 'Carnival Celebration', 'Carnival Luminosa'],
 }
 const ALL_SHIPS = Object.values(CRUISE_LINES).flat()
-const CABIN_GRADES = ['1D', '2D', '3D', '3D(FIT)', '4D', '4U', 'BA2', 'BM1', 'BR1', 'VC', 'VD', 'VE']
+const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
 
 // ── SelectOrInput ─────────────────────────────────────────────────────────
 function SelectOrInput({
@@ -137,7 +137,7 @@ type DraftGrade = {
   id: string; grade: string; total: number; reserved: number
   price_per_person: number | null; currency: string; sort_order: number
 }
-const DEFAULT_GRADES = ['1D', '2D', '3D', '3D(FIT)', '4D', '4U', 'BA2', 'BM1', 'BR1', 'VC', 'VD', 'VE']
+const DEFAULT_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
 
 function formatPrice(price: number | null, currency: string): string {
   if (price == null) return '—'
