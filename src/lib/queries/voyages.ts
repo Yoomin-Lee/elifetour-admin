@@ -355,6 +355,13 @@ export async function deleteCancellationPolicy(id: string): Promise<void> {
   if (error) throw error
 }
 
+export async function restoreCancellationPolicy(snapshot: CancellationPolicy): Promise<void> {
+  const { error } = await sb()
+    .from('cancellation_policies')
+    .upsert(snapshot, { onConflict: 'id' })
+  if (error) throw error
+}
+
 // ── CabinGrade CRUD ───────────────────────────────────────────────────────
 
 export async function fetchCabinGrades(voyageId: string): Promise<CabinGrade[]> {
