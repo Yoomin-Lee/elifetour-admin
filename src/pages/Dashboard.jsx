@@ -263,10 +263,21 @@ export default function Dashboard() {
                 ].join(' ')}
                 style={editMode ? { cursor: NAVY_CURSOR } : {}}
                 draggable={editMode}
-                onDragStart={e => { e.dataTransfer.setDragImage(new Image(), 0, 0); document.body.style.cursor = NAVY_CURSOR; setDraggedId(id) }}
+                onDragStart={e => {
+                  e.dataTransfer.setDragImage(new Image(), 0, 0)
+                  const el = document.createElement('style')
+                  el.id = '__drag_cursor__'
+                  el.textContent = `* { cursor: ${NAVY_CURSOR} !important; }`
+                  document.head.appendChild(el)
+                  setDraggedId(id)
+                }}
                 onDragOver={e => { e.preventDefault(); setDragOverId(id) }}
                 onDrop={() => handleDrop(id)}
-                onDragEnd={() => { document.body.style.cursor = ''; setDraggedId(null); setDragOverId(null) }}
+                onDragEnd={() => {
+                  document.getElementById('__drag_cursor__')?.remove()
+                  setDraggedId(null)
+                  setDragOverId(null)
+                }}
               >
                 <StatCard
                   label={def.label}
