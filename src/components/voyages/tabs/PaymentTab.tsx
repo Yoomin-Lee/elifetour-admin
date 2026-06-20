@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Check, Save, Trash2, ExternalLink } from 'lucide-react'
@@ -83,8 +83,15 @@ function formatAmount(amount: string, currency: string): string {
 
 export default function PaymentTab() {
   const navigate = useNavigate()
-  const [voyageId, setVoyageId] = useState('')
+  const [searchParams] = useSearchParams()
+  const urlVoyageId = searchParams.get('voyage') ?? ''
+  const [voyageId, setVoyageId] = useState(urlVoyageId)
   const [yearFilter, setYearFilter] = useState<string>('ALL')
+
+  // URL voyage 파라미터가 바뀌면 선택 행사 동기화
+  useEffect(() => {
+    if (urlVoyageId) setVoyageId(urlVoyageId)
+  }, [urlVoyageId])
   const [editing, setEditing] = useState<DraftKey | null>(null)
   const [drafts, setDrafts] = useState<Record<DraftKey, DraftCell>>({})
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null)

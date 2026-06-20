@@ -116,8 +116,8 @@ export default function CalendarTab() {
     [payments],
   )
 
-  const goToVoyage = (id: string) =>
-    navigate(`/voyages?tab=항차검색&voyage=${id}`)
+  const goToVoyage   = (id: string) => navigate(`/voyages?tab=항차검색&voyage=${id}`)
+  const goToPayment  = (id: string) => navigate(`/voyages?tab=결제&voyage=${id}`)
 
   const isLoading = voyagesLoading || paymentsFetching
 
@@ -246,10 +246,11 @@ export default function CalendarTab() {
                     {dayPayments.length > 0 && (
                       <div className="mt-0.5 pt-0.5 border-t border-slate-100 space-y-0.5">
                         {dayPayments.slice(0, MAX_PAYMENT_SHOW).map(p => (
-                          <div
+                          <button
                             key={p.id}
-                            title={`${PAYMENT_CATEGORY_LABEL[p.category]} ${PAYMENT_TYPE_SHORT[p.payment_type]} 마감${p.voyages ? ` · ${p.voyages.region}` : ''}`}
-                            className={`w-full flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded border border-dashed truncate ${
+                            onClick={() => goToPayment(p.voyage_id)}
+                            title={`${PAYMENT_CATEGORY_LABEL[p.category]} ${PAYMENT_TYPE_SHORT[p.payment_type]} 마감${p.voyages ? ` · ${p.voyages.region}` : ''} — 결제 탭에서 보기`}
+                            className={`w-full flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded border border-dashed truncate transition hover:opacity-75 ${
                               p.is_completed
                                 ? 'opacity-40 line-through bg-slate-50 border-slate-200 text-slate-400'
                                 : PAYMENT_STYLE[p.category]
@@ -262,7 +263,7 @@ export default function CalendarTab() {
                               {PAYMENT_TYPE_SHORT[p.payment_type]}
                               {p.voyages && ` ${p.voyages.region}`}
                             </span>
-                          </div>
+                          </button>
                         ))}
                         {dayPayments.length > MAX_PAYMENT_SHOW && (
                           <p className="text-[10px] text-slate-400 px-1">
@@ -353,9 +354,10 @@ export default function CalendarTab() {
           ) : (
             <div className="space-y-1">
               {paymentsThisMonth.map(p => (
-                <div
+                <button
                   key={p.id}
-                  className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${
+                  onClick={() => goToPayment(p.voyage_id)}
+                  className={`w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-slate-50 ${
                     p.is_completed ? 'opacity-50' : ''
                   }`}
                 >
@@ -373,7 +375,7 @@ export default function CalendarTab() {
                   {p.is_completed && (
                     <Check className="h-3.5 w-3.5 shrink-0 text-green-500" />
                   )}
-                </div>
+                </button>
               ))}
             </div>
           )}

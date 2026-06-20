@@ -63,7 +63,7 @@ function VoyageMasterInner() {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
       next.set('tab', key)
-      if (key !== '항차검색') next.delete('voyage')
+      if (key !== '항차검색' && key !== '결제') next.delete('voyage')
       return next
     })
   }
