@@ -468,8 +468,8 @@ export default function CruiseTab() {
               <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-16 whitespace-nowrap">보유캐빈</th>
               <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-16 whitespace-nowrap">예약캐빈</th>
               <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-16 whitespace-nowrap">잔여캐빈</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-24">캐빈가</th>
               <th className="px-3 py-2.5 w-12" />
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-24">캐빈가</th>
             </tr>
           </thead>
           <tbody>
@@ -534,9 +534,6 @@ export default function CruiseTab() {
                         {remaining}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-700">
-                      {primaryGrade ? formatPrice(primaryGrade.price_per_person, primaryGrade.currency) : '—'}
-                    </td>
                     <td className="px-3 py-2 text-right">
                       {!isEdit && canWrite && (
                         <button onClick={() => startEdit(v)}
@@ -545,6 +542,9 @@ export default function CruiseTab() {
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                       )}
+                    </td>
+                    <td className="px-3 py-2 text-right text-slate-700">
+                      {primaryGrade ? formatPrice(primaryGrade.price_per_person, primaryGrade.currency) : '—'}
                     </td>
                   </tr>
 
