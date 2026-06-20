@@ -45,13 +45,20 @@ export default function HistoryTab() {
     return Array.from(ys).sort().reverse()
   }, [data])
 
-  const filtered = data.filter(r => {
-    if (yearFilter !== 'ALL' && !r.voyages?.departure_date?.startsWith(yearFilter)) return false
-    return !filter ||
-      (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
-      (r.author ?? '').includes(filter) ||
-      r.content.includes(filter)
-  })
+  const filtered = data
+    .filter(r => {
+      if (yearFilter !== 'ALL' && !r.voyages?.departure_date?.startsWith(yearFilter)) return false
+      return !filter ||
+        (r.voyages && voyageTitle(r.voyages).toLowerCase().includes(filter.toLowerCase())) ||
+        (r.author ?? '').includes(filter) ||
+        r.content.includes(filter)
+    })
+    .sort((a, b) => {
+      const depA = a.voyages?.departure_date ?? ''
+      const depB = b.voyages?.departure_date ?? ''
+      if (depB !== depA) return depB.localeCompare(depA)
+      return b.logged_at.localeCompare(a.logged_at)
+    })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) =>
