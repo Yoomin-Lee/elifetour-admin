@@ -549,8 +549,8 @@ export default function CruiseTab() {
                         {saveMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8 mb-2">
-                          <div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-2 mb-2">
+                          <div className="w-36">
                             <label className="label">선사</label>
                             <SelectOrInput
                               key={`${editingId}-cl`}
@@ -560,7 +560,7 @@ export default function CruiseTab() {
                               placeholder="선사 선택…"
                             />
                           </div>
-                          <div>
+                          <div className="w-52">
                             <label className="label">크루즈 선박명</label>
                             <SelectOrInput
                               key={`${editingId}-sn`}
@@ -572,46 +572,46 @@ export default function CruiseTab() {
                               placeholder="선박명 선택…"
                             />
                           </div>
-                          <div>
+                          <div className="w-28">
                             <label className="label">에이전트</label>
                             <Input value={editForm.agent} onChange={set('agent')} placeholder="현지 파트너" className="h-7 text-sm" />
                           </div>
-                          <div>
+                          <div className="w-24">
                             <label className="label">캐빈등급</label>
                             <SelectOrInput
                               key={`${editingId}-cg`}
                               value={editForm.cabin_grade}
                               onChange={v => setField('cabin_grade', v)}
                               options={CABIN_GRADES}
-                              placeholder="등급 선택…"
+                              placeholder="등급…"
                             />
                           </div>
-                          <div>
+                          <div className="w-20">
                             <label className="label">보유 캐빈</label>
                             <Input type="number" min={0} value={editForm.cabin_total} onChange={set('cabin_total')} className="h-7 text-sm" />
                           </div>
-                          <div>
+                          <div className="w-20">
                             <label className="label">잔여 캐빈</label>
                             <Input type="number" min={0} value={editForm.cabin_remaining} onChange={set('cabin_remaining')} className="h-7 text-sm" />
                           </div>
-                          <div>
+                          <div className="w-24">
                             <label className="label">캐빈가 (1인)</label>
                             <Input
                               type="number"
                               min={0}
                               value={editForm.cabin_price}
                               onChange={set('cabin_price')}
-                              placeholder="가격 입력"
+                              placeholder="가격"
                               className="h-7 text-sm"
                             />
                           </div>
-                          <div>
+                          <div className="w-20">
                             <label className="label">통화</label>
                             <FieldSelect
                               value={editForm.cabin_currency}
                               options={['USD', 'EUR']}
                               onChange={v => setField('cabin_currency', v)}
-                              className="h-7 text-sm px-2"
+                              className="h-7 text-sm"
                             />
                           </div>
                         </div>
