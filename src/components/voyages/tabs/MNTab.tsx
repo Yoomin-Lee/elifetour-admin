@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, RotateCcw, AlertTriangle } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, RotateCcw, AlertTriangle, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
   fetchMnSections,
@@ -32,6 +32,7 @@ function emptySection(category: Category): Omit<MnSection, 'id'> {
     category,
     title: '',
     description: null,
+    reference_url: null,
     row_type: category === '팁' ? 'tip' : 'rule',
     rows: category === '팁' ? [{ ...EMPTY_TIP_ROW }] : [{ ...EMPTY_RULE_ROW }],
     sort_order: 99,
@@ -204,6 +205,16 @@ function SectionForm({
             rows={2} placeholder="추가 설명 (줄바꿈 가능)"
             className="input text-sm resize-none" />
         </div>
+        <div className="col-span-2">
+          <label className="label">참조 링크 (URL)</label>
+          <input
+            type="url"
+            value={form.reference_url ?? ''}
+            onChange={e => setForm(s => ({ ...s, reference_url: e.target.value || null }))}
+            placeholder="https://..."
+            className="input text-sm"
+          />
+        </div>
         <div>
           <label className="label">순서</label>
           <input type="number" value={form.sort_order}
@@ -250,20 +261,33 @@ function SectionCard({
         <h3 className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex-1 min-w-0 truncate">
           {section.title}
         </h3>
-        {canWrite && (
-          <div className="flex items-center gap-1 shrink-0">
-            <button onClick={onEdit}
-              className="rounded p-1 text-slate-400 hover:text-brand hover:bg-slate-100 transition"
-              title="편집">
-              <Pencil className="h-3 w-3" />
-            </button>
-            <button onClick={onDelete}
-              className="rounded p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 transition"
-              title="삭제">
-              <Trash2 className="h-3 w-3" />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {section.reference_url && (
+            <a
+              href={section.reference_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium text-brand bg-brand/10 hover:bg-brand/20 transition"
+              title="참조 링크 열기"
+            >
+              <ExternalLink className="h-3 w-3" />참조
+            </a>
+          )}
+          {canWrite && (
+            <>
+              <button onClick={onEdit}
+                className="rounded p-1 text-slate-400 hover:text-brand hover:bg-slate-100 transition"
+                title="편집">
+                <Pencil className="h-3 w-3" />
+              </button>
+              <button onClick={onDelete}
+                className="rounded p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 transition"
+                title="삭제">
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
       <div className="p-4">
         {section.description && (

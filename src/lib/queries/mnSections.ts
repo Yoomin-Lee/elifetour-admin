@@ -13,6 +13,7 @@ export type MnSection = {
   category: string
   title: string
   description: string | null
+  reference_url: string | null
   row_type: 'rule' | 'tip'
   rows: MnRow[]
   sort_order: number
