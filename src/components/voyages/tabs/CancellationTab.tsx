@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Pencil, Trash2, Check, X, ExternalLink } from 'lucide-react'
+import { Search, Pencil, Trash2, Check, X, ExternalLink, Zap } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -19,6 +19,25 @@ import { YearSelect } from '@/components/ui/year-select'
 import type { CancellationPolicy } from '@/types/database'
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP']
+
+function calcDMinus(departureDate?: string | null): number | null {
+  if (!departureDate) return null
+  const dep = new Date(departureDate + 'T00:00:00')
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.ceil((dep.getTime() - today.getTime()) / 86400000)
+}
+
+function isActivePolicyRow(
+  start_d_minus: number | null,
+  end_d_minus: number | null,
+  d: number | null,
+): boolean {
+  if (d === null || d < 0) return false
+  const inStart = start_d_minus == null || d <= start_d_minus
+  const inEnd   = end_d_minus   == null || d >= end_d_minus
+  return inStart && inEnd
+}
 
 type CancelForm = {
   category: string
@@ -186,6 +205,7 @@ export default function CancellationTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">구분</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">기준출발일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">D-day 범위</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-14">현재</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">취소료(인당)</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-16">통화</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500">비고</th>
@@ -194,16 +214,18 @@ export default function CancellationTab() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading && (
-              <tr><td colSpan={8} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
+              <tr><td colSpan={9} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
             )}
             {!isLoading && filtered.length === 0 && (
-              <tr><td colSpan={8} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
+              <tr><td colSpan={9} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
             {filtered.map(r => {
               const isEdit = editingId === r.id
+              const d = calcDMinus(r.voyages?.departure_date)
+              const active = isActivePolicyRow(r.start_d_minus, r.end_d_minus, d)
               return (
                 <>
-                  <tr key={r.id} className="hover:bg-slate-50">
+                  <tr key={r.id} className={active ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-slate-50'}>
                     <td className="px-3 py-2 whitespace-nowrap">
                       {r.voyages ? (
                         <button
@@ -221,6 +243,13 @@ export default function CancellationTab() {
                       {r.voyages ? formatDate(r.voyages.departure_date) : '—'}
                     </td>
                     <td className="px-3 py-2 font-mono text-slate-700">{dRange(r)}</td>
+                    <td className="px-3 py-2">
+                      {active && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                          <Zap className="h-2.5 w-2.5" />적용중
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 font-medium text-slate-800">{feeText(r)}</td>
                     <td className="px-3 py-2 text-slate-500">{r.fee_unit ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-500">{r.note ?? ''}</td>
@@ -250,7 +279,7 @@ export default function CancellationTab() {
 
                   {isEdit && (
                     <tr key={`${r.id}-edit`}>
-                      <td colSpan={8} className="px-4 py-3 bg-brand/5 border-t border-brand/10">
+                      <td colSpan={9} className="px-4 py-3 bg-brand/5 border-t border-brand/10">
                         {editMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
