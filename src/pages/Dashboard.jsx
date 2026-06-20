@@ -142,6 +142,7 @@ export default function Dashboard() {
 
   const [activeIds, setActiveIds] = useState(loadSavedIds)
   const [editMode, setEditMode]   = useState(false)
+  const [beforeIds, setBeforeIds] = useState([])
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [draggedId, setDraggedId] = useState(null)
   const [dragOverId, setDragOverId] = useState(null)
@@ -204,11 +205,22 @@ export default function Dashboard() {
     setDragOverId(null)
   }
 
+  function enterEdit() {
+    setBeforeIds([...activeIds])
+    setEditMode(true)
+  }
+
   function exitEdit() {
     setEditMode(false)
     setShowAddMenu(false)
     setDraggedId(null)
     setDragOverId(null)
+  }
+
+  function cancelEdit() {
+    setActiveIds(beforeIds)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(beforeIds))
+    exitEdit()
   }
 
   function toggle(id) {
@@ -227,15 +239,23 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-xs font-medium text-slate-400">통계 요약</span>
           {editMode ? (
-            <button
-              onClick={exitEdit}
-              className="text-xs font-medium text-brand hover:underline"
-            >
-              완료
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={cancelEdit}
+                className="text-xs text-slate-400 hover:text-slate-600 transition"
+              >
+                취소
+              </button>
+              <button
+                onClick={exitEdit}
+                className="text-xs font-medium text-brand hover:underline"
+              >
+                완료
+              </button>
+            </div>
           ) : (
             <button
-              onClick={() => setEditMode(true)}
+              onClick={enterEdit}
               className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition"
             >
               <Settings className="h-3.5 w-3.5" />
