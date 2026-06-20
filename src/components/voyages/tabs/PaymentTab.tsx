@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, Save, Trash2, ChevronDown, ExternalLink } from 'lucide-react'
+import { Check, Save, Trash2, ExternalLink } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { fetchVoyages } from '@/lib/queries/voyages'
 import {
@@ -13,8 +13,8 @@ import {
 } from '@/lib/queries/paymentSchedules'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { YearSelect } from '@/components/ui/year-select'
+import { FieldSelect } from '@/components/ui/field-select'
 import { voyageTitle } from '@/types/database'
 import type { PaymentCategory, PaymentType, PaymentSchedule } from '@/types/database'
 
@@ -199,19 +199,13 @@ export default function PaymentTab() {
               if (sel && y !== 'ALL' && !sel.departure_date?.startsWith(y)) setVoyageId('')
             }}
           />
-          <div className="relative">
-            <Select
-              value={voyageId}
-              onChange={e => setVoyageId(e.target.value)}
-              className="h-9 py-0 text-sm appearance-none pr-7 w-72"
-            >
-              <option value="">행사를 선택하세요</option>
-              {filteredVoyages.map(v => (
-                <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
-              ))}
-            </Select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          </div>
+          <FieldSelect
+            value={voyageId}
+            options={filteredVoyages.map(v => ({ value: v.id, label: voyageTitle(v) }))}
+            onChange={setVoyageId}
+            placeholder="행사를 선택하세요"
+            className="w-72"
+          />
           {voyageId && (
             <button
               onClick={() => navigate(`/voyages?tab=항차검색&voyage=${voyageId}`)}
