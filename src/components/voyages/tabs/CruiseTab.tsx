@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { YearSelect } from '@/components/ui/year-select'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Pencil, Check, X, ChevronRight, ExternalLink } from 'lucide-react'
+import { Search, Pencil, Check, X, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades, fetchAllCabinGrades } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
@@ -81,9 +81,10 @@ function SelectOrInput({
         <button
           type="button"
           onClick={() => { setIsCustom(false); onChange('') }}
-          className="shrink-0 flex h-7 items-center rounded border border-slate-200 px-2 text-xs text-slate-400 hover:bg-slate-100 transition"
+          className="shrink-0 flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-400 hover:bg-slate-100 transition"
+          title="목록으로 돌아가기"
         >
-          목록
+          <ChevronDown className="h-3.5 w-3.5" />
         </button>
       </div>
     )
