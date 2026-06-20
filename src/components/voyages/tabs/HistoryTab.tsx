@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -29,7 +29,15 @@ export default function HistoryTab() {
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null)
   const qc = useQueryClient()
+
+  useEffect(() => {
+    const el = editTextareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }, [editText, editingId])
 
   const { data = [], isLoading } = useQuery({
     queryKey: ['all-history'],
@@ -176,16 +184,17 @@ export default function HistoryTab() {
                 <td className="px-3 py-2 text-slate-700 leading-relaxed">
                   {editingId === r.id ? (
                     <textarea
+                      ref={editTextareaRef}
                       value={editText}
-                      ref={el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } }}
-                      onChange={e => { setEditText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
+                      onChange={e => setEditText(e.target.value)}
                       onKeyDown={e => {
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(r.id)
                         if (e.key === 'Escape') cancelEdit()
                       }}
-                      rows={3}
+                      rows={1}
                       autoFocus
                       className="w-full resize-none rounded border border-brand px-2 py-1 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand/30"
+                      style={{ minHeight: '4rem' }}
                     />
                   ) : (
                     r.content

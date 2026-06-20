@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Send, Pencil, Trash2, Check, X } from 'lucide-react'
@@ -34,7 +34,15 @@ export default function HistoryCard({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null)
   const qc = useQueryClient()
+
+  useEffect(() => {
+    const el = editTextareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }, [editText, editingId])
 
   const addMutation = useMutation({
     mutationFn: () => addHistoryLog(voyageId, text.trim(), author),
@@ -173,16 +181,17 @@ export default function HistoryCard({
                 {editingId === log.id ? (
                   <div className="space-y-2">
                     <textarea
+                      ref={editTextareaRef}
                       value={editText}
-                      ref={el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } }}
-                      onChange={e => { setEditText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
+                      onChange={e => setEditText(e.target.value)}
                       onKeyDown={e => {
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(log.id)
                         if (e.key === 'Escape') cancelEdit()
                       }}
-                      rows={3}
+                      rows={1}
                       autoFocus
                       className="w-full resize-none rounded-lg border border-brand px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand/20 transition"
+                      style={{ minHeight: '4.5rem' }}
                     />
                     <div className="flex items-center gap-1.5">
                       <button
