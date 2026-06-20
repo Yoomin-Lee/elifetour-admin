@@ -245,12 +245,12 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
               {isEditing && draft ? (
                 <tr>
                   <td className="py-1">
-                    <input value={draft.grade} onChange={e => setField('grade', e.target.value)}
-                      placeholder="내측, 오션뷰…" list="grade-suggestions"
-                      className="input h-6 text-xs w-full" />
-                    <datalist id="grade-suggestions">
-                      {DEFAULT_GRADES.map(s => <option key={s} value={s} />)}
-                    </datalist>
+                    <SelectOrInput
+                      value={draft.grade}
+                      onChange={v => setField('grade', v)}
+                      options={DEFAULT_GRADES}
+                      placeholder="등급 선택…"
+                    />
                   </td>
                   <td className="py-1 pr-1">
                     <input type="number" min={0} value={draft.total} onChange={e => setField('total', Number(e.target.value))}
