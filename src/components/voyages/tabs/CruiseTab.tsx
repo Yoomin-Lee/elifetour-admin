@@ -162,7 +162,7 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
     mutationFn: () => {
       if (!draft) return saveCabinGrades(voyageId, [], grades.map(g => g.id))
       const { _key, _isNew, _deleted, id, ...rest } = draft
-      const toSave = [{ id: _isNew ? undefined : id, ...rest }]
+      const toSave = [{ id: _isNew ? undefined : id, ...rest, grade: rest.grade || '기본' }]
       const deletedIds = grades.filter(g => g.id !== id).map(g => g.id)
       return saveCabinGrades(voyageId, toSave, deletedIds)
     },
@@ -344,21 +344,22 @@ export default function CruiseTab() {
       })
       const existing = gradeMap[id]?.[0]
       const gradeToSave = editForm.cabin_grade || existing?.grade
-      if (gradeToSave) {
-        const priceToSave = editForm.cabin_price !== ''
-          ? Number(editForm.cabin_price)
-          : (existing?.price_per_person ?? null)
+      const priceToSave = editForm.cabin_price !== ''
+        ? Number(editForm.cabin_price)
+        : (existing?.price_per_person ?? null)
+      if (gradeToSave || editForm.cabin_price !== '') {
+        const finalGrade = gradeToSave || '기본'
         const currencyToSave = editForm.cabin_currency || existing?.currency || 'KRW'
         if (existing) {
           await saveCabinGrades(id, [{
-            id: existing.id, grade: gradeToSave,
+            id: existing.id, grade: finalGrade,
             total: existing.total, reserved: existing.reserved,
             price_per_person: priceToSave,
             currency: currencyToSave, sort_order: 0,
           }], [])
         } else {
           await saveCabinGrades(id, [{
-            grade: gradeToSave, total: 0, reserved: 0,
+            grade: finalGrade, total: 0, reserved: 0,
             price_per_person: priceToSave,
             currency: currencyToSave, sort_order: 0,
           }], [])
