@@ -226,6 +226,13 @@ export async function deleteHotel(id: string): Promise<void> {
   if (error) throw error
 }
 
+export async function restoreHotel(snapshot: Hotel): Promise<void> {
+  const { error } = await sb()
+    .from('hotels')
+    .upsert(snapshot, { onConflict: 'id' })
+  if (error) throw error
+}
+
 // ── Voyage update ─────────────────────────────────────────────────────────
 
 export async function updateVoyage(
@@ -305,6 +312,13 @@ export async function saveItineraryDay(
 
 export async function deleteItineraryDay(id: string): Promise<void> {
   const { error } = await sb().from('itinerary_days').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function restoreItineraryDay(snapshot: ItineraryDay): Promise<void> {
+  const { error } = await sb()
+    .from('itinerary_days')
+    .upsert(snapshot, { onConflict: 'id' })
   if (error) throw error
 }
 

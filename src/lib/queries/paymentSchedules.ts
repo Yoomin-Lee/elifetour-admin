@@ -84,6 +84,13 @@ export async function deletePaymentSchedule(id: string): Promise<void> {
   if (error) throw error
 }
 
+export async function restorePaymentSchedule(snapshot: PaymentSchedule): Promise<void> {
+  const { error } = await sb()
+    .from('payment_schedules')
+    .upsert(snapshot, { onConflict: 'id' })
+  if (error) throw error
+}
+
 export async function togglePaymentCompleted(id: string, is_completed: boolean): Promise<void> {
   const { error } = await sb()
     .from('payment_schedules')

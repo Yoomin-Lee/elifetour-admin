@@ -12,6 +12,7 @@ import {
   insertVoyageFlight,
   updateVoyageFlight,
   deleteVoyageFlight,
+  restoreVoyageFlight,
 } from '@/lib/queries/voyageFlights'
 import { fetchVoyages } from '@/lib/queries/voyages'
 import { getAirportTimezone } from '@/lib/utils/flightCalc'
@@ -203,10 +204,19 @@ export default function FlightsTab() {
 
   const deleteMut = useMutation({
     mutationFn: deleteVoyageFlight,
-    onSuccess: () => {
+    onMutate: (id: string) => ({ snapshot: data.find(r => r.id === id) ?? null }),
+    onSuccess: (_r, _id, ctx) => {
       qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
       setDeleteTarget(null)
-      toast.success('삭제됐습니다')
+      const snap = ctx?.snapshot
+      toast.success('삭제됐습니다', snap ? {
+        action: {
+          label: '되돌리기',
+          onClick: () => restoreVoyageFlight(snap)
+            .then(() => { qc.invalidateQueries({ queryKey: ['all-voyage-flights'] }); toast.success('복원됐습니다') })
+            .catch(() => toast.error('복원에 실패했습니다')),
+        },
+      } : undefined)
     },
     onError: () => toast.error('삭제에 실패했습니다'),
   })

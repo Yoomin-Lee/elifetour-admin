@@ -9,6 +9,7 @@ import {
   fetchPaymentSchedules,
   upsertPaymentSchedule,
   deletePaymentSchedule,
+  restorePaymentSchedule,
   togglePaymentCompleted,
 } from '@/lib/queries/paymentSchedules'
 import { DatePicker } from '@/components/ui/date-picker'
@@ -158,11 +159,24 @@ export default function PaymentTab() {
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deletePaymentSchedule(id),
-    onSuccess: () => {
+    onMutate: (id: string) => ({ snapshot: schedules.find(s => s.id === id) ?? null }),
+    onSuccess: (_r, _id, ctx) => {
       qc.invalidateQueries({ queryKey: ['payment-schedules', voyageId] })
       qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
       setDeleteTarget(null)
-      toast.success('삭제됐습니다')
+      const snap = ctx?.snapshot
+      toast.success('삭제됐습니다', snap ? {
+        action: {
+          label: '되돌리기',
+          onClick: () => restorePaymentSchedule(snap)
+            .then(() => {
+              qc.invalidateQueries({ queryKey: ['payment-schedules', voyageId] })
+              qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
+              toast.success('복원됐습니다')
+            })
+            .catch(() => toast.error('복원에 실패했습니다')),
+        },
+      } : undefined)
     },
     onError: () => toast.error('삭제에 실패했습니다'),
   })

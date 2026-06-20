@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Search, Plus, Pencil, Trash2, Check, X, ChevronDown, ExternalLink } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { useAuth } from '@/context/AuthContext'
-import { fetchAllHotels, addHotel, updateHotel, deleteHotel, fetchVoyages } from '@/lib/queries/voyages'
+import { fetchAllHotels, addHotel, updateHotel, deleteHotel, restoreHotel, fetchVoyages } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
@@ -151,10 +151,19 @@ export default function HotelTab() {
 
   const deleteMut = useMutation({
     mutationFn: deleteHotel,
-    onSuccess: () => {
+    onMutate: (id: string) => ({ snapshot: data.find(r => r.id === id) ?? null }),
+    onSuccess: (_r, _id, ctx) => {
       qc.invalidateQueries({ queryKey: ['all-hotels'] })
       setDeleteTarget(null)
-      toast.success('삭제됐습니다')
+      const snap = ctx?.snapshot
+      toast.success('삭제됐습니다', snap ? {
+        action: {
+          label: '되돌리기',
+          onClick: () => restoreHotel(snap)
+            .then(() => { qc.invalidateQueries({ queryKey: ['all-hotels'] }); toast.success('복원됐습니다') })
+            .catch(() => toast.error('복원에 실패했습니다')),
+        },
+      } : undefined)
     },
     onError: () => toast.error('삭제에 실패했습니다'),
   })

@@ -548,11 +548,16 @@ export default function MNTab() {
 
   const softDeleteMut = useMutation({
     mutationFn: softDeleteMnSection,
-    onSuccess: () => {
+    onSuccess: (_r, id) => {
       qc.invalidateQueries({ queryKey: ['mn-sections'] })
       qc.invalidateQueries({ queryKey: ['mn-sections-deleted'] })
       setDeleteTarget(null)
-      toast.success('삭제됐습니다', { description: '하단 삭제된 항목에서 복원할 수 있습니다' })
+      toast.success('삭제됐습니다', {
+        action: {
+          label: '되돌리기',
+          onClick: () => restoreMut.mutate(id),
+        },
+      })
     },
     onError: () => toast.error('삭제에 실패했습니다'),
   })

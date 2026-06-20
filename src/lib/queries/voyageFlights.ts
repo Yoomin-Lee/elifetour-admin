@@ -143,3 +143,10 @@ export async function deleteVoyageFlight(id: string): Promise<void> {
   const { error } = await sb().from('voyage_flights').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function restoreVoyageFlight(snapshot: VoyageFlight): Promise<void> {
+  const { error } = await sb()
+    .from('voyage_flights')
+    .upsert(snapshot, { onConflict: 'id' })
+  if (error) throw error
+}
