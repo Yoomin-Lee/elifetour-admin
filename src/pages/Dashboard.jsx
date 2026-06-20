@@ -263,12 +263,18 @@ export default function Dashboard() {
                 ].join(' ')}
                 style={editMode ? { cursor: NAVY_CURSOR } : {}}
                 draggable={editMode}
-                onDragStart={e => {
-                  e.dataTransfer.setDragImage(new Image(), 0, 0)
+                onMouseDown={editMode ? () => {
+                  document.getElementById('__drag_cursor__')?.remove()
                   const el = document.createElement('style')
                   el.id = '__drag_cursor__'
                   el.textContent = `* { cursor: ${NAVY_CURSOR} !important; }`
                   document.head.appendChild(el)
+                } : undefined}
+                onMouseUp={editMode ? () => {
+                  document.getElementById('__drag_cursor__')?.remove()
+                } : undefined}
+                onDragStart={e => {
+                  e.dataTransfer.setDragImage(new Image(), 0, 0)
                   setDraggedId(id)
                 }}
                 onDragOver={e => { e.preventDefault(); setDragOverId(id) }}
