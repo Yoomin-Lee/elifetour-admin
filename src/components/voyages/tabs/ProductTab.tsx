@@ -161,7 +161,7 @@ export default function ProductTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">귀국일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">선사</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">크루즈</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-16">항공</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24 whitespace-nowrap">항공</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-18">상태</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">고객</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">인솔자</th>
@@ -210,7 +210,7 @@ export default function ProductTab() {
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
                     <td className="px-3 py-2 text-slate-600">{v.cruise_line ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-600">{v.ship_name ?? '—'}</td>
-                    <td className="px-3 py-2 text-slate-600">{v.airline ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.airline ?? '—'}</td>
                     <td className="px-3 py-2">
                       <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_COLORS[v.status] ?? 'bg-slate-100 text-slate-600'}`}>
                         {v.status}
