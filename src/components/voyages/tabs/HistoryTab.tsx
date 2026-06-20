@@ -177,12 +177,13 @@ export default function HistoryTab() {
                   {editingId === r.id ? (
                     <textarea
                       value={editText}
-                      onChange={e => setEditText(e.target.value)}
+                      ref={el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } }}
+                      onChange={e => { setEditText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
                       onKeyDown={e => {
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(r.id)
                         if (e.key === 'Escape') cancelEdit()
                       }}
-                      rows={2}
+                      rows={3}
                       autoFocus
                       className="w-full resize-none rounded border border-brand px-2 py-1 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand/30"
                     />

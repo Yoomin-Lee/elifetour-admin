@@ -174,7 +174,8 @@ export default function HistoryCard({
                   <div className="space-y-2">
                     <textarea
                       value={editText}
-                      onChange={e => setEditText(e.target.value)}
+                      ref={el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } }}
+                      onChange={e => { setEditText(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
                       onKeyDown={e => {
                         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(log.id)
                         if (e.key === 'Escape') cancelEdit()
