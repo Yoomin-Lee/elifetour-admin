@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { Ship, Anchor, Users, CreditCard, ChevronDown, Settings, X, Plus, AlertCircle, GripVertical } from 'lucide-react'
 import { fetchVoyageDashboardData } from '../lib/queries/voyages'
 
+const NAVY_CURSOR = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'><path d='M3,2 L3,16 L6,12 L8,17 L10,16 L8,11 L13,11 Z' fill='%23172554' stroke='white' stroke-width='1.5' stroke-linejoin='round'/></svg>") 3 2, default`
+
 const STATUS_ITEMS = [
   { key: '미오픈',   label: '미오픈',   dot: 'bg-slate-400' },
   { key: '판매중',   label: '판매중',   dot: 'bg-blue-500'  },
@@ -254,14 +256,14 @@ export default function Dashboard() {
                 key={id}
                 className={[
                   'relative transition-all',
-                  editMode ? 'cursor-default' : '',
                   isDragging ? 'opacity-30 scale-95' : '',
                   isOver
                     ? 'ring-2 ring-brand/50 rounded-xl'
                     : editMode ? 'hover:ring-2 hover:ring-slate-800 hover:rounded-xl' : '',
                 ].join(' ')}
+                style={editMode ? { cursor: NAVY_CURSOR } : {}}
                 draggable={editMode}
-                onDragStart={() => setDraggedId(id)}
+                onDragStart={e => { e.dataTransfer.setDragImage(new Image(), 0, 0); setDraggedId(id) }}
                 onDragOver={e => { e.preventDefault(); setDragOverId(id) }}
                 onDrop={() => handleDrop(id)}
                 onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
