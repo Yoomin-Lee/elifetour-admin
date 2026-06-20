@@ -3,6 +3,8 @@ import { Plus, Trash2, ChevronDown } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP']
 import { Button } from '@/components/ui/button'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
@@ -50,8 +52,14 @@ export default function CancellationEditor() {
                   <Input type="number" {...register(`policies.${i}.end_d_minus`)} placeholder="예: 90" />
                 </div>
                 <div>
-                  <label className="label">단위</label>
-                  <Input {...register(`policies.${i}.fee_unit`)} placeholder="인당" />
+                  <label className="label">통화</label>
+                  <div className="relative">
+                    <Select {...register(`policies.${i}.fee_unit`)} className="appearance-none pr-7">
+                      <option value="">-</option>
+                      {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </Select>
+                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  </div>
                 </div>
                 <div className="col-span-2">
                   <label className="label">취소료 설명</label>

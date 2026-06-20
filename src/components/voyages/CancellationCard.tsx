@@ -5,7 +5,10 @@ import { Pencil, Plus, Trash2, Check, X } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
+import { FieldSelect } from '@/components/ui/field-select'
 import { Button } from '@/components/ui/button'
+
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP']
 import { cn } from '@/lib/utils'
 import { saveCancellationPolicy, deleteCancellationPolicy } from '@/lib/queries/voyages'
 import type { CancellationPolicy } from '@/types/database'
@@ -192,8 +195,13 @@ export default function CancellationCard({
                       <Input type="number" value={r.end_d_minus} onChange={e => upd(r._key, 'end_d_minus', e.target.value)} placeholder="45" className="h-7 text-sm" />
                     </div>
                     <div>
-                      <label className="label">단위</label>
-                      <Input value={r.fee_unit} onChange={e => upd(r._key, 'fee_unit', e.target.value)} placeholder="인당" className="h-7 text-sm" />
+                      <label className="label">통화</label>
+                      <FieldSelect
+                        value={r.fee_unit}
+                        options={CURRENCIES}
+                        onChange={v => upd(r._key, 'fee_unit', v)}
+                        className="h-7 text-sm"
+                      />
                     </div>
                     <div className="col-span-2 sm:col-span-4">
                       <label className="label">취소료 설명</label>
@@ -240,7 +248,7 @@ export default function CancellationCard({
                 <TableHead>구분</TableHead>
                 <TableHead>기간</TableHead>
                 <TableHead>취소료</TableHead>
-                <TableHead>단위</TableHead>
+                <TableHead>통화</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
