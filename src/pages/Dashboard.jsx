@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Ship, Anchor, Users, CreditCard, ChevronDown, Settings, X, Plus, AlertCircle, GripVertical } from 'lucide-react'
+import { Ship, Anchor, Users, CreditCard, ChevronDown, Settings, X, Plus, AlertCircle, GripVertical, Clock, Lock, Flag, List, Layers } from 'lucide-react'
 import { fetchVoyageDashboardData } from '../lib/queries/voyages'
 
 const NAVY_CURSOR = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'><path d='M3,2 L3,16 L6,12 L8,17 L10,16 L8,11 L13,11 Z' fill='%23172554' stroke='white' stroke-width='1.5' stroke-linejoin='round'/></svg>") 3 2, default`
@@ -19,6 +19,11 @@ const CARD_DEFS = [
   { id: 'this-month-departs', label: '이번달 출발',      icon: Anchor,       color: 'cyan'                             },
   { id: 'this-month-pay',     label: '이번달 결제 마감', icon: CreditCard,   color: 'orange', link: '/voyages?tab=결제' },
   { id: 'overdue',            label: '연체 결제',        icon: AlertCircle,  color: 'red',    link: '/voyages?tab=결제' },
+  { id: 'status-미오픈',      label: '미오픈 항차',      icon: Clock,        color: 'slate'                            },
+  { id: 'status-마감',        label: '마감 항차',        icon: Lock,         color: 'orange'                           },
+  { id: 'status-출발완료',    label: '출발완료 항차',    icon: Flag,         color: 'green'                            },
+  { id: 'total-voyages',      label: '전체 항차 수',     icon: List,         color: 'blue'                             },
+  { id: 'cabin-remaining',    label: '총 잔여 객실',     icon: Layers,       color: 'emerald'                          },
 ]
 
 const DEFAULT_IDS = ['on-sale', 'total-customers', 'this-month-departs', 'this-month-pay']
@@ -36,7 +41,7 @@ function loadSavedIds() {
   return DEFAULT_IDS
 }
 
-function getCardProps(id, { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, loading }) {
+function getCardProps(id, { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, statusCounts, loading }) {
   switch (id) {
     case 'on-sale':
       return { value: loading ? '…' : onSaleVoyages.length }
@@ -52,6 +57,16 @@ function getCardProps(id, { onSaleVoyages, thisMonthDepartures, thisMonthPayment
       }
     case 'overdue':
       return { value: loading ? '…' : `${overdueCount}건` }
+    case 'status-미오픈':
+      return { value: loading ? '…' : (statusCounts['미오픈'] ?? 0) }
+    case 'status-마감':
+      return { value: loading ? '…' : (statusCounts['마감'] ?? 0) }
+    case 'status-출발완료':
+      return { value: loading ? '…' : (statusCounts['출발완료'] ?? 0) }
+    case 'total-voyages':
+      return { value: loading ? '…' : Object.values(statusCounts).reduce((s, n) => s + n, 0) }
+    case 'cabin-remaining':
+      return { value: loading ? '…' : `${onSaleVoyages.reduce((s, v) => s + (v.cabin_remaining ?? 0), 0)}석` }
     default:
       return {}
   }
@@ -59,11 +74,14 @@ function getCardProps(id, { onSaleVoyages, thisMonthDepartures, thisMonthPayment
 
 function StatCard({ label, value, icon: Icon, color, sub, link }) {
   const colors = {
-    blue:   'bg-blue-50 text-blue-600',
-    orange: 'bg-orange-50 text-orange-600',
-    purple: 'bg-purple-50 text-purple-600',
-    cyan:   'bg-cyan-50 text-cyan-600',
-    red:    'bg-red-50 text-red-600',
+    blue:    'bg-blue-50 text-blue-600',
+    orange:  'bg-orange-50 text-orange-600',
+    purple:  'bg-purple-50 text-purple-600',
+    cyan:    'bg-cyan-50 text-cyan-600',
+    red:     'bg-red-50 text-red-600',
+    green:   'bg-green-50 text-green-600',
+    slate:   'bg-slate-100 text-slate-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
   }
   const inner = (
     <div className="card flex items-center gap-4 p-5">
@@ -175,7 +193,8 @@ export default function Dashboard() {
     thisMonthStatusCounts[v.status] = (thisMonthStatusCounts[v.status] ?? 0) + 1
   }
 
-  const computed = { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, loading }
+  const { statusCounts } = dash
+  const computed = { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, statusCounts, loading }
 
   const inactiveIds = CARD_DEFS.filter(d => !activeIds.includes(d.id)).map(d => d.id)
 
