@@ -13,6 +13,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { Button } from '@/components/ui/button'
 import { YearSelect } from '@/components/ui/year-select'
+import { FieldSelect } from '@/components/ui/field-select'
 import type { ItineraryDay } from '@/types/database'
 
 const CATEGORIES = ['크루즈', '항공', '호텔', '지상', '식사', '기타'] as const
@@ -111,16 +112,15 @@ function ShoreFormFields({
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {showVoyageSelect && (
         <div className="col-span-2 sm:col-span-4">
-          <SelectField
-            label="행사"
-            value={form.voyage_id}
-            onChange={set('voyage_id')}
-          >
-            <option value="">행사를 선택하세요</option>
-            {voyages.map(v => (
-              <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
-            ))}
-          </SelectField>
+          <div>
+            <label className="label">행사</label>
+            <FieldSelect
+              value={form.voyage_id}
+              options={voyages.map(v => ({ value: v.id, label: voyageTitle(v) }))}
+              onChange={val => setForm(prev => ({ ...prev, voyage_id: val }))}
+              placeholder="행사를 선택하세요"
+            />
+          </div>
         </div>
       )}
       <div>
