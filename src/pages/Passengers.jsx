@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Phone, BookOpen, Users, ChevronDown } from 'lucide-react'
+import { Search, Phone, BookOpen, Users } from 'lucide-react'
 import { searchPassengers, getPassengersByVoyage } from '../lib/passengers'
 import { fetchVoyages } from '../lib/queries/voyages'
 import { voyageTitle } from '../types/database'
 import StatusBadge from '../components/StatusBadge'
+import { YearSelect } from '../components/ui/year-select'
+import { FieldSelect } from '../components/ui/field-select'
 
 function formatMoney(n) {
   if (!n) return '-'
@@ -85,34 +87,20 @@ export default function Passengers() {
       {/* 필터 영역 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
         {/* 연도 드롭다운 */}
-        <div className="relative">
-          <select
-            value={yearFilter}
-            onChange={e => handleYearChange(e.target.value)}
-            className="h-9 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-sm text-slate-700 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/30"
-          >
-            <option value="ALL">전체 연도</option>
-            {years.map(y => (
-              <option key={y} value={y}>{y}년</option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        </div>
+        <YearSelect
+          value={yearFilter}
+          years={years}
+          onChange={handleYearChange}
+        />
 
         {/* 행사 드롭다운 */}
-        <div className="relative sm:w-64">
-          <select
-            value={selectedVoyageId}
-            onChange={e => handleVoyageChange(e.target.value)}
-            className="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-sm text-slate-700 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/30"
-          >
-            <option value="">행사 선택…</option>
-            {filteredVoyages.map(v => (
-              <option key={v.id} value={v.id}>{voyageTitle(v)}</option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        </div>
+        <FieldSelect
+          value={selectedVoyageId}
+          options={filteredVoyages.map(v => ({ value: v.id, label: voyageTitle(v) }))}
+          onChange={handleVoyageChange}
+          placeholder="행사 선택…"
+          className="sm:w-64"
+        />
 
         <div className="h-5 w-px bg-slate-200 hidden sm:block" />
 
