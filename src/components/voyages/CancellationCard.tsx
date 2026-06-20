@@ -136,6 +136,18 @@ export default function CancellationCard({
     setDraft(d => d.map(r => r._key === key ? { ...r, [field]: value } : r))
   }
 
+  function updCurrency(key: string, currency: string) {
+    setDraft(d => d.map(r => {
+      if (r._key !== key) return r
+      const desc = r.fee_description
+      const prefix = CURRENCIES.find(c => desc === c || desc.startsWith(c + ' '))
+      const newDesc = !desc
+        ? currency + ' '
+        : prefix ? currency + desc.slice(prefix.length) : desc
+      return { ...r, fee_unit: currency, fee_description: newDesc }
+    }))
+  }
+
   const visible = draft.filter(r => !r._deleted)
 
   if (editing) {
@@ -199,7 +211,7 @@ export default function CancellationCard({
                       <FieldSelect
                         value={r.fee_unit}
                         options={CURRENCIES}
-                        onChange={v => upd(r._key, 'fee_unit', v)}
+                        onChange={v => updCurrency(r._key, v)}
                         className="h-7 text-sm"
                       />
                     </div>
