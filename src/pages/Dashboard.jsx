@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Ship, Anchor, Users, CreditCard, ChevronDown, Settings, X, Plus, AlertCircle } from 'lucide-react'
+import { Ship, Anchor, Users, CreditCard, ChevronDown, Settings, X, Plus, AlertCircle, GripVertical } from 'lucide-react'
 import { fetchVoyageDashboardData } from '../lib/queries/voyages'
 
 const STATUS_ITEMS = [
@@ -141,6 +141,8 @@ export default function Dashboard() {
   const [activeIds, setActiveIds] = useState(loadSavedIds)
   const [editMode, setEditMode]   = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
+  const [draggedId, setDraggedId] = useState(null)
+  const [dragOverId, setDragOverId] = useState(null)
   const addMenuRef = useRef(null)
 
   useEffect(() => {
@@ -187,9 +189,24 @@ export default function Dashboard() {
     setShowAddMenu(false)
   }
 
+  function handleDrop(targetId) {
+    if (!draggedId || draggedId === targetId) return
+    const next = [...activeIds]
+    const from = next.indexOf(draggedId)
+    const to   = next.indexOf(targetId)
+    next.splice(from, 1)
+    next.splice(to, 0, draggedId)
+    setActiveIds(next)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    setDraggedId(null)
+    setDragOverId(null)
+  }
+
   function exitEdit() {
     setEditMode(false)
     setShowAddMenu(false)
+    setDraggedId(null)
+    setDragOverId(null)
   }
 
   function toggle(id) {
@@ -230,8 +247,23 @@ export default function Dashboard() {
             const def = CARD_DEFS.find(d => d.id === id)
             if (!def) return null
             const props = getCardProps(id, computed)
+            const isDragging = draggedId === id
+            const isOver     = dragOverId === id && draggedId !== id
             return (
-              <div key={id} className="relative">
+              <div
+                key={id}
+                className={[
+                  'relative transition-all',
+                  editMode ? 'cursor-grab active:cursor-grabbing' : '',
+                  isDragging ? 'opacity-30 scale-95' : '',
+                  isOver ? 'ring-2 ring-brand/50 rounded-xl' : '',
+                ].join(' ')}
+                draggable={editMode}
+                onDragStart={() => setDraggedId(id)}
+                onDragOver={e => { e.preventDefault(); setDragOverId(id) }}
+                onDrop={() => handleDrop(id)}
+                onDragEnd={() => { setDraggedId(null); setDragOverId(null) }}
+              >
                 <StatCard
                   label={def.label}
                   icon={def.icon}
@@ -241,13 +273,18 @@ export default function Dashboard() {
                   link={editMode ? undefined : def.link}
                 />
                 {editMode && (
-                  <button
-                    onClick={() => removeCard(id)}
-                    className="absolute -top-1.5 -right-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-slate-600 text-white shadow hover:bg-red-500 transition"
-                    title="카드 제거"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                  <>
+                    <div className="pointer-events-none absolute left-2 top-2 z-10 text-slate-300">
+                      <GripVertical className="h-4 w-4" />
+                    </div>
+                    <button
+                      onClick={() => removeCard(id)}
+                      className="absolute -top-1.5 -right-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-slate-600 text-white shadow hover:bg-red-500 transition"
+                      title="카드 제거"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </>
                 )}
               </div>
             )
