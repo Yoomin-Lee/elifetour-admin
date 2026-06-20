@@ -13,6 +13,7 @@ import {
 } from '@/lib/queries/mnSections'
 import type { MnSection, MnRow } from '@/lib/queries/mnSections'
 import { Button } from '@/components/ui/button'
+import { FieldSelect } from '@/components/ui/field-select'
 
 const CATEGORIES = ['취소료', 'MSC상세', '팁'] as const
 type Category = typeof CATEGORIES[number]
@@ -179,26 +180,22 @@ function SectionForm({
         </div>
         <div>
           <label className="label">카테고리</label>
-          <div className="relative">
-            <select value={form.category}
-              onChange={e => setForm(s => ({ ...s, category: e.target.value }))}
-              className="select text-sm appearance-none pr-9">
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          </div>
+          <FieldSelect
+            value={form.category}
+            options={[...CATEGORIES]}
+            onChange={v => setForm(s => ({ ...s, category: v }))}
+          />
         </div>
         <div>
           <label className="label">행 유형</label>
-          <div className="relative">
-            <select value={form.row_type}
-              onChange={e => setForm(s => ({ ...s, row_type: e.target.value as 'rule' | 'tip' }))}
-              className="select text-sm appearance-none pr-9">
-              <option value="rule">취소료 (D-day / 취소료 / 비고)</option>
-              <option value="tip">팁 (객실 / 금액)</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          </div>
+          <FieldSelect
+            value={form.row_type}
+            options={[
+              { value: 'rule', label: '취소료 (D-day / 취소료 / 비고)' },
+              { value: 'tip', label: '팁 (객실 / 금액)' },
+            ]}
+            onChange={v => setForm(s => ({ ...s, row_type: v as 'rule' | 'tip' }))}
+          />
         </div>
         <div className="col-span-2">
           <label className="label">설명 / 부제목</label>
