@@ -10,10 +10,11 @@ type Props = {
   onChange: (value: string) => void
   placeholder?: string
   className?: string
+  defaultOpen?: boolean
 }
 
-export function FieldSelect({ value, options, onChange, placeholder, className }: Props) {
-  const [open, setOpen] = useState(false)
+export function FieldSelect({ value, options, onChange, placeholder, className, defaultOpen }: Props) {
+  const [open, setOpen] = useState(defaultOpen ?? false)
 
   const normalized: Option[] = options.map(o =>
     typeof o === 'string' ? { value: o, label: o } : o,
