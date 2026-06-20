@@ -53,7 +53,7 @@ const ALL_SHIPS = Object.values(CRUISE_LINES).flat()
 const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
 const AGENTS = ['TMK', 'COSTA', 'ONLINE', 'DONGBO', 'VASCO', 'FLORENCE']
 
-// ── SelectOrInput ─────────────────────────────────────────────────────────
+// ── SelectOrInput — FieldSelect 기반 (직접 입력 지원) ──────────────────────
 const CUSTOM = '__CUSTOM__'
 
 function SelectOrInput({
@@ -82,8 +82,8 @@ function SelectOrInput({
         <button
           type="button"
           onClick={() => { setIsCustom(false); onChange('') }}
-          className="shrink-0 flex h-7 w-7 items-center justify-center rounded border border-slate-200 text-slate-400 hover:bg-slate-100 transition"
-          title="목록으로 돌아가기"
+          className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-100 transition"
+          title="목록으로"
         >
           <ChevronDown className="h-3.5 w-3.5" />
         </button>
@@ -91,27 +91,27 @@ function SelectOrInput({
     )
   }
 
-  // 현재 값이 목록에 없으면 옵션에 동적으로 추가 (기존 DB 값 표시)
-  const allOptions = value !== '' && !options.includes(value)
+  // 기존 DB 값이 목록에 없으면 동적으로 추가
+  const baseOptions = value !== '' && !options.includes(value)
     ? [value, ...options]
     : options
 
+  const fieldOptions = [
+    ...baseOptions,
+    { value: CUSTOM, label: '✏ 직접 입력' },
+  ]
+
   return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={e => {
-          if (e.target.value === CUSTOM) { setIsCustom(true); onChange('') }
-          else onChange(e.target.value)
-        }}
-        className="select h-7 py-0 text-sm appearance-none pr-7 w-full"
-      >
-        <option value="">{placeholder}</option>
-        {allOptions.map(o => <option key={o} value={o}>{o}</option>)}
-        <option value={CUSTOM}>✏ 직접 입력</option>
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-    </div>
+    <FieldSelect
+      value={value}
+      options={fieldOptions}
+      onChange={v => {
+        if (v === CUSTOM) { setIsCustom(true); onChange('') }
+        else onChange(v)
+      }}
+      placeholder={placeholder}
+      className="h-7 text-sm"
+    />
   )
 }
 
@@ -275,14 +275,12 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
                       placeholder="—" className="input h-6 text-xs text-right w-full" />
                   </td>
                   <td className="py-1 pr-1">
-                    <div className="relative">
-                      <select value={draft.currency} onChange={e => setField('currency', e.target.value)}
-                        className="select h-6 text-xs w-full appearance-none pr-5">
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
-                    </div>
+                    <FieldSelect
+                      value={draft.currency}
+                      options={['USD', 'EUR']}
+                      onChange={v => setField('currency', v)}
+                      className="h-6 text-xs"
+                    />
                   </td>
                 </tr>
               ) : grade && (
@@ -626,14 +624,12 @@ export default function CruiseTab() {
                           </div>
                           <div className="w-20">
                             <label className="label">통화</label>
-                            <div className="relative">
-                              <select value={editForm.cabin_currency} onChange={e => setField('cabin_currency', e.target.value)}
-                                className="select h-7 py-0 text-sm appearance-none pr-7 w-full">
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                              </select>
-                              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                            </div>
+                            <FieldSelect
+                              value={editForm.cabin_currency}
+                              options={['USD', 'EUR']}
+                              onChange={v => setField('cabin_currency', v)}
+                              className="h-7 text-sm"
+                            />
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
