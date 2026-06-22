@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import VoyageCombobox from '@/components/voyages/VoyageCombobox'
 import { YearSelect } from '@/components/ui/year-select'
+import { FieldSelect } from '@/components/ui/field-select'
 import OverviewCard from '@/components/voyages/OverviewCard'
 import FlightsCard from '@/components/voyages/FlightsCard'
 import ItineraryCard from '@/components/voyages/ItineraryCard'
@@ -40,6 +41,7 @@ function VoyageSearchInner() {
     '직원'
 
   const [yearFilter, setYearFilter] = useState<string>('ALL')
+  const [statusFilter, setStatusFilter] = useState<string>('ALL')
 
   const voyagesQuery = useQuery({ queryKey: ['voyages'], queryFn: fetchVoyages })
 
@@ -53,9 +55,12 @@ function VoyageSearchInner() {
 
   const filteredVoyages = useMemo(() => {
     const all = voyagesQuery.data ?? []
-    if (yearFilter === 'ALL') return all
-    return all.filter(v => v.departure_date?.startsWith(yearFilter))
-  }, [voyagesQuery.data, yearFilter])
+    return all.filter(v => {
+      if (yearFilter !== 'ALL' && !v.departure_date?.startsWith(yearFilter)) return false
+      if (statusFilter !== 'ALL' && v.status !== statusFilter) return false
+      return true
+    })
+  }, [voyagesQuery.data, yearFilter, statusFilter])
 
   const flightsQuery = useQuery({
     queryKey: ['flights', voyageId],
@@ -101,6 +106,20 @@ function VoyageSearchInner() {
                 setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('voyage'); return next })
               }
             }}
+          />
+          <FieldSelect
+            value={statusFilter}
+            options={[
+              { value: 'ALL', label: '전체 상태' },
+              '미오픈', '판매중', '마감', '출발완료', '취소',
+            ]}
+            onChange={v => {
+              setStatusFilter(v)
+              if (selectedVoyage && v !== 'ALL' && selectedVoyage.status !== v) {
+                setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('voyage'); return next })
+              }
+            }}
+            className="h-8 text-sm w-28"
           />
           <VoyageCombobox
             voyages={filteredVoyages}
