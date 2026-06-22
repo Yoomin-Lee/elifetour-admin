@@ -10,7 +10,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { formatDate, calcNights } from '@/lib/utils'
 import { voyageTitle } from '@/types/database'
 import { updateVoyage } from '@/lib/queries/voyages'
-import type { Voyage, VoyageStatus } from '@/types/database'
+import type { Voyage, VoyageStatus, ItineraryDay } from '@/types/database'
 
 const STATUS_VARIANT: Record<VoyageStatus, 'default' | 'success' | 'destructive' | 'warning' | 'info' | 'outline'> = {
   '미오픈':    'default',
@@ -74,7 +74,21 @@ function toForm(v: Voyage): Form {
   }
 }
 
-export default function OverviewCard({ voyage, canWrite = true }: { voyage: Voyage; canWrite?: boolean }) {
+function detectBoardingDate(itinerary: ItineraryDay[]): string | null {
+  const sorted = [...itinerary].sort((a, b) => a.sort_order - b.sort_order)
+  const found = sorted.find(d => (d.summary ?? '').includes('승선'))
+  return found?.date ?? null
+}
+
+export default function OverviewCard({
+  voyage,
+  itinerary = [],
+  canWrite = true,
+}: {
+  voyage: Voyage
+  itinerary?: ItineraryDay[]
+  canWrite?: boolean
+}) {
   const [editing, setEditing] = useState(false)
   const [f, setF] = useState<Form>(toForm(voyage))
   const qc = useQueryClient()
@@ -156,7 +170,28 @@ export default function OverviewCard({ voyage, canWrite = true }: { voyage: Voya
               <DatePicker value={f.return_date} onChange={v => setF(p => ({ ...p, return_date: v }))} placeholder="귀국일" />
             </ERow>
             <ERow label="승선일">
-              <DatePicker value={f.boarding_date} onChange={v => setF(p => ({ ...p, boarding_date: v }))} placeholder="크루즈 승선일" />
+              <div className="flex items-center gap-1.5">
+                <DatePicker value={f.boarding_date} onChange={v => setF(p => ({ ...p, boarding_date: v }))} placeholder="크루즈 승선일" />
+                {(() => {
+                  const detected = detectBoardingDate(itinerary)
+                  if (!detected) return null
+                  const isSame = detected === f.boarding_date
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setF(p => ({ ...p, boarding_date: detected }))}
+                      title={`기항지 '${itinerary.find(d => d.date === detected)?.port ?? ''}' 날짜로 입력`}
+                      className={`shrink-0 rounded px-2 py-1 text-[11px] font-medium transition whitespace-nowrap ${
+                        isSame
+                          ? 'bg-green-50 text-green-600 cursor-default'
+                          : 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
+                      }`}
+                    >
+                      {isSame ? '✓ 일치' : `기항지 자동입력 (${formatDate(detected)})`}
+                    </button>
+                  )
+                })()}
+              </div>
             </ERow>
             <ERow label="항공사">
               <Input value={f.airline} onChange={set('airline')} placeholder="대한항공" className="h-7 text-sm" />

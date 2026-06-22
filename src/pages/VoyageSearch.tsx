@@ -141,7 +141,7 @@ function VoyageSearchInner() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* 왼쪽: 개요 + 기항지 + 히스토리 */}
           <div className="flex flex-col gap-4">
-            <OverviewCard voyage={selectedVoyage} canWrite={canWrite} />
+            <OverviewCard voyage={selectedVoyage} itinerary={itineraryQuery.data ?? []} canWrite={canWrite} />
             <ItineraryCard days={itineraryQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
             <HistoryCard
               logs={historyQuery.data ?? []}
