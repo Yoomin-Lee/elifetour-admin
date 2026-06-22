@@ -88,7 +88,7 @@ function StatCard({ label, value, icon: Icon, color, sub, link }) {
       </div>
     </div>
   )
-  return link ? <Link to={link} className="block hover:opacity-90 transition">{inner}</Link> : inner
+  return link ? <Link to={link} style={{ cursor: NAVY_CURSOR }} className="block hover:opacity-90 transition">{inner}</Link> : inner
 }
 
 function SectionHeader({ title, badge, link, linkLabel }) {
