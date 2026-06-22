@@ -1,12 +1,14 @@
+import { useState } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
-import { Plus, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, FileText } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { CANCELLATION_PRESETS, CANCELLATION_PRESET_OPTIONS } from '@/config/cancellationPresets'
+import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP']
-import { Button } from '@/components/ui/button'
-import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const EMPTY_POLICY = {
   category: '', start_d_minus: undefined, end_d_minus: undefined,
@@ -16,19 +18,119 @@ const EMPTY_POLICY = {
 
 export default function CancellationEditor() {
   const { register } = useFormContext<VoyageFormValues>()
-  const { fields, append, remove } = useFieldArray<VoyageFormValues, 'policies'>({ name: 'policies' })
+  const { fields, append, remove, replace } = useFieldArray<VoyageFormValues, 'policies'>({ name: 'policies' })
+  const [presetOpen, setPresetOpen] = useState(false)
+  const [pendingPreset, setPendingPreset] = useState<string | null>(null)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+
+  function applyPreset(key: string, mode: 'replace' | 'append') {
+    const preset = CANCELLATION_PRESETS[key]
+    if (!preset) return
+    if (mode === 'replace') {
+      replace(preset.policies as any)
+    } else {
+      preset.policies.forEach(p => append(p as any))
+    }
+    setImportMsg(`${preset.label} — ${preset.policies.length}개 구간 불러옴`)
+    setTimeout(() => setImportMsg(null), 4000)
+    setPendingPreset(null)
+    setPresetOpen(false)
+  }
+
+  function handlePresetSelect(key: string) {
+    if (fields.length > 0) {
+      setPendingPreset(key)
+      setPresetOpen(false)
+    } else {
+      applyPreset(key, 'replace')
+    }
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>취소료</CardTitle>
-        <Button type="button" variant="outline" size="sm" onClick={() => append(EMPTY_POLICY)}>
-          <Plus className="h-4 w-4" /> 구간 추가
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {importMsg && (
+            <span className="text-xs text-brand font-medium">{importMsg}</span>
+          )}
+
+          {/* 프리셋 드롭다운 */}
+          <div className="relative">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPresetOpen(v => !v)}
+              className="gap-1"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              취소료 불러오기
+              <ChevronDown className={`h-3 w-3 transition-transform ${presetOpen ? 'rotate-180' : ''}`} />
+            </Button>
+            {presetOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
+                <div className="absolute left-0 top-full mt-1 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden">
+                  {CANCELLATION_PRESET_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handlePresetSelect(opt.value)}
+                      className="w-full px-3 py-2 text-left text-xs hover:bg-slate-50 transition"
+                    >
+                      <span className="font-medium text-slate-700">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <Button type="button" variant="outline" size="sm" onClick={() => append(EMPTY_POLICY)}>
+            <Plus className="h-4 w-4" /> 구간 추가
+          </Button>
+        </div>
       </CardHeader>
+
       <CardContent>
-        {fields.length === 0 && (
-          <p className="py-4 text-center text-sm text-slate-400">취소료 구간을 추가하세요</p>
+        {/* 프리셋 적용 확인 */}
+        {pendingPreset && (
+          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm text-amber-800 font-medium mb-2">
+              이미 입력된 취소료가 있습니다. 어떻게 처리할까요?
+            </p>
+            <p className="text-xs text-amber-600 mb-3">
+              선택한 취소료: <span className="font-semibold">{CANCELLATION_PRESETS[pendingPreset]?.label}</span>
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => applyPreset(pendingPreset, 'replace')}
+                className="rounded px-3 py-1.5 text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition"
+              >
+                기존 삭제 후 불러오기
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset(pendingPreset, 'append')}
+                className="rounded px-3 py-1.5 text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-100 transition"
+              >
+                기존 유지하고 추가
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingPreset(null)}
+                className="rounded px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-100 transition"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+
+        {fields.length === 0 && !pendingPreset && (
+          <p className="py-4 text-center text-sm text-slate-400">취소료 불러오기 또는 구간을 직접 추가하세요</p>
         )}
         <div className="space-y-2">
           {fields.map((field, i) => (
