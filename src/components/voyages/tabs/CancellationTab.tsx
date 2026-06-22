@@ -32,7 +32,8 @@ function isCruiseCat(category: string | null): boolean {
   return (category ?? '').includes('크루즈')
 }
 
-function refDate(r: { category: string | null; voyages?: { departure_date?: string | null; boarding_date?: string | null } | null }): string | null {
+function refDate(r: { reference_date?: string | null; category: string | null; voyages?: { departure_date?: string | null; boarding_date?: string | null } | null }): string | null {
+  if (r.reference_date) return r.reference_date
   if (isCruiseCat(r.category) && r.voyages?.boarding_date) return r.voyages.boarding_date
   return r.voyages?.departure_date ?? null
 }
@@ -52,6 +53,7 @@ type CancelForm = {
   category: string
   start_d_minus: string
   end_d_minus: string
+  reference_date: string
   fee_unit: string
   fee_description: string
   note: string
@@ -62,6 +64,7 @@ function toForm(r: CancellationPolicy): CancelForm {
     category:     r.category ?? '',
     start_d_minus: r.start_d_minus != null ? String(r.start_d_minus) : '',
     end_d_minus:   r.end_d_minus   != null ? String(r.end_d_minus)   : '',
+    reference_date: r.reference_date ?? '',
     fee_unit:      r.fee_unit      ?? '',
     fee_description: r.fee_description ?? '',
     note:          r.note          ?? '',
@@ -70,7 +73,7 @@ function toForm(r: CancellationPolicy): CancelForm {
 
 const EMPTY_FORM: CancelForm = {
   category: '', start_d_minus: '', end_d_minus: '',
-  fee_unit: '', fee_description: '', note: '',
+  reference_date: '', fee_unit: '', fee_description: '', note: '',
 }
 
 export default function CancellationTab() {
@@ -97,6 +100,7 @@ export default function CancellationTab() {
         end_d_minus:   editForm.end_d_minus   ? Number(editForm.end_d_minus)   : null,
         start_date:    r.start_date,
         end_date:      r.end_date,
+        reference_date: editForm.reference_date || null,
         fee_description: editForm.fee_description || null,
         fee_type:      r.fee_type,
         fee_value:     r.fee_value,
@@ -252,7 +256,9 @@ export default function CancellationTab() {
                       {r.voyages ? (
                         <span className="text-slate-600">
                           {formatDate(refDate(r) ?? r.voyages.departure_date)}
-                          {isCruiseCat(r.category) && r.voyages.boarding_date ? (
+                          {r.reference_date ? (
+                            <span className="ml-1 text-[10px] text-cyan-500 font-medium">(직접)</span>
+                          ) : isCruiseCat(r.category) && r.voyages.boarding_date ? (
                             <span className="ml-1 text-[10px] text-slate-400">(승선)</span>
                           ) : (
                             <span className="ml-1 text-[10px] text-slate-400">(출발)</span>
@@ -326,6 +332,21 @@ export default function CancellationTab() {
                           <div className="col-span-2">
                             <label className="label">취소료 설명</label>
                             <Input value={editForm.fee_description} onChange={e => setField('fee_description', e.target.value)} placeholder="크루즈 요금의 50%" className="h-7 text-sm" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="label">기준일 직접 지정 <span className="text-slate-400 font-normal">(비워두면 자동)</span></label>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="date"
+                                value={editForm.reference_date}
+                                onChange={e => setField('reference_date', e.target.value)}
+                                className="h-7 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand"
+                              />
+                              {editForm.reference_date && (
+                                <button type="button" onClick={() => setField('reference_date', '')}
+                                  className="shrink-0 text-xs text-slate-400 hover:text-red-500 px-1 transition">✕</button>
+                              )}
+                            </div>
                           </div>
                           <div className="col-span-2 sm:col-span-4 lg:col-span-6">
                             <label className="label">비고</label>

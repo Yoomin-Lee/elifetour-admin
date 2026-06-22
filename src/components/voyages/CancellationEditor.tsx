@@ -15,7 +15,7 @@ const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP']
 
 const EMPTY_POLICY = {
   category: '', start_d_minus: undefined, end_d_minus: undefined,
-  fee_description: '', fee_type: undefined, fee_value: undefined,
+  reference_date: '', fee_description: '', fee_type: undefined, fee_value: undefined,
   fee_unit: '', note: '', sort_order: 0,
 }
 
@@ -193,6 +193,10 @@ export default function CancellationEditor() {
                       </Select>
                       <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                     </div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="label">기준일 직접 지정 <span className="text-slate-400 font-normal">(비워두면 자동)</span></label>
+                    <Input type="date" {...register(`policies.${i}.reference_date`)} className="h-[38px]" />
                   </div>
                   <div className="col-span-2">
                     <label className="label">취소료 설명</label>

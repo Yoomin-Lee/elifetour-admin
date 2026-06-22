@@ -26,6 +26,7 @@ export const policySchema = z.object({
   category:       z.string().optional(),
   start_d_minus:  z.coerce.number().nullable().optional(),
   end_d_minus:    z.coerce.number().nullable().optional(),
+  reference_date: z.string().optional(),
   fee_description:z.string().optional(),
   fee_type:       z.enum(['percent', 'fixed', 'free']).nullable().optional(),
   fee_value:      z.coerce.number().nullable().optional(),

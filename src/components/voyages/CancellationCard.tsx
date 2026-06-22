@@ -26,6 +26,7 @@ function isCruiseCat(category: string | null): boolean {
 }
 
 function dMinusForPolicy(p: CancellationPolicy, departureDate: string, boardingDate: string | null): number {
+  if (p.reference_date) return dMinus(p.reference_date)
   if (isCruiseCat(p.category) && boardingDate) return dMinus(boardingDate)
   return dMinus(departureDate)
 }
@@ -48,6 +49,7 @@ type DraftPolicy = {
   category: string
   start_d_minus: string
   end_d_minus: string
+  reference_date: string
   fee_description: string
   fee_unit: string
   note: string
@@ -60,6 +62,7 @@ function toDraft(p: CancellationPolicy): DraftPolicy {
     category: p.category ?? '',
     start_d_minus: p.start_d_minus != null ? String(p.start_d_minus) : '',
     end_d_minus: p.end_d_minus != null ? String(p.end_d_minus) : '',
+    reference_date: p.reference_date ?? '',
     fee_description: p.fee_description ?? '',
     fee_unit: p.fee_unit ?? '',
     note: p.note ?? '',
@@ -70,7 +73,7 @@ function toDraft(p: CancellationPolicy): DraftPolicy {
 const EMPTY: Omit<DraftPolicy, '_key'> = {
   _isNew: true, _deleted: false, id: '',
   category: '', start_d_minus: '', end_d_minus: '',
-  fee_description: '', fee_unit: '', note: '', sort_order: 0,
+  reference_date: '', fee_description: '', fee_unit: '', note: '', sort_order: 0,
 }
 
 function toInput(r: DraftPolicy, idx: number) {
@@ -80,6 +83,7 @@ function toInput(r: DraftPolicy, idx: number) {
     end_d_minus: r.end_d_minus ? Number(r.end_d_minus) : null,
     start_date: null,
     end_date: null,
+    reference_date: r.reference_date || null,
     fee_description: r.fee_description || null,
     fee_type: null,
     fee_value: null,
@@ -228,6 +232,21 @@ export default function CancellationCard({
                         onChange={v => updCurrency(r._key, v)}
                         className="h-7 text-sm"
                       />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="label">기준일 직접 지정 <span className="text-slate-400 font-normal">(항공·크루즈 각각 다를 때)</span></label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="date"
+                          value={r.reference_date}
+                          onChange={e => upd(r._key, 'reference_date', e.target.value)}
+                          className="h-7 flex-1 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand"
+                        />
+                        {r.reference_date && (
+                          <button type="button" onClick={() => upd(r._key, 'reference_date', '')}
+                            className="shrink-0 text-xs text-slate-400 hover:text-red-500 px-1 transition">✕</button>
+                        )}
+                      </div>
                     </div>
                     <div className="col-span-2 sm:col-span-4">
                       <label className="label">취소료 설명</label>

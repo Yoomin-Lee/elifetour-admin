@@ -59,6 +59,7 @@ export interface CancellationPolicy {
   end_d_minus: number | null
   start_date: string | null
   end_date: string | null
+  reference_date: string | null
   fee_description: string | null
   fee_type: FeeType | null
   fee_value: number | null
