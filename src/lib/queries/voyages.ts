@@ -168,7 +168,7 @@ export async function fetchAllItinerary(): Promise<ItineraryRow[]> {
 export async function fetchAllCancellationPolicies(): Promise<CancellationRow[]> {
   const { data, error } = await sb()
     .from('cancellation_policies')
-    .select('*, voyages(region, departure_date)')
+    .select('*, voyages(region, departure_date, boarding_date)')
     .order('sort_order')
   if (error) throw error
   return data as CancellationRow[]

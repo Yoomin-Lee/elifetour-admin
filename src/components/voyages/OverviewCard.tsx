@@ -48,6 +48,7 @@ type Form = {
   ship_name: string
   departure_date: string
   return_date: string
+  boarding_date: string
   cabin_total: string
   cabin_remaining: string
   customer_count: string
@@ -64,6 +65,7 @@ function toForm(v: Voyage): Form {
     ship_name: v.ship_name ?? '',
     departure_date: v.departure_date,
     return_date: v.return_date ?? '',
+    boarding_date: v.boarding_date ?? '',
     cabin_total: String(v.cabin_total ?? ''),
     cabin_remaining: String(v.cabin_remaining ?? ''),
     customer_count: String(v.customer_count ?? ''),
@@ -86,6 +88,7 @@ export default function OverviewCard({ voyage, canWrite = true }: { voyage: Voya
       ship_name: f.ship_name || null,
       departure_date: f.departure_date,
       return_date: f.return_date || null,
+      boarding_date: f.boarding_date || null,
       cabin_total: Number(f.cabin_total) || 0,
       cabin_remaining: Number(f.cabin_remaining) || 0,
       customer_count: Number(f.customer_count) || 0,
@@ -152,6 +155,9 @@ export default function OverviewCard({ voyage, canWrite = true }: { voyage: Voya
             <ERow label="귀국일">
               <DatePicker value={f.return_date} onChange={v => setF(p => ({ ...p, return_date: v }))} placeholder="귀국일" />
             </ERow>
+            <ERow label="승선일">
+              <DatePicker value={f.boarding_date} onChange={v => setF(p => ({ ...p, boarding_date: v }))} placeholder="크루즈 승선일" />
+            </ERow>
             <ERow label="항공사">
               <Input value={f.airline} onChange={set('airline')} placeholder="대한항공" className="h-7 text-sm" />
             </ERow>
@@ -204,6 +210,7 @@ export default function OverviewCard({ voyage, canWrite = true }: { voyage: Voya
           <Row label="행사명"    value={voyageTitle(voyage)} />
           <Row label="출발일"    value={formatDate(voyage.departure_date)} />
           <Row label="귀국일"    value={formatDate(voyage.return_date)} />
+          <Row label="승선일"    value={voyage.boarding_date ? formatDate(voyage.boarding_date) : '-'} />
           <Row label="여행 기간" value={calcNights(voyage.departure_date, voyage.return_date)} />
           <Row label="항공사"    value={voyage.airline} />
           <Row label="선사"      value={voyage.cruise_line} />

@@ -156,6 +156,7 @@ function VoyageSearchInner() {
             <CancellationCard
               policies={cancellationQuery.data ?? []}
               departureDate={selectedVoyage.departure_date}
+              boardingDate={selectedVoyage.boarding_date}
               voyageId={voyageId}
               canWrite={canWrite}
             />

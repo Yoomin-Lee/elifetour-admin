@@ -13,11 +13,21 @@ import { cn } from '@/lib/utils'
 import { saveCancellationPolicy, deleteCancellationPolicy } from '@/lib/queries/voyages'
 import type { CancellationPolicy } from '@/types/database'
 
-function dMinus(departureDate: string): number {
-  const dep = new Date(departureDate + 'T00:00:00')
+function dMinus(date: string): number {
+  const dep = new Date(date + 'T00:00:00')
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   return Math.ceil((dep.getTime() - today.getTime()) / 86400000)
+}
+
+// 크루즈 카테고리 여부 (정확히 '크루즈' 또는 크루즈 포함 문자열)
+function isCruiseCat(category: string | null): boolean {
+  return (category ?? '').includes('크루즈')
+}
+
+function dMinusForPolicy(p: CancellationPolicy, departureDate: string, boardingDate: string | null): number {
+  if (isCruiseCat(p.category) && boardingDate) return dMinus(boardingDate)
+  return dMinus(departureDate)
 }
 
 function isCurrent(p: CancellationPolicy, d: number): boolean {
@@ -82,15 +92,19 @@ function toInput(r: DraftPolicy, idx: number) {
 export default function CancellationCard({
   policies,
   departureDate,
+  boardingDate,
   voyageId,
   canWrite = true,
 }: {
   policies: CancellationPolicy[]
   departureDate: string
+  boardingDate?: string | null
   voyageId: string
   canWrite?: boolean
 }) {
-  const today = dMinus(departureDate)
+  const flightDDay  = dMinus(departureDate)
+  const cruiseDDay  = boardingDate ? dMinus(boardingDate) : flightDDay
+  const today       = flightDDay  // 기존 호환성 유지용 (편집 모드)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DraftPolicy[]>([])
   const qc = useQueryClient()
@@ -238,7 +252,15 @@ export default function CancellationCard({
       <CardHeader>
         <CardTitle>취소료</CardTitle>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400">D-{today > 0 ? today : 0} 기준</span>
+          {boardingDate && boardingDate !== departureDate ? (
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span>항공 D-{flightDDay > 0 ? flightDDay : 0}</span>
+              <span className="text-slate-200">|</span>
+              <span>크루즈 D-{cruiseDDay > 0 ? cruiseDDay : 0}</span>
+            </div>
+          ) : (
+            <span className="text-xs text-slate-400">D-{flightDDay > 0 ? flightDDay : 0} 기준</span>
+          )}
           {canWrite && (
             <button
               onClick={startEdit}
@@ -265,7 +287,8 @@ export default function CancellationCard({
             </TableHeader>
             <TableBody>
               {policies.map(p => {
-                const current = isCurrent(p, today)
+                const d = dMinusForPolicy(p, departureDate, boardingDate ?? null)
+                const current = isCurrent(p, d)
                 return (
                   <TableRow
                     key={p.id}

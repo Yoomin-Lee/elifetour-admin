@@ -42,6 +42,7 @@ export const voyageFormSchema = z.object({
   ship_name:       z.string().optional(),
   departure_date:  z.string().min(1, '출발일을 입력하세요'),
   return_date:     z.string().optional(),
+  boarding_date:   z.string().optional(),
   cabin_total:     z.coerce.number().min(0).default(0),
   cabin_remaining: z.coerce.number().min(0).default(0),
   customer_count:  z.coerce.number().min(0).default(0),

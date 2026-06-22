@@ -80,6 +80,20 @@ export default function BasicInfoSection() {
             />
           </Field>
 
+          <Field label="승선일 (크루즈 취소료 기준)" error={errors.boarding_date?.message}>
+            <Controller
+              name="boarding_date"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  placeholder="크루즈 승선일 선택"
+                />
+              )}
+            />
+          </Field>
+
           <Field label="항공사" error={errors.airline?.message}>
             <Input {...register('airline')} placeholder="예: 대한항공" />
           </Field>

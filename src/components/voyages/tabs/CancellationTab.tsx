@@ -20,12 +20,21 @@ import type { CancellationPolicy } from '@/types/database'
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP']
 
-function calcDMinus(departureDate?: string | null): number | null {
-  if (!departureDate) return null
-  const dep = new Date(departureDate + 'T00:00:00')
+function calcDMinus(date?: string | null): number | null {
+  if (!date) return null
+  const dep = new Date(date + 'T00:00:00')
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   return Math.ceil((dep.getTime() - today.getTime()) / 86400000)
+}
+
+function isCruiseCat(category: string | null): boolean {
+  return (category ?? '').includes('크루즈')
+}
+
+function refDate(r: { category: string | null; voyages?: { departure_date?: string | null; boarding_date?: string | null } | null }): string | null {
+  if (isCruiseCat(r.category) && r.voyages?.boarding_date) return r.voyages.boarding_date
+  return r.voyages?.departure_date ?? null
 }
 
 function isActivePolicyRow(
@@ -203,7 +212,7 @@ export default function CancellationTab() {
             <tr>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">구분</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">기준출발일</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">기준일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">D-day 범위</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-14">현재</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">취소료(인당)</th>
@@ -221,7 +230,7 @@ export default function CancellationTab() {
             )}
             {filtered.map(r => {
               const isEdit = editingId === r.id
-              const d = calcDMinus(r.voyages?.departure_date)
+              const d = calcDMinus(refDate(r))
               const active = isActivePolicyRow(r.start_d_minus, r.end_d_minus, d)
               return (
                 <>
@@ -239,8 +248,17 @@ export default function CancellationTab() {
                       ) : '—'}
                     </td>
                     <td className="px-3 py-2 text-slate-600">{r.category ?? '—'}</td>
-                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">
-                      {r.voyages ? formatDate(r.voyages.departure_date) : '—'}
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {r.voyages ? (
+                        <span className="text-slate-600">
+                          {formatDate(refDate(r) ?? r.voyages.departure_date)}
+                          {isCruiseCat(r.category) && r.voyages.boarding_date ? (
+                            <span className="ml-1 text-[10px] text-slate-400">(승선)</span>
+                          ) : (
+                            <span className="ml-1 text-[10px] text-slate-400">(출발)</span>
+                          )}
+                        </span>
+                      ) : '—'}
                     </td>
                     <td className="px-3 py-2 font-mono text-slate-700">{dRange(r)}</td>
                     <td className="px-3 py-2">
