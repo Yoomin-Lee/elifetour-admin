@@ -4,7 +4,7 @@ import { site } from '../config/site'
 
 const navItems = [
   {
-    to: '/',
+    to: '/dashboard',
     label: '대시보드',
     end: true,
     icon: (

@@ -53,6 +53,7 @@ export default function App() {
         <Route path="/pending" element={<Pending />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/voyages?tab=상품등록" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="trips" element={<Trips />} />
           <Route path="trips/:id" element={<TripDetail />} />
           <Route path="passengers" element={<Passengers />} />
