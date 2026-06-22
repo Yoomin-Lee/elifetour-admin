@@ -377,7 +377,7 @@ export default function ShoreTab() {
                           <button
                             onClick={() => navigate(`/voyages?tab=항차검색&voyage=${r.voyage_id}`)}
                             className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition"
-                            title="항차 검색에서 보기"
+                            title="항차 상세에서 보기"
                           >
                             {voyageTitle(r.voyages)}
                             <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />

@@ -231,10 +231,10 @@ export default function PaymentTab() {
             <button
               onClick={() => navigate(`/voyages?tab=항차검색&voyage=${voyageId}`)}
               className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition"
-              title="항차 검색에서 보기"
+              title="항차 상세에서 보기"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              항차 검색
+              항차 상세
             </button>
           )}
         </div>

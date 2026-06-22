@@ -129,7 +129,7 @@ export default function ProductTab() {
       {/* 헤더 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-lg font-bold text-slate-800">상품 등록</h1>
+          <h1 className="text-lg font-bold text-slate-800">항차 검색</h1>
           <p className="text-sm text-slate-400">전체 {voyages.length}건 · 취소 제외 {active.length}건</p>
         </div>
         <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export default function ProductTab() {
                         <button
                           onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
                           className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition"
-                          title="항차 검색에서 보기"
+                          title="항차 상세에서 보기"
                         >
                           {voyageTitle(v)}
                           <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />

@@ -5,13 +5,6 @@ import { fetchVoyageDashboardData } from '../lib/queries/voyages'
 
 const NAVY_CURSOR = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'><path d='M3,2 L3,16 L6,12 L8,17 L10,16 L8,11 L13,11 Z' fill='%23172554' stroke='white' stroke-width='1.5' stroke-linejoin='round'/></svg>") 3 2, default`
 
-const STATUS_ITEMS = [
-  { key: '미오픈',   label: '미오픈',   dot: 'bg-slate-400' },
-  { key: '판매중',   label: '판매중',   dot: 'bg-blue-500'  },
-  { key: '마감',     label: '마감',     dot: 'bg-orange-500'},
-  { key: '출발완료', label: '출발완료', dot: 'bg-green-500' },
-]
-
 // 사용 가능한 카드 전체 목록
 const CARD_DEFS = [
   { id: 'on-sale',            label: '판매중 항차',      icon: Ship,         color: 'purple'                           },
@@ -187,11 +180,6 @@ export default function Dashboard() {
   const { onSaleVoyages, thisMonthDepartures, thisMonthPayments } = dash
   const totalCustomers = onSaleVoyages.reduce((s, v) => s + (v.customer_count || 0), 0)
   const overdueCount   = thisMonthPayments.filter(p => isOverdue(p.due_date)).length
-
-  const thisMonthStatusCounts = {}
-  for (const v of thisMonthDepartures) {
-    thisMonthStatusCounts[v.status] = (thisMonthStatusCounts[v.status] ?? 0) + 1
-  }
 
   const { statusCounts } = dash
   const computed = { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, statusCounts, loading }
@@ -384,11 +372,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 메인 그리드: 좌 3 / 우 2 */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-
-        {/* ── 판매중 항차 현황 (아코디언) ── */}
-        <div className="card overflow-hidden lg:col-span-3">
+      {/* 판매중 항차 현황 */}
+      <div>
+        <div className="card overflow-hidden">
           <SectionHeader title="판매중 항차 현황" link="/voyages" linkLabel="항차 관리" />
           {loading ? (
             <div className="flex items-center justify-center py-16 text-slate-400 text-sm">불러오는 중...</div>
@@ -442,65 +428,6 @@ export default function Dashboard() {
               })}
             </div>
           )}
-        </div>
-
-        {/* ── 우측 컬럼 ── */}
-        <div className="flex flex-col gap-4 lg:col-span-2">
-
-          {/* 이번달 항차 현황 요약 */}
-          <div className="card overflow-hidden">
-            <SectionHeader title="이번달 항차 현황" link="/voyages" linkLabel="항차 관리" />
-            {loading ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 text-sm">불러오는 중...</div>
-            ) : (
-              <div className="divide-y divide-slate-50">
-                {STATUS_ITEMS.map(({ key, label, dot }) => (
-                  <div key={key} className="flex items-center justify-between px-5 py-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${dot}`} />
-                      <span className="text-sm text-slate-700">{label}</span>
-                    </div>
-                    <span className="text-sm font-semibold text-slate-800">
-                      {thisMonthStatusCounts[key] ?? 0}건
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* 이번달 출발 항차 */}
-          <div className="card overflow-hidden">
-            <SectionHeader title="이번달 출발 항차" link="/voyages?tab=달력" linkLabel="달력 보기" />
-            {loading ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 text-sm">불러오는 중...</div>
-            ) : thisMonthDepartures.length === 0 ? (
-              <Empty message="이번달 출발 항차가 없습니다" />
-            ) : (
-              <div className="divide-y divide-slate-50">
-                {thisMonthDepartures.map((v) => {
-                  const cb = cabinBadge(v.cabin_remaining, v.cabin_total)
-                  return (
-                    <Link
-                      key={v.id}
-                      to={`/voyages?tab=항차검색&voyage=${v.id}`}
-                      className="flex items-center justify-between gap-2 px-5 py-3 hover:bg-slate-50/60 transition"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-800 truncate">{v.region}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">{v.ship_name ?? '-'}</p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-sm text-slate-600">{formatDate(v.departure_date)}</p>
-                        <p className={`text-xs mt-0.5 ${cb.cls}`}>{cb.text}</p>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
         </div>
       </div>
     </div>
