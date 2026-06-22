@@ -232,18 +232,14 @@ export default function ProductTab() {
                     ].join(' ')}
                   >
                     <td className="px-3 py-2 whitespace-nowrap">
-                      {isCancelled ? (
-                        <span className="line-through text-slate-400">{voyageTitle(v)}</span>
-                      ) : (
-                        <button
-                          onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
-                          className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition"
-                          title="항차 상세에서 보기"
-                        >
-                          {voyageTitle(v)}
-                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
+                        className={`group flex items-center gap-1 transition hover:text-brand ${isCancelled ? 'line-through text-slate-400' : 'font-medium text-slate-800'}`}
+                        title="항차 상세에서 보기"
+                      >
+                        {voyageTitle(v)}
+                        <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
+                      </button>
                     </td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
