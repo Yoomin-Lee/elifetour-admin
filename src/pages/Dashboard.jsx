@@ -19,7 +19,7 @@ const CARD_DEFS = [
   { id: 'cabin-remaining',    label: '총 잔여 객실',     icon: Layers,       color: 'emerald'                          },
 ]
 
-const DEFAULT_IDS = ['on-sale', 'total-customers', 'this-month-departs', 'this-month-pay']
+const DEFAULT_IDS = ['this-month-departs', 'on-sale', 'this-month-pay', 'status-미오픈']
 const STORAGE_KEY = 'elifetour_dashboard_cards'
 
 function loadSavedIds() {
