@@ -21,8 +21,8 @@ const qc = new QueryClient({
 })
 
 const TABS = [
-  { key: '항차검색', label: '항차 상세' },
   { key: '상품등록', label: '항차 검색' },
+  { key: '항차검색', label: '항차 상세' },
   { key: '크루즈',   label: '크루즈'   },
   { key: '항공',     label: '항공'     },
   { key: '호텔',     label: '호텔'     },
