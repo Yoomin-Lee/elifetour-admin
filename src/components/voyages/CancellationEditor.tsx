@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Trash2, ChevronDown, FileText, Settings } from 'lucide-react'
@@ -23,9 +23,11 @@ export default function CancellationEditor() {
   const { register } = useFormContext<VoyageFormValues>()
   const { fields, append, remove, replace } = useFieldArray<VoyageFormValues, 'policies'>({ name: 'policies' })
   const [presetOpen, setPresetOpen] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
   const [managerOpen, setManagerOpen] = useState(false)
   const [pendingPreset, setPendingPreset] = useState<CancellationPresetDB | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
+  const presetBtnRef = useRef<HTMLDivElement>(null)
 
   const { data: presets = [] } = useQuery({
     queryKey: ['cancellation-presets'],
@@ -64,12 +66,18 @@ export default function CancellationEditor() {
             )}
 
             {/* 프리셋 드롭다운 */}
-            <div className="relative">
+            <div className="relative" ref={presetBtnRef}>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setPresetOpen(v => !v)}
+                onClick={() => {
+                  if (!presetOpen && presetBtnRef.current) {
+                    const rect = presetBtnRef.current.getBoundingClientRect()
+                    setDropUp(window.innerHeight - rect.bottom < 280)
+                  }
+                  setPresetOpen(v => !v)
+                }}
                 className="gap-1"
               >
                 <FileText className="h-3.5 w-3.5" />
@@ -79,22 +87,24 @@ export default function CancellationEditor() {
               {presetOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
-                  <div className="absolute left-0 top-full mt-1 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden">
-                    {presets.length === 0 && (
-                      <p className="px-3 py-2 text-xs text-slate-400">등록된 취소료가 없습니다</p>
-                    )}
-                    {presets.map(p => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => handlePresetSelect(p)}
-                        className="w-full px-3 py-2 text-left text-xs hover:bg-slate-50 transition"
-                      >
-                        <span className="font-medium text-slate-700">{p.label}</span>
-                        <span className="ml-1.5 text-slate-400">{p.policies.length}구간</span>
-                      </button>
-                    ))}
-                    <div className="border-t border-slate-100 mt-1 pt-1">
+                  <div className={`absolute left-0 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden flex flex-col ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+                    <div className="overflow-y-auto max-h-56">
+                      {presets.length === 0 && (
+                        <p className="px-3 py-2 text-xs text-slate-400">등록된 취소료가 없습니다</p>
+                      )}
+                      {presets.map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => handlePresetSelect(p)}
+                          className="w-full px-3 py-2 text-left text-xs hover:bg-slate-50 transition"
+                        >
+                          <span className="font-medium text-slate-700">{p.label}</span>
+                          <span className="ml-1.5 text-slate-400">{p.policies.length}구간</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="border-t border-slate-100 shrink-0">
                       <button
                         type="button"
                         onClick={() => { setPresetOpen(false); setManagerOpen(true) }}
