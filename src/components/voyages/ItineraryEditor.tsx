@@ -1,12 +1,11 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useFieldArray, useFormContext, Controller } from 'react-hook-form'
-import { Plus, Trash2, Upload, Download, MapPin, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, MapPin, ChevronDown } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
-import { parseItineraryExcel, downloadItineraryTemplate } from '@/lib/excel'
 import { ITINERARY_PRESETS, PRESET_OPTIONS } from '@/config/itineraryPresets'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
@@ -17,25 +16,9 @@ const EMPTY_DAY = {
 export default function ItineraryEditor() {
   const { register, control, formState: { errors } } = useFormContext<VoyageFormValues>()
   const { fields, append, remove, replace } = useFieldArray<VoyageFormValues, 'itinerary'>({ name: 'itinerary' })
-  const fileRef = useRef<HTMLInputElement>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const [presetOpen, setPresetOpen] = useState(false)
   const [pendingPreset, setPendingPreset] = useState<string | null>(null)
-
-  async function handleExcelImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    try {
-      const rows = await parseItineraryExcel(file)
-      rows.forEach(r => append(r))
-      setImportMsg(`${rows.length}행 추가됨`)
-      setTimeout(() => setImportMsg(null), 3000)
-    } catch {
-      setImportMsg('파일을 읽을 수 없습니다')
-      setTimeout(() => setImportMsg(null), 3000)
-    }
-    e.target.value = ''
-  }
 
   function applyPreset(key: string, mode: 'replace' | 'append') {
     const preset = ITINERARY_PRESETS[key]
@@ -111,37 +94,12 @@ export default function ItineraryEditor() {
 
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => downloadItineraryTemplate()}
-            title="엑셀 양식 다운로드"
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">양식</span>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload className="h-4 w-4" /> Excel
-          </Button>
-          <Button
-            type="button"
             variant="outline"
             size="sm"
             onClick={() => append(EMPTY_DAY)}
           >
             <Plus className="h-4 w-4" /> 직접 입력
           </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            className="hidden"
-            onChange={handleExcelImport}
-          />
         </div>
       </CardHeader>
 
