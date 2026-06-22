@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -7,6 +7,7 @@ import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { fetchVoyages } from '@/lib/queries/voyages'
 import {
   fetchPaymentSchedules,
+  fetchPaymentSchedulesByMonth,
   upsertPaymentSchedule,
   deletePaymentSchedule,
   restorePaymentSchedule,
@@ -86,8 +87,12 @@ export default function PaymentTab() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const urlVoyageId = searchParams.get('voyage') ?? ''
+  const urlFilter = searchParams.get('filter')  // 'this-month' | null
   const [voyageId, setVoyageId] = useState(urlVoyageId)
   const [yearFilter, setYearFilter] = useState<string>('ALL')
+  const [thisMonthMode, setThisMonthMode] = useState(urlFilter === 'this-month')
+  const now = new Date()
+  const didAutoSelectRef = useRef(false)
 
   // URL voyage 파라미터가 바뀌면 선택 행사 동기화
   useEffect(() => {
@@ -109,12 +114,33 @@ export default function PaymentTab() {
     return Array.from(ys).sort().reverse()
   }, [voyages])
 
+  // 이번달 결제 마감 필터용 쿼리
+  const { data: thisMonthSchedules = [] } = useQuery({
+    queryKey: ['payment-schedules-month', now.getFullYear(), now.getMonth() + 1],
+    queryFn: () => fetchPaymentSchedulesByMonth(now.getFullYear(), now.getMonth() + 1),
+    enabled: thisMonthMode,
+  })
+
+  const thisMonthVoyageIds = useMemo(() => {
+    if (!thisMonthMode) return null
+    return new Set(thisMonthSchedules.map(s => s.voyage_id))
+  }, [thisMonthMode, thisMonthSchedules])
+
   const filteredVoyages = useMemo(() => {
     const sorted = [...voyages]
       .sort((a, b) => (b.departure_date ?? '').localeCompare(a.departure_date ?? ''))
+    if (thisMonthVoyageIds) return sorted.filter(v => thisMonthVoyageIds.has(v.id))
     if (yearFilter === 'ALL') return sorted
     return sorted.filter(v => v.departure_date?.startsWith(yearFilter))
-  }, [voyages, yearFilter])
+  }, [voyages, yearFilter, thisMonthVoyageIds])
+
+  // 이번달 모드 진입 시 첫 번째 행사 자동 선택
+  useEffect(() => {
+    if (thisMonthMode && !voyageId && filteredVoyages.length > 0 && !didAutoSelectRef.current) {
+      didAutoSelectRef.current = true
+      setVoyageId(filteredVoyages[0].id)
+    }
+  }, [thisMonthMode, filteredVoyages, voyageId])
 
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ['payment-schedules', voyageId],
@@ -202,9 +228,20 @@ export default function PaymentTab() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-base font-bold text-slate-800">결제 스케줄</h2>
-        <p className="text-sm text-slate-400">크루즈·항공·호텔 데포짓 및 잔금 마감일 관리</p>
+      <div className="flex items-center gap-3 flex-wrap">
+        <div>
+          <h2 className="text-base font-bold text-slate-800">결제 스케줄</h2>
+          <p className="text-sm text-slate-400">크루즈·항공·호텔 데포짓 및 잔금 마감일 관리</p>
+        </div>
+        {thisMonthMode && (
+          <button
+            onClick={() => { setThisMonthMode(false); setVoyageId('') }}
+            className="flex items-center gap-1 rounded-full bg-orange-100 text-orange-700 px-2.5 py-0.5 text-xs font-medium hover:bg-orange-200 transition"
+          >
+            이번달 결제 마감
+            <span className="ml-0.5 opacity-60">✕</span>
+          </button>
+        )}
       </div>
 
       {/* 행사 선택 */}
@@ -212,10 +249,11 @@ export default function PaymentTab() {
         <label className="label">행사 선택</label>
         <div className="flex items-center gap-2 flex-wrap">
           <YearSelect
-            value={yearFilter}
+            value={thisMonthMode ? 'ALL' : yearFilter}
             years={years}
             onChange={y => {
               setYearFilter(y)
+              setThisMonthMode(false)
               const sel = voyages.find(v => v.id === voyageId)
               if (sel && y !== 'ALL' && !sel.departure_date?.startsWith(y)) setVoyageId('')
             }}

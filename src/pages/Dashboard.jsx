@@ -7,16 +7,16 @@ const NAVY_CURSOR = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/
 
 // 사용 가능한 카드 전체 목록
 const CARD_DEFS = [
-  { id: 'on-sale',            label: '판매중 항차',      icon: Ship,         color: 'purple'                           },
-  { id: 'total-customers',    label: '총 예약 인원',     icon: Users,        color: 'blue'                             },
-  { id: 'this-month-departs', label: '이번달 출발',      icon: Anchor,       color: 'cyan'                             },
-  { id: 'this-month-pay',     label: '이번달 결제 마감', icon: CreditCard,   color: 'orange', link: '/voyages?tab=결제' },
-  { id: 'overdue',            label: '연체 결제',        icon: AlertCircle,  color: 'red',    link: '/voyages?tab=결제' },
-  { id: 'status-미오픈',      label: '미오픈 항차',      icon: Clock,        color: 'slate'                            },
-  { id: 'status-마감',        label: '마감 항차',        icon: Lock,         color: 'orange'                           },
-  { id: 'status-출발완료',    label: '출발완료 항차',    icon: Flag,         color: 'green'                            },
-  { id: 'total-voyages',      label: '전체 항차 수',     icon: List,         color: 'blue'                             },
-  { id: 'cabin-remaining',    label: '총 잔여 객실',     icon: Layers,       color: 'emerald'                          },
+  { id: 'on-sale',            label: '판매중 항차',      icon: Ship,         color: 'purple',  link: '/voyages?tab=상품등록&status=판매중'         },
+  { id: 'total-customers',    label: '총 예약 인원',     icon: Users,        color: 'blue'                                                         },
+  { id: 'this-month-departs', label: '이번달 출발',      icon: Anchor,       color: 'cyan',    link: '/voyages?tab=상품등록&filter=this-month'     },
+  { id: 'this-month-pay',     label: '이번달 결제 마감', icon: CreditCard,   color: 'orange',  link: '/voyages?tab=결제&filter=this-month'         },
+  { id: 'overdue',            label: '연체 결제',        icon: AlertCircle,  color: 'red',     link: '/voyages?tab=결제'                           },
+  { id: 'status-미오픈',      label: '미오픈 항차',      icon: Clock,        color: 'slate',   link: '/voyages?tab=상품등록&status=미오픈'         },
+  { id: 'status-마감',        label: '마감 항차',        icon: Lock,         color: 'orange',  link: '/voyages?tab=상품등록&status=마감'           },
+  { id: 'status-출발완료',    label: '출발완료 항차',    icon: Flag,         color: 'green',   link: '/voyages?tab=상품등록&status=출발완료'       },
+  { id: 'total-voyages',      label: '전체 항차 수',     icon: List,         color: 'blue',    link: '/voyages?tab=상품등록'                       },
+  { id: 'cabin-remaining',    label: '총 잔여 객실',     icon: Layers,       color: 'emerald'                                                      },
 ]
 
 const DEFAULT_IDS = ['this-month-departs', 'on-sale', 'this-month-pay', 'status-미오픈']

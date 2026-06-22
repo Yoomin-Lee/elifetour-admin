@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
@@ -87,9 +87,16 @@ export default function ProductTab() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { canWrite } = useAuth() as { canWrite: boolean }
+  const [searchParams] = useSearchParams()
+
+  // 대시보드 카드 클릭 시 URL 파라미터로 초기 필터 세팅
+  const initStatus = searchParams.get('status') ?? 'ALL'
+  const initMonthFilter = searchParams.get('filter') === 'this-month'
+
   const [filter, setFilter] = useState('')
   const [yearFilter, setYearFilter] = useState<string>('ALL')
-  const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [statusFilter, setStatusFilter] = useState<string>(initStatus)
+  const [monthFilter, setMonthFilter] = useState<boolean>(initMonthFilter)
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ status: '미오픈', customer_count: '', tour_leader: '' })
@@ -149,8 +156,12 @@ export default function ProductTab() {
     return Array.from(ys).sort().reverse()
   }, [voyages])
 
+  const now = new Date()
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
   const filtered = voyages.filter(v => {
-    if (yearFilter !== 'ALL' && !v.departure_date?.startsWith(yearFilter)) return false
+    if (monthFilter && !v.departure_date?.startsWith(thisMonth)) return false
+    if (!monthFilter && yearFilter !== 'ALL' && !v.departure_date?.startsWith(yearFilter)) return false
     if (statusFilter !== 'ALL' && v.status !== statusFilter) return false
     return !filter || voyageTitle(v).toLowerCase().includes(filter.toLowerCase()) ||
       (v.region ?? '').includes(filter) ||
@@ -168,10 +179,30 @@ export default function ProductTab() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-bold text-slate-800">항차 검색</h1>
-          <p className="text-sm text-slate-400">전체 {voyages.length}건 · 취소 제외 {active.length}건</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-slate-400">전체 {voyages.length}건 · 취소 제외 {active.length}건</p>
+            {monthFilter && (
+              <button
+                onClick={() => setMonthFilter(false)}
+                className="flex items-center gap-1 rounded-full bg-cyan-100 text-cyan-700 px-2 py-0.5 text-xs font-medium hover:bg-cyan-200 transition"
+              >
+                이번달 출발
+                <span className="ml-0.5 opacity-60">✕</span>
+              </button>
+            )}
+            {statusFilter !== 'ALL' && (
+              <button
+                onClick={() => setStatusFilter('ALL')}
+                className="flex items-center gap-1 rounded-full bg-brand/10 text-brand px-2 py-0.5 text-xs font-medium hover:bg-brand/20 transition"
+              >
+                {statusFilter}
+                <span className="ml-0.5 opacity-60">✕</span>
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
+          <YearSelect value={monthFilter ? 'ALL' : yearFilter} years={years} onChange={v => { setYearFilter(v); setMonthFilter(false) }} />
           <StatusSelect value={statusFilter} onChange={setStatusFilter} />
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
