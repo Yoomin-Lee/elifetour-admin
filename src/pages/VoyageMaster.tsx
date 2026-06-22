@@ -56,7 +56,7 @@ function VoyageMasterInner() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { canWrite } = useAuth() as { canWrite: boolean }
-  const activeTab = (searchParams.get('tab') as TabKey) ?? '항차검색'
+  const activeTab = (searchParams.get('tab') as TabKey) ?? '상품등록'
   const { connected } = useRealtimeSync()
 
   function switchTab(key: TabKey) {

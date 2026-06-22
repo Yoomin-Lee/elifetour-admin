@@ -33,7 +33,7 @@ export default function AuthCallback() {
           throw new Error('인증 정보를 찾을 수 없습니다 — URL: ' + window.location.href)
         }
 
-        navigate('/', { replace: true })
+        navigate('/voyages?tab=상품등록', { replace: true })
       } catch (err) {
         console.error('Auth callback error:', err)
         setError(err.message || '로그인 처리 중 오류가 발생했습니다.')
