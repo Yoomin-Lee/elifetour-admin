@@ -526,7 +526,7 @@ export default function CruiseTab() {
                         </button>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.boarding_date ?? v.departure_date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
                     <td className="px-3 py-2 text-slate-600 truncate">{v.cruise_line ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-600 truncate">{v.ship_name ?? '—'}</td>
