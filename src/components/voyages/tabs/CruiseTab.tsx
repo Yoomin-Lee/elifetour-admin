@@ -256,84 +256,76 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
             <button onClick={startEdit} className="ml-2 text-brand hover:underline">추가하기</button>
           )}
         </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-[640px] w-full text-xs">
-            <thead>
-              <tr className="text-slate-400 border-b border-slate-200">
-                <th className="py-1.5 text-left font-medium w-24">등급</th>
-                <th className="py-1.5 text-right font-medium w-12">보유</th>
-                <th className="py-1.5 text-right font-medium w-12">예약</th>
-                <th className="py-1.5 text-right font-medium w-12">잔여</th>
-                <th className="py-1.5 text-right font-medium w-24">CCF</th>
-                <th className="py-1.5 text-right font-medium w-24">NCCF</th>
-                <th className="py-1.5 text-right font-medium w-24">TAX</th>
-                <th className="py-1.5 text-right font-medium w-24">TIP</th>
-                <th className="py-1.5 text-right font-medium w-28 text-brand">캐빈가 (총합)</th>
-                <th className="py-1.5 text-right font-medium w-14">통화</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isEditing && draft ? (
-                <tr>
-                  <td className="py-1">
-                    <SelectOrInput
-                      value={draft.grade}
-                      onChange={v => setField('grade', v)}
-                      options={DEFAULT_GRADES}
-                      placeholder="등급 선택…"
-                    />
-                  </td>
-                  <td className="py-1 pr-1">
-                    <input type="number" min={0} value={draft.total} onChange={e => setField('total', Number(e.target.value))}
-                      className="input h-6 text-xs text-right w-full" />
-                  </td>
-                  <td className="py-1 pr-1">
-                    <input type="number" min={0} value={draft.reserved} onChange={e => setField('reserved', Number(e.target.value))}
-                      className="input h-6 text-xs text-right w-full" />
-                  </td>
-                  <td className="py-1 text-right text-slate-500">{draft.total - draft.reserved}</td>
-                  {(['ccf', 'nccf', 'tax', 'tip'] as const).map(field => (
-                    <td key={field} className="py-1 pr-1">
-                      <input type="number" min={0} value={draft[field] ?? ''}
-                        onChange={e => setField(field, e.target.value ? Number(e.target.value) : null)}
-                        placeholder="—" className="input h-6 text-xs text-right w-full" />
-                    </td>
-                  ))}
-                  <td className="py-1 text-right font-semibold text-brand">
-                    {formatPrice(calcTotal(draft), draft.currency)}
-                  </td>
-                  <td className="py-1 pr-1">
-                    <FieldSelect
-                      value={draft.currency}
-                      options={['KRW', 'USD', 'EUR', 'SGD', 'JPY']}
-                      onChange={v => setField('currency', v)}
-                      className="h-6 text-xs"
-                    />
-                  </td>
-                </tr>
-              ) : grade && (
-                <tr>
-                  <td className="py-1.5 font-medium text-slate-700">{grade.grade}</td>
-                  <td className="py-1.5 text-right text-slate-600">{grade.total}</td>
-                  <td className="py-1.5 text-right text-slate-600">{grade.reserved}</td>
-                  <td className="py-1.5 text-right">
-                    <span className={grade.total - grade.reserved === 0 ? 'text-red-500 font-medium' : 'text-slate-600'}>
-                      {grade.total - grade.reserved}
-                    </span>
-                  </td>
-                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.ccf, grade.currency)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.nccf, grade.currency)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.tax, grade.currency)}</td>
-                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.tip, grade.currency)}</td>
-                  <td className="py-1.5 text-right font-semibold text-brand">{formatPrice(calcTotal(grade), grade.currency)}</td>
-                  <td className="py-1.5 text-right text-slate-400">{grade.currency}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      ) : isEditing && draft ? (
+        <div className="space-y-2">
+          {/* 편집 1행: 등급/캐빈 수량 */}
+          <div className="flex flex-wrap gap-2 items-end">
+            <div className="w-32">
+              <p className="text-[10px] text-slate-400 mb-0.5">등급</p>
+              <SelectOrInput value={draft.grade} onChange={v => setField('grade', v)} options={DEFAULT_GRADES} placeholder="등급…" />
+            </div>
+            {(['total', 'reserved'] as const).map(f => (
+              <div key={f} className="w-16">
+                <p className="text-[10px] text-slate-400 mb-0.5">{f === 'total' ? '보유' : '예약'}</p>
+                <input type="number" min={0} value={draft[f]}
+                  onChange={e => setField(f, Number(e.target.value))}
+                  className="input h-7 text-xs text-right w-full" />
+              </div>
+            ))}
+            <div className="w-16">
+              <p className="text-[10px] text-slate-400 mb-0.5">잔여</p>
+              <div className="h-7 flex items-center justify-end pr-2 text-xs text-slate-500">{draft.total - draft.reserved}</div>
+            </div>
+          </div>
+          {/* 편집 2행: 요금 계산식 */}
+          <div className="flex flex-wrap gap-2 items-end border-t border-slate-200 pt-2">
+            {(['ccf', 'nccf', 'tax', 'tip'] as const).map((f, idx) => (
+              <Fragment key={f}>
+                <div className="w-20">
+                  <p className="text-[10px] text-slate-400 mb-0.5">{f.toUpperCase()}</p>
+                  <input type="number" min={0} value={draft[f] ?? ''}
+                    onChange={e => setField(f, e.target.value ? Number(e.target.value) : null)}
+                    placeholder="—" className="input h-7 text-xs text-right w-full" />
+                </div>
+                {idx < 3 && <span className="text-slate-400 text-sm pb-1">+</span>}
+              </Fragment>
+            ))}
+            <span className="text-slate-400 text-sm pb-1">=</span>
+            <div className="w-24">
+              <p className="text-[10px] text-brand mb-0.5">캐빈가 총합</p>
+              <div className="h-7 flex items-center justify-end pr-2 text-xs font-semibold text-brand">
+                {formatPrice(calcTotal(draft), draft.currency)}
+              </div>
+            </div>
+            <div className="w-20">
+              <p className="text-[10px] text-slate-400 mb-0.5">통화</p>
+              <FieldSelect value={draft.currency} options={['KRW', 'USD', 'EUR', 'SGD', 'JPY']}
+                onChange={v => setField('currency', v)} className="h-7 text-xs" />
+            </div>
+          </div>
         </div>
-      )}
+      ) : grade ? (
+        <div className="space-y-1.5">
+          {/* 조회 1행: 등급/캐빈 수량 */}
+          <div className="flex gap-6 text-xs">
+            <span className="text-slate-400">등급 <span className="font-semibold text-slate-700">{grade.grade}</span></span>
+            <span className="text-slate-400">보유 <span className="font-semibold text-slate-700">{grade.total}</span></span>
+            <span className="text-slate-400">예약 <span className="font-semibold text-slate-700">{grade.reserved}</span></span>
+            <span className="text-slate-400">잔여 <span className={`font-semibold ${grade.total - grade.reserved === 0 ? 'text-red-500' : 'text-slate-700'}`}>{grade.total - grade.reserved}</span></span>
+          </div>
+          {/* 조회 2행: 계산식 */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            {(['ccf', 'nccf', 'tax', 'tip'] as const).map((f, idx) => (
+              <Fragment key={f}>
+                <span className="text-slate-400">{f.toUpperCase()} <span className="text-slate-700 font-medium">{formatPrice(grade[f], grade.currency)}</span></span>
+                {idx < 3 && <span className="text-slate-300">+</span>}
+              </Fragment>
+            ))}
+            <span className="text-slate-300">=</span>
+            <span className="font-semibold text-brand">{formatPrice(calcTotal(grade), grade.currency)}</span>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
