@@ -589,9 +589,7 @@ export default function CruiseTab() {
               const totalCabin    = voyageGrades.length > 0 ? voyageGrades.reduce((s, g) => s + g.total, 0) : v.cabin_total
               const reservedCabin = voyageGrades.length > 0 ? voyageGrades.reduce((s, g) => s + g.reserved, 0) : (v.cabin_total - v.cabin_remaining)
               const remainingCabin = voyageGrades.length > 0 ? voyageGrades.reduce((s, g) => s + (g.total - g.reserved), 0) : v.cabin_remaining
-              const gradeLabel = voyageGrades.length === 0 ? '—'
-                : voyageGrades.length === 1 ? voyageGrades[0].grade
-                : `${voyageGrades[0].grade} 외 ${voyageGrades.length - 1}`
+              const gradeLabel = voyageGrades.length === 0 ? '—' : voyageGrades[0].grade
               const isCancelled = v.status === '취소'
               const isEdit     = editingId === v.id
               const isExpanded = expandedId === v.id
