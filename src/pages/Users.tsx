@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
 import { getProfiles, updateProfile, approveProfile } from '../lib/users'
 import { useAuth } from '../context/AuthContext'
+import { FieldSelect } from '@/components/ui/field-select'
 
 interface Profile {
   id: string
@@ -14,15 +14,14 @@ interface Profile {
 }
 
 const ROLE_OPTIONS = [
-  { value: 'admin',  label: '관리자' },
-  { value: 'staff',  label: '직원' },
-  { value: 'escort', label: '인솔자' },
+  { value: 'admin', label: '관리자' },
+  { value: 'staff', label: '직원' },
 ]
 
 const ROLE_COLOR: Record<string, string> = {
   admin:  'bg-blue-100 text-blue-700',
   staff:  'bg-slate-100 text-slate-600',
-  escort: 'bg-emerald-100 text-emerald-700',
+  escort: 'bg-emerald-100 text-emerald-700', // 기존 데이터 표시용 유지
 }
 
 function formatDate(d: string | null | undefined) {
@@ -90,18 +89,11 @@ function EditModal({ profile, onClose, onSave, isMe }: EditModalProps) {
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1">역할</label>
-            <div className="relative">
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/30"
-              >
-                {ROLE_OPTIONS.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            </div>
+            <FieldSelect
+              value={role}
+              options={ROLE_OPTIONS}
+              onChange={setRole}
+            />
             {isMe && role !== 'admin' && (
               <p className="mt-1 text-xs text-amber-600">본인 역할을 관리자에서 변경하면 관리 권한을 잃습니다.</p>
             )}
@@ -172,18 +164,11 @@ function ApproveModal({ profile, onClose, onApprove }: ApproveModalProps) {
 
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-1">역할 지정</label>
-          <div className="relative">
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand/30"
-            >
-              {ROLE_OPTIONS.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          </div>
+          <FieldSelect
+            value={role}
+            options={ROLE_OPTIONS}
+            onChange={setRole}
+          />
         </div>
 
         {error && (
