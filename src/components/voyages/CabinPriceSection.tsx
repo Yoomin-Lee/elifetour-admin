@@ -39,7 +39,7 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
       <div className="flex flex-wrap items-end gap-2">
         <div className="w-36">
           <p className="text-[10px] text-slate-400 mb-0.5">캐빈 등급</p>
-          <FieldSelect
+          <SelectOrInput
             value={grade}
             options={CABIN_GRADES}
             onChange={v => setValue(`cabin_grades.${index}.grade`, v)}
@@ -52,7 +52,7 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
             type="number" min={0}
             {...register(`cabin_grades.${index}.total`)}
             placeholder="0"
-            className="text-right"
+            className="h-7 text-sm text-right"
           />
         </div>
         <div className="w-32">
@@ -71,6 +71,7 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
             value={currency}
             options={CURRENCIES}
             onChange={v => setValue(`cabin_grades.${index}.currency`, v)}
+            className="h-7 text-sm"
           />
         </div>
         <button
@@ -92,7 +93,7 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
                 type="number" min={0}
                 {...register(`cabin_grades.${index}.${f}`)}
                 placeholder="—"
-                className="text-right"
+                className="h-7 text-sm text-right"
               />
             </div>
             {i < 3 && <span className="text-slate-400 pb-1 text-sm">+</span>}
@@ -101,7 +102,7 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
         <span className="text-slate-400 pb-1 text-sm">=</span>
         <div className="w-28">
           <p className="text-[10px] text-brand mb-0.5">캐빈가</p>
-          <div className="h-9 flex items-center justify-end pr-3 text-sm font-semibold text-brand border border-slate-200 rounded-lg bg-white">
+          <div className="h-7 flex items-center justify-end pr-3 text-sm font-semibold text-brand border border-slate-200 rounded-lg bg-white">
             {formatPrice(values?.ccf, values?.nccf, values?.tax, values?.tip, currency)}
           </div>
         </div>
