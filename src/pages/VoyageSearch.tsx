@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Trash2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import VoyageCombobox from '@/components/voyages/VoyageCombobox'
 import { YearSelect } from '@/components/ui/year-select'
@@ -16,6 +18,7 @@ import {
   fetchItinerary,
   fetchCancellationPolicies,
   fetchHistory,
+  deleteVoyage,
 } from '@/lib/queries/voyages'
 
 export default function VoyageSearch() {
@@ -42,6 +45,24 @@ function VoyageSearchInner() {
 
   const [yearFilter, setYearFilter] = useState<string>('ALL')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+
+  const qc = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: deleteVoyage,
+    onSuccess: () => {
+      toast.success('삭제되었습니다')
+      qc.invalidateQueries({ queryKey: ['voyages'] })
+      setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('voyage'); return next })
+    },
+    onError: () => toast.error('삭제에 실패했습니다'),
+  })
+
+  function handleDelete() {
+    if (!selectedVoyage) return
+    const label = [selectedVoyage.region, selectedVoyage.ship_name, selectedVoyage.departure_date].filter(Boolean).join(' ')  || '이 행사'
+    if (!window.confirm(`"${label}"를 삭제하시겠습니까?\n\n항공, 기항지, 취소료 등 모든 데이터가 함께 삭제됩니다.`)) return
+    deleteMutation.mutate(voyageId!)
+  }
 
   const voyagesQuery = useQuery({ queryKey: ['voyages'], queryFn: fetchVoyages })
 
@@ -152,6 +173,21 @@ function VoyageSearchInner() {
             <Skeleton className="h-40" />
             <Skeleton className="h-56" />
           </div>
+        </div>
+      )}
+
+      {/* 선택된 행사 삭제 버튼 */}
+      {voyageId && !isLoading && selectedVoyage && canWrite && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-500 transition disabled:opacity-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {deleteMutation.isPending ? '삭제 중…' : '행사 삭제'}
+          </button>
         </div>
       )}
 
