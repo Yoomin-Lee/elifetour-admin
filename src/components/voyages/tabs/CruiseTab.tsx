@@ -149,9 +149,9 @@ const DEFAULT_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', 
 
 function formatPrice(price: number | null, currency: string): string {
   if (price == null) return '—'
-  if (currency === 'KRW') return price.toLocaleString('ko-KR') + '원'
-  if (currency === 'USD') return '$' + price.toLocaleString('en-US')
-  return price.toLocaleString() + ' ' + currency
+  const sym: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
+  const prefix = sym[currency] ?? (currency + ' ')
+  return prefix + price.toLocaleString(currency === 'KRW' ? 'ko-KR' : 'en-US')
 }
 
 // ── 등급 현황 서브 패널 ───────────────────────────────────────────────────
