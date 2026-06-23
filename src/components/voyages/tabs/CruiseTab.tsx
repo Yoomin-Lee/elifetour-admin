@@ -11,6 +11,7 @@ import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
+import { SelectOrInput } from '@/components/ui/select-or-input'
 import type { Voyage, CabinGrade } from '@/types/database'
 
 // ── 선사/선박명 프리셋 ────────────────────────────────────────────────────
@@ -54,67 +55,7 @@ const ALL_SHIPS = Object.values(CRUISE_LINES).flat()
 const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
 const AGENTS = ['TMK', 'COSTA', 'ONLINE', 'DONGBO', 'VASCO', 'FLORENCE']
 
-// ── SelectOrInput — FieldSelect 기반 (직접 입력 지원) ──────────────────────
-const CUSTOM = '__CUSTOM__'
 
-function SelectOrInput({
-  value,
-  onChange,
-  options,
-  placeholder = '선택…',
-}: {
-  value: string
-  onChange: (v: string) => void
-  options: string[]
-  placeholder?: string
-}) {
-  const [isCustom, setIsCustom] = useState(false)
-
-  if (isCustom) {
-    return (
-      <div className="flex gap-1">
-        <input
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder="직접 입력"
-          autoFocus
-          className="input h-7 text-sm flex-1 min-w-0"
-        />
-        <button
-          type="button"
-          onClick={() => { setIsCustom(false); onChange('') }}
-          className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-100 transition"
-          title="목록으로"
-        >
-          <ChevronDown className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    )
-  }
-
-  // 기존 DB 값이 목록에 없으면 동적으로 추가
-  const baseOptions = value !== '' && !options.includes(value)
-    ? [value, ...options]
-    : options
-
-  const fieldOptions = [
-    ...baseOptions,
-    { value: CUSTOM, label: '✏ 직접 입력' },
-  ]
-
-  return (
-    <FieldSelect
-      value={value}
-      options={fieldOptions}
-      onChange={v => {
-        if (v === CUSTOM) { setIsCustom(true); onChange('') }
-        else onChange(v)
-      }}
-      placeholder={placeholder}
-      className="h-7 text-sm"
-    />
-  )
-}
 
 // ── 선실 편집 폼 ─────────────────────────────────────────────────────────
 type CruiseForm = {

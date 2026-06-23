@@ -4,14 +4,20 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
+import { SelectOrInput } from '@/components/ui/select-or-input'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
+const AGENTS = ['TMK', 'COSTA', 'ONLINE', 'DONGBO', 'VASCO', 'FLORENCE']
 const SYM: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
 const PRICE_FIELDS = ['ccf', 'nccf', 'tax', 'tip'] as const
 
-const EMPTY_GRADE = { grade: '', total: 0, reserved: 0, ccf: null, nccf: null, tax: null, tip: null, currency: 'USD', agent: '' }
+const EMPTY_GRADE = {
+  grade: '', total: 0, reserved: 0,
+  ccf: null, nccf: null, tax: null, tip: null,
+  currency: 'USD', agent: '',
+}
 
 function formatPrice(ccf: unknown, nccf: unknown, tax: unknown, tip: unknown, currency: string): string {
   const sum = (Number(ccf) || 0) + (Number(nccf) || 0) + (Number(tax) || 0) + (Number(tip) || 0)
@@ -25,10 +31,11 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
   const values = useWatch({ control, name: `cabin_grades.${index}` })
   const currency = values?.currency ?? 'USD'
   const grade = values?.grade ?? ''
+  const agent = values?.agent ?? ''
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 space-y-2">
-      {/* 1행: 등급 · 보유 · 통화 · 삭제 */}
+      {/* 1행: 등급 · 보유 · 에이전트 · 통화 · 삭제 */}
       <div className="flex flex-wrap items-end gap-2">
         <div className="w-36">
           <p className="text-[10px] text-slate-400 mb-0.5">캐빈 등급</p>
@@ -46,6 +53,15 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
             {...register(`cabin_grades.${index}.total`)}
             placeholder="0"
             className="text-right"
+          />
+        </div>
+        <div className="w-32">
+          <p className="text-[10px] text-slate-400 mb-0.5">에이전트</p>
+          <SelectOrInput
+            value={agent}
+            options={AGENTS}
+            onChange={v => setValue(`cabin_grades.${index}.agent`, v)}
+            placeholder="에이전트"
           />
         </div>
         <div className="flex-1" />
@@ -67,7 +83,7 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
       </div>
 
       {/* 2행: CCF + NCCF + TAX + TIP = 캐빈가 */}
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2 pt-1 border-t border-slate-200">
         {PRICE_FIELDS.map((f, i) => (
           <Fragment key={f}>
             <div className="w-20">
