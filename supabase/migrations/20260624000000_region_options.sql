@@ -8,18 +8,16 @@ create table if not exists region_options (
 
 -- 기본 지역 옵션 시드
 insert into region_options (label, sort_order) values
-  ('동북아',      1),
-  ('싱가포르',    2),
-  ('두바이',      3),
-  ('미서부',      4),
-  ('알래스카',    5),
-  ('서부지중해',  6),
-  ('동부지중해',  7),
-  ('카리브해',    8),
-  ('북유럽',      9),
-  ('개기일식',   10),
-  ('홍콩',       11),
-  ('호주',       12)
+  ('동북아',     1),
+  ('싱가포르',   2),
+  ('두바이',     3),
+  ('미서부',     4),
+  ('알래스카',   5),
+  ('서부지중해', 6),
+  ('동부지중해', 7),
+  ('카리브해',   8),
+  ('북유럽',     9),
+  ('홍콩',      10)
 on conflict (label) do nothing;
 
 alter table region_options enable row level security;
