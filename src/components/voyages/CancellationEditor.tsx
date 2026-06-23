@@ -11,7 +11,8 @@ import type { CancellationPresetDB } from '@/lib/queries/cancellationPresets'
 import CancellationPresetManager from './CancellationPresetManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP']
+const CATEGORIES = ['크루즈', '항공', '팁', '데포']
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP', 'JPY', 'AUD']
 
 const EMPTY_POLICY = {
   category: '', start_d_minus: undefined, end_d_minus: undefined,
@@ -170,7 +171,13 @@ export default function CancellationEditor() {
                 <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
                   <div>
                     <label className="label">구분</label>
-                    <Input {...register(`policies.${i}.category`)} placeholder="크루즈" />
+                    <div className="relative">
+                      <Select {...register(`policies.${i}.category`)} className="appearance-none pr-7">
+                        <option value="">-</option>
+                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </Select>
+                      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                    </div>
                   </div>
                   <div>
                     <label className="label">시작 D-</label>
