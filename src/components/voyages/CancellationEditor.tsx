@@ -246,9 +246,9 @@ export default function CancellationEditor() {
           {fields.length === 0 && !pendingPreset && (
             <p className="py-4 text-center text-sm text-slate-400">취소료 불러오기 또는 구간을 직접 추가하세요</p>
           )}
-          <div className="space-y-2">
+          <div className="space-y-1">
             {fields.map((field, i) => (
-              <div key={field.id} className="flex gap-2 items-start rounded-lg border border-slate-100 p-3">
+              <div key={field.id} className="flex gap-2 items-start rounded-lg border border-slate-100 p-2">
                 <span className="mt-2 w-5 shrink-0 text-center text-xs text-slate-400">{i + 1}</span>
                 <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
                   <div>
@@ -301,7 +301,7 @@ export default function CancellationEditor() {
                     <Input type="number" {...register(`policies.${i}.end_d_minus`)} placeholder="예: 90" />
                   </div>
                   <div className="col-span-2">
-                    <label className="label">기준일 직접 지정 <span className="text-slate-400 font-normal">(비워두면 자동)</span></label>
+                    <label className="label">기준일 <span className="text-slate-400 font-normal text-[10px]">(비워두면 자동)</span></label>
                     <DatePicker
                       value={watchedPolicies?.[i]?.reference_date ?? ''}
                       onChange={v => setValue(`policies.${i}.reference_date`, v)}

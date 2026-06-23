@@ -189,11 +189,11 @@ export default function ItineraryEditor() {
           {fields.length === 0 ? (
             <p className="py-4 text-center text-sm text-slate-400">루트를 불러오거나 직접 입력하세요</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {fields.map((field, i) => {
                 const dayErrors = errors.itinerary?.[i]
                 return (
-                  <div key={field.id} className="flex gap-2 items-start rounded-lg border border-slate-100 p-3">
+                  <div key={field.id} className="flex gap-2 items-start rounded-lg border border-slate-100 p-2">
                     <span className="mt-2 w-5 shrink-0 text-center text-xs text-slate-400">{i + 1}</span>
                     <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-5">
                       <div>

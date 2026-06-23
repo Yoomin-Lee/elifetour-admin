@@ -84,8 +84,11 @@ function VoyageNewInner() {
               <FlightsEditor />
             </div>
           </div>
-          <ItineraryEditor />
-          <CancellationEditor />
+          {/* 하단: 기항지(좌) + 취소료(우) */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[3fr_2fr] items-start">
+            <ItineraryEditor />
+            <CancellationEditor />
+          </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <Button
