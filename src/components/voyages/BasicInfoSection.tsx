@@ -143,16 +143,6 @@ export default function BasicInfoSection() {
             </Field>
 
             <div className="space-y-4">
-              <Field label="선사" error={errors.cruise_line?.message}>
-                <Input {...register('cruise_line')} placeholder="예: MSC" />
-              </Field>
-
-              <Field label="크루즈 선박명" error={errors.ship_name?.message}>
-                <Input {...register('ship_name')} placeholder="예: WORLD EUROPA" />
-              </Field>
-            </div>
-
-            <div className="space-y-4">
               <Field label="항공사" error={errors.airline?.message}>
                 <div className="flex gap-1">
                   <div className="flex-1">
@@ -193,6 +183,16 @@ export default function BasicInfoSection() {
                     />
                   )}
                 />
+              </Field>
+            </div>
+
+            <div className="space-y-4">
+              <Field label="선사" error={errors.cruise_line?.message}>
+                <Input {...register('cruise_line')} placeholder="예: MSC" />
+              </Field>
+
+              <Field label="크루즈 선박명" error={errors.ship_name?.message}>
+                <Input {...register('ship_name')} placeholder="예: WORLD EUROPA" />
               </Field>
             </div>
 
