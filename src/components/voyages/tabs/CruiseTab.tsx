@@ -634,7 +634,11 @@ export default function CruiseTab() {
                     <td className="px-3 py-2"><CruiseLineBadge value={v.cruise_line} /></td>
                     <td className="px-3 py-2 text-slate-600 truncate">{v.ship_name ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-600 truncate">{v.agent ?? '—'}</td>
-                    <td className="px-3 py-2 text-slate-600">{gradeLabel}</td>
+                    <td
+                      className="px-3 py-2 text-slate-600 cursor-pointer hover:text-brand transition-colors"
+                      onClick={() => toggleExpand(v.id)}
+                      title="선실 등급 현황 보기"
+                    >{gradeLabel}</td>
                     <td className="px-2 py-2 text-right text-slate-700">{totalCabin || '—'}</td>
                     <td className="px-2 py-2 text-right text-slate-700">{reservedCabin || '—'}</td>
                     <td className="px-2 py-2 text-right">
