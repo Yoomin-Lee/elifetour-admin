@@ -15,7 +15,6 @@ import CancellationPresetManager from './CancellationPresetManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const CATEGORIES = ['크루즈', '항공', '호텔']
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 
 const EMPTY_POLICY = {
   category: '', start_d_minus: undefined, end_d_minus: undefined,
@@ -259,15 +258,6 @@ export default function CancellationEditor() {
                     <label className="label">종료 D-</label>
                     <Input type="number" {...register(`policies.${i}.end_d_minus`)} placeholder="예: 90" />
                   </div>
-                  <div>
-                    <label className="label">통화</label>
-                    <FieldSelect
-                      value={watchedPolicies?.[i]?.fee_unit ?? ''}
-                      options={CURRENCIES}
-                      onChange={v => setValue(`policies.${i}.fee_unit`, v)}
-                      placeholder="-"
-                    />
-                  </div>
                   <div className="col-span-2">
                     <label className="label">기준일 직접 지정 <span className="text-slate-400 font-normal">(비워두면 자동)</span></label>
                     <DatePicker
@@ -279,10 +269,6 @@ export default function CancellationEditor() {
                   <div className="col-span-2">
                     <label className="label">취소료 설명</label>
                     <Input {...register(`policies.${i}.fee_description`)} placeholder="예: 크루즈요금 25%" />
-                  </div>
-                  <div>
-                    <label className="label">값</label>
-                    <Input type="number" {...register(`policies.${i}.fee_value`)} placeholder="예: 25" />
                   </div>
                 </div>
                 <button
