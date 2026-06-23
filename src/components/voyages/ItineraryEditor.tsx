@@ -202,102 +202,109 @@ export default function ItineraryEditor() {
                 const dayErrors = errors.itinerary?.[i]
                 return (
                   <div key={field.id} className="flex gap-2 items-start rounded-lg border border-slate-100 p-2">
-                    <span className="mt-2 w-5 shrink-0 text-center text-xs text-slate-400">{i + 1}</span>
-                    <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-5">
-                      <div>
-                        <label className="label">날짜 *</label>
-                        <Controller
-                          name={`itinerary.${i}.date`}
-                          control={control}
-                          render={({ field }) => (
-                            <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="날짜" size="sm" />
+                    <span className="mt-[22px] w-5 shrink-0 text-center text-xs text-slate-400">{i + 1}</span>
+                    <div className="flex-1 space-y-1.5">
+                      {/* Row 1: 날짜 | 기항지 | 도착 | 출발 */}
+                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-[88px_1fr_78px_78px]">
+                        <div>
+                          <label className="label">날짜 *</label>
+                          <Controller
+                            name={`itinerary.${i}.date`}
+                            control={control}
+                            render={({ field }) => (
+                              <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="날짜" size="sm" />
+                            )}
+                          />
+                          {dayErrors?.date && (
+                            <p className="mt-0.5 text-xs text-red-500">{dayErrors.date.message}</p>
                           )}
-                        />
-                        {dayErrors?.date && (
-                          <p className="mt-0.5 text-xs text-red-500">{dayErrors.date.message}</p>
-                        )}
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className="label">기항지 *</label>
-                        <Input {...register(`itinerary.${i}.port`)} placeholder="바르셀로나 (스페인)" />
-                        {dayErrors?.port && (
-                          <p className="mt-0.5 text-xs text-red-500">{dayErrors.port.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="label">도착</label>
-                        <Controller
-                          name={`itinerary.${i}.arrival_time`}
-                          control={control}
-                          render={({ field }) => (
-                            <TimePicker value={field.value ?? ''} onChange={field.onChange} />
+                        </div>
+                        <div>
+                          <label className="label">기항지 *</label>
+                          <Input {...register(`itinerary.${i}.port`)} placeholder="바르셀로나 (스페인)" className="h-7 text-xs" />
+                          {dayErrors?.port && (
+                            <p className="mt-0.5 text-xs text-red-500">{dayErrors.port.message}</p>
                           )}
-                        />
+                        </div>
+                        <div>
+                          <label className="label">도착</label>
+                          <Controller
+                            name={`itinerary.${i}.arrival_time`}
+                            control={control}
+                            render={({ field }) => (
+                              <TimePicker value={field.value ?? ''} onChange={field.onChange} size="sm" />
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <label className="label">출발</label>
+                          <Controller
+                            name={`itinerary.${i}.departure_time`}
+                            control={control}
+                            render={({ field }) => (
+                              <TimePicker value={field.value ?? ''} onChange={field.onChange} size="sm" />
+                            )}
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="label">출발</label>
-                        <Controller
-                          name={`itinerary.${i}.departure_time`}
-                          control={control}
-                          render={({ field }) => (
-                            <TimePicker value={field.value ?? ''} onChange={field.onChange} />
-                          )}
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <label className="label">구분</label>
-                        <Controller
-                          name={`itinerary.${i}.category`}
-                          control={control}
-                          render={({ field }) => (
-                            <SelectOrInput
-                              value={field.value ?? ''}
-                              options={ITINERARY_CATEGORIES}
-                              onChange={field.onChange}
-                              placeholder="구분"
-                            />
-                          )}
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <label className="label">통화</label>
-                        <Controller
-                          name={`itinerary.${i}.cost_currency`}
-                          control={control}
-                          render={({ field }) => (
-                            <FieldSelect
-                              value={field.value ?? 'USD'}
-                              options={CURRENCY_OPTIONS}
-                              onChange={field.onChange}
-                              className="h-7 text-sm"
-                            />
-                          )}
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <label className="label">비용(인당)</label>
-                        <Controller
-                          name={`itinerary.${i}.cost`}
-                          control={control}
-                          render={({ field }) => (
-                            <Input
-                              value={field.value ?? ''}
-                              onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
-                              placeholder="0"
-                              className="h-7 text-sm"
-                            />
-                          )}
-                        />
-                      </div>
-                      <div className="col-span-1 sm:col-span-2">
-                        <label className="label">비고</label>
-                        <Input {...register(`itinerary.${i}.summary`)} placeholder="주요 관광지, 이동 정보 등" className="h-7 text-sm" />
+                      {/* Row 2: 구분 | 통화 | 비용 | 비고 */}
+                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-[78px_56px_80px_1fr]">
+                        <div>
+                          <label className="label">구분</label>
+                          <Controller
+                            name={`itinerary.${i}.category`}
+                            control={control}
+                            render={({ field }) => (
+                              <SelectOrInput
+                                value={field.value ?? ''}
+                                options={ITINERARY_CATEGORIES}
+                                onChange={field.onChange}
+                                placeholder="구분"
+                                className="h-7 text-xs"
+                              />
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <label className="label">통화</label>
+                          <Controller
+                            name={`itinerary.${i}.cost_currency`}
+                            control={control}
+                            render={({ field }) => (
+                              <FieldSelect
+                                value={field.value ?? 'USD'}
+                                options={CURRENCY_OPTIONS}
+                                onChange={field.onChange}
+                                className="h-7 text-xs"
+                              />
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <label className="label">비용(인당)</label>
+                          <Controller
+                            name={`itinerary.${i}.cost`}
+                            control={control}
+                            render={({ field }) => (
+                              <Input
+                                value={field.value ?? ''}
+                                onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                                placeholder="0"
+                                className="h-7 text-xs"
+                              />
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <label className="label">비고</label>
+                          <Input {...register(`itinerary.${i}.summary`)} placeholder="비고" className="h-7 text-xs" />
+                        </div>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => remove(i)}
-                      className="mt-2 shrink-0 rounded p-1 text-slate-400 hover:text-red-500 transition"
+                      className="mt-[22px] shrink-0 rounded p-1 text-slate-400 hover:text-red-500 transition"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
