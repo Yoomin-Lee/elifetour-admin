@@ -17,6 +17,8 @@ import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const STATUSES = ['미오픈', '판매중', '마감', '출발완료', '취소'] as const
 
+const stripParens = (v: string) => v.replace(/\s*\(.*\)\s*$/, '')
+
 
 function Field({
   label, error, children,
@@ -152,7 +154,7 @@ export default function BasicInfoSection() {
                       <SelectOrInput
                         value={field.value ?? ''}
                         options={airlineOptions}
-                        onChange={field.onChange}
+                        onChange={v => field.onChange(stripParens(v))}
                         placeholder="항공사 선택 또는 직접 입력"
                       />
                     )}
@@ -183,7 +185,7 @@ export default function BasicInfoSection() {
                       <SelectOrInput
                         value={field.value ?? ''}
                         options={airlineOptions}
-                        onChange={field.onChange}
+                        onChange={v => field.onChange(stripParens(v))}
                         placeholder="항공사 선택 또는 직접 입력"
                       />
                     )}

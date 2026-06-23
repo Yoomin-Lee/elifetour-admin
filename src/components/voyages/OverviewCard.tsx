@@ -16,6 +16,8 @@ import { fetchRegionOptions } from '@/lib/queries/regionOptions'
 import { fetchAirlineOptions } from '@/lib/queries/airlineOptions'
 import type { Voyage, VoyageStatus, ItineraryDay } from '@/types/database'
 
+const stripParens = (v: string) => v.replace(/\s*\(.*\)\s*$/, '')
+
 const STATUS_VARIANT: Record<VoyageStatus, 'default' | 'success' | 'destructive' | 'warning' | 'info' | 'outline'> = {
   '미오픈':    'default',
   '판매중':    'success',
@@ -222,7 +224,7 @@ export default function OverviewCard({
               <SelectOrInput
                 value={f.airline}
                 options={airlineOptions}
-                onChange={v => setF(p => ({ ...p, airline: v }))}
+                onChange={v => setF(p => ({ ...p, airline: stripParens(v) }))}
                 className="h-7 text-sm"
               />
             </ERow>
@@ -230,7 +232,7 @@ export default function OverviewCard({
               <SelectOrInput
                 value={f.airline_return}
                 options={airlineOptions}
-                onChange={v => setF(p => ({ ...p, airline_return: v }))}
+                onChange={v => setF(p => ({ ...p, airline_return: stripParens(v) }))}
                 className="h-7 text-sm"
               />
             </ERow>
