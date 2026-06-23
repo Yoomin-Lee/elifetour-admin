@@ -1,7 +1,16 @@
 import { useState, useRef } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
-import { Plus, Trash2, ChevronDown, FileText, Settings } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, FileText, Settings, GripVertical } from 'lucide-react'
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext, verticalListSortingStrategy, useSortable,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
@@ -23,6 +32,22 @@ const LEGACY_CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 const cleanFeeUnit = (v: string | undefined | null) =>
   LEGACY_CURRENCIES.includes(v ?? '') ? '' : (v ?? '')
 
+function SortablePolicyRow({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1 }}
+      className="flex gap-2 items-start rounded-lg border border-slate-100 p-2"
+    >
+      <div {...attributes} {...listeners} className="mt-2 cursor-grab active:cursor-grabbing shrink-0 touch-none">
+        <GripVertical className="h-4 w-4 text-slate-300 hover:text-slate-500" />
+      </div>
+      {children}
+    </div>
+  )
+}
+
 const EMPTY_POLICY = {
   category: '', start_d_minus: undefined, end_d_minus: undefined,
   reference_date: '', fee_description: '', fee_type: undefined, fee_value: undefined,
@@ -32,7 +57,20 @@ const EMPTY_POLICY = {
 export default function CancellationEditor() {
   const { register, watch, setValue } = useFormContext<VoyageFormValues>()
   const watchedPolicies = watch('policies')
-  const { fields, append, remove, replace } = useFieldArray<VoyageFormValues, 'policies'>({ name: 'policies' })
+  const { fields, append, remove, replace, move } = useFieldArray<VoyageFormValues, 'policies'>({ name: 'policies' })
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  function handlePolicyDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIdx = fields.findIndex(f => f.id === active.id)
+    const newIdx = fields.findIndex(f => f.id === over.id)
+    if (oldIdx !== -1 && newIdx !== -1) move(oldIdx, newIdx)
+  }
   const [presetOpen, setPresetOpen] = useState(false)
   const [dropUp, setDropUp] = useState(false)
   const [managerOpen, setManagerOpen] = useState(false)
@@ -246,9 +284,11 @@ export default function CancellationEditor() {
           {fields.length === 0 && !pendingPreset && (
             <p className="py-4 text-center text-sm text-slate-400">취소료 불러오기 또는 구간을 직접 추가하세요</p>
           )}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePolicyDragEnd}>
+          <SortableContext items={fields.map(f => f.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-1">
             {fields.map((field, i) => (
-              <div key={field.id} className="flex gap-2 items-start rounded-lg border border-slate-100 p-2">
+              <SortablePolicyRow key={field.id} id={field.id}>
                 <span className="mt-2 w-5 shrink-0 text-center text-xs text-slate-400">{i + 1}</span>
                 <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
                   <div>
@@ -320,9 +360,11 @@ export default function CancellationEditor() {
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-              </div>
+              </SortablePolicyRow>
             ))}
           </div>
+          </SortableContext>
+          </DndContext>
         </CardContent>
       </Card>
 
