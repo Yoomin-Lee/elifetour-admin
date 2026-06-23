@@ -4,6 +4,7 @@ export type RegionOption = {
   id: string
   label: string
   sort_order: number
+  usage_count: number
 }
 
 function sb() {
@@ -14,10 +15,15 @@ function sb() {
 export async function fetchRegionOptions(): Promise<RegionOption[]> {
   const { data, error } = await sb()
     .from('region_options')
-    .select('id, label, sort_order')
+    .select('id, label, sort_order, usage_count')
+    .order('usage_count', { ascending: false })
     .order('sort_order')
   if (error) throw error
   return data as RegionOption[]
+}
+
+export async function incrementRegionUsage(id: string): Promise<void> {
+  await sb().rpc('increment_region_usage', { row_id: id })
 }
 
 export async function addRegionOption(label: string): Promise<RegionOption> {

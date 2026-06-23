@@ -4,6 +4,7 @@ export type AirlineOption = {
   id: string
   label: string
   sort_order: number
+  usage_count: number
 }
 
 function sb() {
@@ -14,10 +15,15 @@ function sb() {
 export async function fetchAirlineOptions(): Promise<AirlineOption[]> {
   const { data, error } = await sb()
     .from('airline_options')
-    .select('id, label, sort_order')
+    .select('id, label, sort_order, usage_count')
+    .order('usage_count', { ascending: false })
     .order('sort_order')
   if (error) throw error
   return data as AirlineOption[]
+}
+
+export async function incrementAirlineUsage(id: string): Promise<void> {
+  await sb().rpc('increment_airline_usage', { row_id: id })
 }
 
 export async function addAirlineOption(label: string): Promise<AirlineOption> {

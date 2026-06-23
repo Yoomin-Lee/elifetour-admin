@@ -9,8 +9,8 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { FieldSelect } from '@/components/ui/field-select'
 import { SelectOrInput } from '@/components/ui/select-or-input'
 
-import { fetchRegionOptions } from '@/lib/queries/regionOptions'
-import { fetchAirlineOptions } from '@/lib/queries/airlineOptions'
+import { fetchRegionOptions, incrementRegionUsage } from '@/lib/queries/regionOptions'
+import { fetchAirlineOptions, incrementAirlineUsage } from '@/lib/queries/airlineOptions'
 import RegionManager from './RegionManager'
 import AirlineManager from './AirlineManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
@@ -39,17 +39,28 @@ export default function BasicInfoSection() {
   const [regionManagerOpen, setRegionManagerOpen] = useState(false)
   const [airlineManagerOpen, setAirlineManagerOpen] = useState(false)
 
-  const { data: regionOptions = [] } = useQuery({
+  const { data: regionOptionsFull = [] } = useQuery({
     queryKey: ['region-options'],
     queryFn: fetchRegionOptions,
-    select: data => data.map(r => r.label),
   })
+  const regionOptions = regionOptionsFull.map(r => r.label)
 
-  const { data: airlineOptions = [] } = useQuery({
+  const { data: airlineOptionsFull = [] } = useQuery({
     queryKey: ['airline-options'],
     queryFn: fetchAirlineOptions,
-    select: data => data.map(r => r.label),
   })
+  const airlineOptions = airlineOptionsFull.map(r => r.label)
+
+  function trackRegion(label: string) {
+    const match = regionOptionsFull.find(r => r.label === label)
+    if (match) incrementRegionUsage(match.id)
+  }
+
+  function trackAirline(label: string) {
+    const code = stripParens(label)
+    const match = airlineOptionsFull.find(r => r.label === label || stripParens(r.label) === code)
+    if (match) incrementAirlineUsage(match.id)
+  }
 
   return (
     <>
@@ -69,7 +80,7 @@ export default function BasicInfoSection() {
                       <SelectOrInput
                         value={field.value ?? ''}
                         options={regionOptions}
-                        onChange={field.onChange}
+                        onChange={v => { field.onChange(v); trackRegion(v) }}
                         placeholder="상품명 선택 또는 직접 입력"
                       />
                     )}
@@ -152,7 +163,7 @@ export default function BasicInfoSection() {
                       <SelectOrInput
                         value={field.value ?? ''}
                         options={airlineOptions}
-                        onChange={v => field.onChange(stripParens(v))}
+                        onChange={v => { field.onChange(stripParens(v)); trackAirline(v) }}
                         placeholder="항공사 선택 또는 직접 입력"
                       />
                     )}
@@ -183,7 +194,7 @@ export default function BasicInfoSection() {
                       <SelectOrInput
                         value={field.value ?? ''}
                         options={airlineOptions}
-                        onChange={v => field.onChange(stripParens(v))}
+                        onChange={v => { field.onChange(stripParens(v)); trackAirline(v) }}
                         placeholder="항공사 선택 또는 직접 입력"
                       />
                     )}
