@@ -29,8 +29,15 @@ const EMPTY_DAY = {
   category: '', cost: null as number | null, cost_currency: 'USD', summary: '', sort_order: 0,
 }
 
+function addDays(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d + days)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
 export default function ItineraryEditor() {
-  const { register, control, formState: { errors } } = useFormContext<VoyageFormValues>()
+  const { register, control, formState: { errors }, watch } = useFormContext<VoyageFormValues>()
+  const departureDate = watch('departure_date')
   const { fields, append, remove, replace } = useFieldArray<VoyageFormValues, 'itinerary'>({ name: 'itinerary' })
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const [presetOpen, setPresetOpen] = useState(false)
@@ -45,8 +52,9 @@ export default function ItineraryEditor() {
   })
 
   function applyPreset(preset: ItineraryPreset, mode: 'replace' | 'append') {
+    const baseOffset = mode === 'append' ? fields.length : 0
     const rows = preset.ports.map((p, i) => ({
-      date: '',
+      date: departureDate ? addDays(departureDate, baseOffset + i) : '',
       port: p.port,
       arrival_time: p.arrival_time,
       departure_time: p.departure_time,
@@ -54,7 +62,7 @@ export default function ItineraryEditor() {
       cost: null as number | null,
       cost_currency: 'USD',
       summary: p.summary,
-      sort_order: i + 1,
+      sort_order: baseOffset + i + 1,
     }))
     if (mode === 'replace') replace(rows)
     else rows.forEach(r => append(r))
