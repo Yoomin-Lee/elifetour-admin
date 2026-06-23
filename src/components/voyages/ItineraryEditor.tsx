@@ -268,10 +268,17 @@ export default function ItineraryEditor() {
                       </div>
                       <div className="col-span-1">
                         <label className="label">비용(인당)</label>
-                        <Input
-                          {...register(`itinerary.${i}.cost`)}
-                          placeholder="0"
-                          className="h-7 text-sm"
+                        <Controller
+                          name={`itinerary.${i}.cost`}
+                          control={control}
+                          render={({ field }) => (
+                            <Input
+                              value={field.value ?? ''}
+                              onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                              placeholder="0"
+                              className="h-7 text-sm"
+                            />
+                          )}
                         />
                       </div>
                       <div className="col-span-1 sm:col-span-2">
