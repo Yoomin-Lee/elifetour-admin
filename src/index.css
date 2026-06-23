@@ -40,6 +40,21 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  .scrollbar-navy {
+    scrollbar-width: thin;
+    scrollbar-color: #0F4C8A transparent;
+  }
+  .scrollbar-navy::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-navy::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-navy::-webkit-scrollbar-thumb {
+    background-color: #0F4C8A;
+    border-radius: 99px;
+  }
 }
 
 @layer components {
