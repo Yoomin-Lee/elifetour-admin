@@ -252,7 +252,13 @@ export async function restoreHotel(snapshot: Hotel): Promise<void> {
   if (error) throw error
 }
 
-// ── Voyage update ─────────────────────────────────────────────────────────
+// ── Voyage delete / update ────────────────────────────────────────────────
+
+export async function deleteVoyage(id: string): Promise<void> {
+  const { error } = await sb().from('voyages').delete().eq('id', id)
+  if (error) throw error
+}
+
 
 export async function updateVoyage(
   id: string,
