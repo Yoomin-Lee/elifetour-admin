@@ -73,6 +73,35 @@ export const voyageFormSchema = z.object({
   flights:         z.array(flightSchema).default([]),
   itinerary:       z.array(itinerarySchema).default([]),
   policies:        z.array(policySchema).default([]),
+}).superRefine((data, ctx) => {
+  const dep = data.departure_date
+  const ret = data.return_date
+  const board = data.boarding_date
+
+  if (ret && ret < dep) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: '귀국일은 출발일 이후여야 합니다',
+      path: ['return_date'],
+    })
+  }
+
+  if (board) {
+    if (board < dep) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '승선일은 출발일 이후여야 합니다',
+        path: ['boarding_date'],
+      })
+    }
+    if (ret && board > ret) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '승선일은 귀국일 이전이어야 합니다',
+        path: ['boarding_date'],
+      })
+    }
+  }
 })
 
 export type VoyageFormValues = z.infer<typeof voyageFormSchema>
