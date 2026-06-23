@@ -216,19 +216,26 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
     }
   }
 
+  function gradesToDrafts() {
+    return grades.map(g => ({
+      _key: g.id, _isNew: false, _deleted: false,
+      id: g.id, grade: g.grade,
+      total: g.total, reserved: g.reserved,
+      price_per_person: null,
+      ccf: g.ccf ?? null, nccf: g.nccf ?? null,
+      tax: g.tax ?? null, tip: g.tip ?? null,
+      currency: g.currency, sort_order: g.sort_order,
+    }))
+  }
+
   function startEdit() {
-    setDrafts(grades.length > 0
-      ? grades.map(g => ({
-          _key: g.id, _isNew: false, _deleted: false,
-          id: g.id, grade: g.grade,
-          total: g.total, reserved: g.reserved,
-          price_per_person: null,
-          ccf: g.ccf ?? null, nccf: g.nccf ?? null,
-          tax: g.tax ?? null, tip: g.tip ?? null,
-          currency: g.currency, sort_order: g.sort_order,
-        }))
-      : [makeDraft()]
-    )
+    setDrafts(grades.length > 0 ? gradesToDrafts() : [makeDraft()])
+    setIsEditing(true)
+    saveMut.reset()
+  }
+
+  function startEditWithNew() {
+    setDrafts([...gradesToDrafts(), makeDraft()])
     setIsEditing(true)
     saveMut.reset()
   }
@@ -274,9 +281,16 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
               </button>
             </>
           ) : canWrite && (
-            <button onClick={startEdit} className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition">
-              <Pencil className="h-3 w-3" />편집
-            </button>
+            <>
+              <button
+                onClick={startEditWithNew}
+                className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1 transition">
+                <Plus className="h-3 w-3" />등급 추가
+              </button>
+              <button onClick={startEdit} className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition">
+                <Pencil className="h-3 w-3" />편집
+              </button>
+            </>
           )}
         </div>
       </div>
