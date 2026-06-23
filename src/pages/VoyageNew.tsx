@@ -76,9 +76,14 @@ function VoyageNewInner() {
         )}
 
         <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
-          <BasicInfoSection />
-          <CabinPriceSection />
-          <FlightsEditor />
+          {/* 상단: 기본정보(좌) + 캐빈·항공(우) */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[3fr_2fr]">
+            <BasicInfoSection />
+            <div className="space-y-4">
+              <CabinPriceSection />
+              <FlightsEditor />
+            </div>
+          </div>
           <ItineraryEditor />
           <CancellationEditor />
 

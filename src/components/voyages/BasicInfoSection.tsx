@@ -60,7 +60,7 @@ export default function BasicInfoSection() {
           <CardTitle>기본 정보</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="지역 / 상품명 *" error={errors.region?.message}>
               <div className="flex gap-1">
                 <div className="flex-1">
