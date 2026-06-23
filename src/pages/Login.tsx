@@ -12,9 +12,7 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sidebar to-brand p-4">
       <div className="w-full max-w-sm">
-        {/* 카드 */}
         <div className="rounded-2xl bg-white p-8 shadow-2xl">
-          {/* 로고 영역 */}
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand text-white shadow-lg">
               <Plane className="h-8 w-8" />

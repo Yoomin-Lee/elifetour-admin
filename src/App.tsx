@@ -25,21 +25,21 @@ function Spinner() {
 
 const DEV_MODE = false
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isPending, loading } = useAuth()
-  if (DEV_MODE) return children
+  if (DEV_MODE) return <>{children}</>
   if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
   if (isPending) return <Navigate to="/pending" replace />
-  return children
+  return <>{children}</>
 }
 
-function RoleRoute({ allow, children }) {
+function RoleRoute({ allow, children }: { allow: string[]; children: React.ReactNode }) {
   const { role, loading } = useAuth()
-  if (DEV_MODE) return children
+  if (DEV_MODE) return <>{children}</>
   if (loading) return <Spinner />
   if (!allow.includes(role)) return <Navigate to="/" replace />
-  return children
+  return <>{children}</>
 }
 
 export default function App() {
@@ -57,7 +57,7 @@ export default function App() {
           <Route path="trips" element={<Trips />} />
           <Route path="trips/:id" element={<TripDetail />} />
           <Route path="passengers" element={<Passengers />} />
-<Route path="voyages" element={<VoyageMaster />} />
+          <Route path="voyages" element={<VoyageMaster />} />
           <Route path="voyages/new" element={<VoyageNew />} />
           <Route path="partners" element={<Partners />} />
           <Route path="users" element={

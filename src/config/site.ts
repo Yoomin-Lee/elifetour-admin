@@ -4,7 +4,13 @@ export const site = {
   url: import.meta.env.VITE_SITE_URL || 'https://yoomin-lee.github.io/elifetour-admin',
 }
 
-export const statusOptions = {
+interface StatusOption {
+  value: string
+  label: string
+  color?: string
+}
+
+export const statusOptions: Record<string, StatusOption[]> = {
   trip: [
     { value: 'upcoming',  label: '예정',   color: 'blue' },
     { value: 'ongoing',   label: '진행중', color: 'green' },

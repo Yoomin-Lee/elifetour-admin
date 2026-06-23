@@ -1,6 +1,6 @@
 import { supabase, t } from './supabase'
 
-export async function getPassengers(tripId) {
+export async function getPassengers(tripId: string) {
   const { data, error } = await supabase
     .from(t('passengers'))
     .select('*')
@@ -10,7 +10,7 @@ export async function getPassengers(tripId) {
   return data
 }
 
-export async function getPassengersByTrip(tripId) {
+export async function getPassengersByTrip(tripId: string) {
   const { data, error } = await supabase
     .from(t('passengers'))
     .select(`*, ${t('trips')}(title, depart_date, destination)`)
@@ -20,17 +20,17 @@ export async function getPassengersByTrip(tripId) {
   return data
 }
 
-export async function getPassengersByVoyage(voyageId) {
+export async function getPassengersByVoyage(voyageId: string) {
   const { data, error } = await supabase
     .from(t('passengers'))
     .select('*')
     .eq('voyage_id', voyageId)
     .order('created_at', { ascending: true })
   if (error) throw error
-  return data
+  return data ?? []
 }
 
-export async function searchPassengers(query) {
+export async function searchPassengers(query: string) {
   const { data, error } = await supabase
     .from(t('passengers'))
     .select(`*, ${t('trips')}(title, depart_date, destination)`)
@@ -38,10 +38,10 @@ export async function searchPassengers(query) {
     .order('created_at', { ascending: false })
     .limit(50)
   if (error) throw error
-  return data
+  return (data ?? []) as unknown as Record<string, unknown>[]
 }
 
-export async function createPassenger(passenger) {
+export async function createPassenger(passenger: Record<string, unknown>) {
   const { data, error } = await supabase
     .from(t('passengers'))
     .insert(passenger)
@@ -51,7 +51,7 @@ export async function createPassenger(passenger) {
   return data
 }
 
-export async function updatePassenger(id, updates) {
+export async function updatePassenger(id: string, updates: Record<string, unknown>) {
   const { data, error } = await supabase
     .from(t('passengers'))
     .update(updates)
@@ -62,12 +62,12 @@ export async function updatePassenger(id, updates) {
   return data
 }
 
-export async function deletePassenger(id) {
+export async function deletePassenger(id: string) {
   const { error } = await supabase.from(t('passengers')).delete().eq('id', id)
   if (error) throw error
 }
 
-export async function getPassengerCount(tripId) {
+export async function getPassengerCount(tripId: string) {
   const { count, error } = await supabase
     .from(t('passengers'))
     .select('id', { count: 'exact', head: true })

@@ -9,7 +9,7 @@ export async function getProfiles() {
   return data ?? []
 }
 
-export async function updateProfileRole(id, role) {
+export async function updateProfileRole(id: string, role: string) {
   const { data, error } = await supabase
     .from('eli_profiles')
     .update({ role })
@@ -20,7 +20,7 @@ export async function updateProfileRole(id, role) {
   return data
 }
 
-export async function updateProfile(id, fields) {
+export async function updateProfile(id: string, fields: Record<string, unknown>) {
   const { data, error } = await supabase
     .from('eli_profiles')
     .update(fields)
@@ -31,7 +31,7 @@ export async function updateProfile(id, fields) {
   return data
 }
 
-export async function approveProfile(id, role = 'staff') {
+export async function approveProfile(id: string, role = 'staff') {
   const { data, error } = await supabase
     .from('eli_profiles')
     .update({ status: 'approved', role })

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function handleCallback() {
@@ -12,7 +12,6 @@ export default function AuthCallback() {
         const search = new URLSearchParams(window.location.search)
         const hash   = new URLSearchParams(window.location.hash.slice(1))
 
-        // 에러 먼저 확인
         const errCode = search.get('error') || hash.get('error')
         const errDesc = search.get('error_description') || hash.get('error_description')
         if (errCode) throw new Error(errDesc || errCode)
@@ -22,21 +21,20 @@ export default function AuthCallback() {
         const refreshToken = hash.get('refresh_token') || ''
 
         if (code) {
-          // PKCE flow: query string에 code
-          const { error } = await supabase.auth.exchangeCodeForSession(code)
-          if (error) throw error
+          const { error: e } = await supabase.auth.exchangeCodeForSession(code)
+          if (e) throw e
         } else if (accessToken) {
-          // Implicit flow: hash에 access_token
-          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
-          if (error) throw error
+          const { error: e } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          if (e) throw e
         } else {
           throw new Error('인증 정보를 찾을 수 없습니다 — URL: ' + window.location.href)
         }
 
         navigate('/voyages?tab=상품등록', { replace: true })
-      } catch (err) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : '로그인 처리 중 오류가 발생했습니다.'
         console.error('Auth callback error:', err)
-        setError(err.message || '로그인 처리 중 오류가 발생했습니다.')
+        setError(message)
         setTimeout(() => navigate('/login', { replace: true }), 3000)
       }
     }

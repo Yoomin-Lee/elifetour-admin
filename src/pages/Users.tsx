@@ -3,28 +3,45 @@ import { ChevronDown } from 'lucide-react'
 import { getProfiles, updateProfile, approveProfile } from '../lib/users'
 import { useAuth } from '../context/AuthContext'
 
+interface Profile {
+  id: string
+  email?: string | null
+  display_name?: string | null
+  avatar_url?: string | null
+  role: string
+  status: string
+  created_at: string
+}
+
 const ROLE_OPTIONS = [
   { value: 'admin',  label: '관리자' },
   { value: 'staff',  label: '직원' },
   { value: 'escort', label: '인솔자' },
 ]
 
-const ROLE_COLOR = {
+const ROLE_COLOR: Record<string, string> = {
   admin:  'bg-blue-100 text-blue-700',
   staff:  'bg-slate-100 text-slate-600',
   escort: 'bg-emerald-100 text-emerald-700',
 }
 
-function formatDate(d) {
+function formatDate(d: string | null | undefined) {
   if (!d) return '-'
   return new Date(d).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-function EditModal({ profile, onClose, onSave, isMe }) {
+interface EditModalProps {
+  profile: Profile
+  isMe: boolean
+  onClose: () => void
+  onSave: (updated: Profile) => void
+}
+
+function EditModal({ profile, onClose, onSave, isMe }: EditModalProps) {
   const [name, setName] = useState(profile.display_name || '')
   const [role, setRole] = useState(profile.role || 'staff')
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleSave() {
     setSaving(true)
@@ -32,8 +49,8 @@ function EditModal({ profile, onClose, onSave, isMe }) {
     try {
       const updated = await updateProfile(profile.id, { display_name: name.trim() || null, role })
       onSave(updated)
-    } catch (e) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '저장 실패')
       setSaving(false)
     }
   }
@@ -96,17 +113,10 @@ function EditModal({ profile, onClose, onSave, isMe }) {
         )}
 
         <div className="flex gap-2 pt-1">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
-          >
+          <button onClick={onClose} className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
             취소
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50 transition"
-          >
+          <button onClick={handleSave} disabled={saving} className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50 transition">
             {saving ? '저장 중…' : '저장'}
           </button>
         </div>
@@ -115,10 +125,16 @@ function EditModal({ profile, onClose, onSave, isMe }) {
   )
 }
 
-function ApproveModal({ profile, onClose, onApprove }) {
+interface ApproveModalProps {
+  profile: Profile
+  onClose: () => void
+  onApprove: (updated: Profile) => void
+}
+
+function ApproveModal({ profile, onClose, onApprove }: ApproveModalProps) {
   const [role, setRole] = useState('staff')
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleApprove() {
     setSaving(true)
@@ -126,8 +142,8 @@ function ApproveModal({ profile, onClose, onApprove }) {
     try {
       const updated = await approveProfile(profile.id, role)
       onApprove(updated)
-    } catch (e) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '처리 실패')
       setSaving(false)
     }
   }
@@ -175,17 +191,10 @@ function ApproveModal({ profile, onClose, onApprove }) {
         )}
 
         <div className="flex gap-2 pt-1">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
-          >
+          <button onClick={onClose} className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
             취소
           </button>
-          <button
-            onClick={handleApprove}
-            disabled={saving}
-            className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50 transition"
-          >
+          <button onClick={handleApprove} disabled={saving} className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-50 transition">
             {saving ? '처리 중…' : '승인하기'}
           </button>
         </div>
@@ -196,25 +205,25 @@ function ApproveModal({ profile, onClose, onApprove }) {
 
 export default function Users() {
   const { user: me } = useAuth()
-  const [profiles, setProfiles] = useState([])
+  const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [editTarget, setEditTarget] = useState(null)
-  const [approveTarget, setApproveTarget] = useState(null)
+  const [error, setError] = useState<string | null>(null)
+  const [editTarget, setEditTarget] = useState<Profile | null>(null)
+  const [approveTarget, setApproveTarget] = useState<Profile | null>(null)
 
   useEffect(() => {
     getProfiles()
       .then(setProfiles)
-      .catch((e) => setError(e.message))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : '오류'))
       .finally(() => setLoading(false))
   }, [])
 
-  function handleSaved(updated) {
+  function handleSaved(updated: Profile) {
     setProfiles((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)))
     setEditTarget(null)
   }
 
-  function handleApproved(updated) {
+  function handleApproved(updated: Profile) {
     setProfiles((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)))
     setApproveTarget(null)
   }
@@ -241,7 +250,6 @@ export default function Users() {
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
-      {/* 승인 대기 섹션 */}
       {pending.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -295,7 +303,6 @@ export default function Users() {
         </div>
       )}
 
-      {/* 승인된 직원 목록 */}
       <div className="space-y-3">
         {pending.length > 0 && (
           <h2 className="text-sm font-semibold text-slate-500">승인된 직원</h2>

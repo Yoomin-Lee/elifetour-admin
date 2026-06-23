@@ -46,7 +46,7 @@ export function useRealtimeSync(): { connected: boolean } {
         qc.invalidateQueries({ queryKey: ['payment-schedules'] })
         qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
       })
-      .subscribe(status => {
+      .subscribe((status: string) => {
         setConnected(status === 'SUBSCRIBED')
       })
 

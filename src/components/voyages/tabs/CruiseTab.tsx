@@ -154,7 +154,7 @@ type DraftGrade = {
   id: string; grade: string; total: number; reserved: number
   price_per_person: number | null
   ccf: number | null; nccf: number | null; tax: number | null; tip: number | null
-  currency: string; sort_order: number
+  currency: string; agent: string | null; sort_order: number
 }
 
 function calcTotal(g: { ccf: number | null; nccf: number | null; tax: number | null; tip: number | null; price_per_person: number | null }): number | null {
@@ -191,6 +191,7 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
         ...rest,
         grade: rest.grade || '기본',
         price_per_person: calcTotal(rest),
+        agent: rest.agent || null,
         sort_order: idx,
       }))
       const deletedIds = drafts.filter(d => d._deleted && !d._isNew).map(d => d.id)
@@ -212,7 +213,7 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
       _key: `new-${keyRef.current}`, _isNew: true, _deleted: false,
       id: '', grade: '', total: 0, reserved: 0,
       price_per_person: null, ccf: null, nccf: null, tax: null, tip: null,
-      currency: 'USD', sort_order: 0,
+      currency: 'USD', agent: null, sort_order: 0,
     }
   }
 
@@ -224,7 +225,7 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
       price_per_person: null,
       ccf: g.ccf ?? null, nccf: g.nccf ?? null,
       tax: g.tax ?? null, tip: g.tip ?? null,
-      currency: g.currency, sort_order: g.sort_order,
+      currency: g.currency, agent: g.agent ?? null, sort_order: g.sort_order,
     }))
   }
 
@@ -307,11 +308,14 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
         <div className="divide-y divide-slate-100">
           {grades.map(g => (
             <div key={g.id} className="py-2 first:pt-0 last:pb-0">
-              <div className="flex gap-5 text-xs mb-1">
+              <div className="flex gap-5 text-xs mb-1 flex-wrap">
                 <span className="font-semibold text-slate-700 w-12">{g.grade}</span>
                 <span className="text-slate-400">보유 <span className="font-semibold text-slate-700">{g.total}</span></span>
                 <span className="text-slate-400">예약 <span className="font-semibold text-slate-700">{g.reserved}</span></span>
                 <span className="text-slate-400">잔여 <span className={`font-semibold ${g.total - g.reserved === 0 ? 'text-red-500' : 'text-slate-700'}`}>{g.total - g.reserved}</span></span>
+                {g.agent && (
+                  <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{g.agent}</span>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
                 {(['ccf', 'nccf', 'tax', 'tip'] as const).map((f, idx) => (
@@ -333,7 +337,7 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
         <div className="space-y-2">
           {visibleDrafts.map(d => (
             <div key={d._key} className="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
-              {/* 편집 1행: 등급 + 수량 + 삭제 */}
+              {/* 편집 1행: 등급 + 수량 + 에이전트 + 삭제 */}
               <div className="flex flex-wrap gap-2 items-end">
                 <div className="w-28">
                   <p className="text-[10px] text-slate-400 mb-0.5">등급</p>
@@ -350,6 +354,10 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
                 <div className="w-12">
                   <p className="text-[10px] text-slate-400 mb-0.5">잔여</p>
                   <div className="h-7 flex items-center justify-end pr-1 text-xs text-slate-500">{d.total - d.reserved}</div>
+                </div>
+                <div className="w-28">
+                  <p className="text-[10px] text-slate-400 mb-0.5">에이전트</p>
+                  <SelectOrInput value={d.agent ?? ''} onChange={v => updateDraft(d._key, 'agent', v || null)} options={AGENTS} placeholder="에이전트…" />
                 </div>
                 <div className="flex-1" />
                 <button

@@ -3,24 +3,44 @@ import { ChevronDown } from 'lucide-react'
 import { DatePicker } from './ui/date-picker'
 import { statusOptions } from '../config/site'
 
-const emptyForm = {
+interface TripFormData {
+  title: string
+  destination: string
+  depart_date: string
+  return_date: string
+  status: string
+  price_per_person: string | number
+  max_pax: string | number
+  manager: string
+  notes: string
+}
+
+interface TripFormProps {
+  initial?: Partial<TripFormData>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onSubmit: (data: any) => void
+  onCancel: () => void
+  loading: boolean
+}
+
+const emptyForm: TripFormData = {
   title: '', destination: '', depart_date: '', return_date: '',
   status: 'upcoming', price_per_person: '', max_pax: '', manager: '', notes: '',
 }
 
-export default function TripForm({ initial = {}, onSubmit, onCancel, loading }) {
-  const [form, setForm] = useState({ ...emptyForm, ...initial })
+export default function TripForm({ initial = {}, onSubmit, onCancel, loading }: TripFormProps) {
+  const [form, setForm] = useState<TripFormData>({ ...emptyForm, ...initial })
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const set = (k: keyof TripFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const payload = {
+    onSubmit({
       ...form,
       price_per_person: Number(form.price_per_person) || 0,
       max_pax: Number(form.max_pax) || 0,
-    }
-    onSubmit(payload)
+    })
   }
 
   return (
@@ -38,7 +58,7 @@ export default function TripForm({ initial = {}, onSubmit, onCancel, loading }) 
           <label className="label">상태</label>
           <div className="relative">
             <select className="select appearance-none pr-9" value={form.status} onChange={set('status')}>
-              {statusOptions.trip.map((o) => (
+              {(statusOptions as Record<string, { value: string; label: string }[]>).trip.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
@@ -47,11 +67,11 @@ export default function TripForm({ initial = {}, onSubmit, onCancel, loading }) 
         </div>
         <div>
           <label className="label">출발일 *</label>
-          <DatePicker value={form.depart_date || ''} onChange={v => setForm(f => ({ ...f, depart_date: v }))} placeholder="출발일" />
+          <DatePicker value={String(form.depart_date || '')} onChange={v => setForm(f => ({ ...f, depart_date: v }))} placeholder="출발일" />
         </div>
         <div>
           <label className="label">귀국일 *</label>
-          <DatePicker value={form.return_date || ''} onChange={v => setForm(f => ({ ...f, return_date: v }))} placeholder="귀국일" />
+          <DatePicker value={String(form.return_date || '')} onChange={v => setForm(f => ({ ...f, return_date: v }))} placeholder="귀국일" />
         </div>
         <div>
           <label className="label">최대 인원</label>

@@ -1,14 +1,14 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const ROLE_LABEL = { admin: '관리자', staff: '직원', escort: '인솔자' }
-const ROLE_COLOR = {
+const ROLE_LABEL: Record<string, string> = { admin: '관리자', staff: '직원', escort: '인솔자' }
+const ROLE_COLOR: Record<string, string> = {
   admin:  'bg-blue-100 text-blue-700',
   staff:  'bg-slate-100 text-slate-600',
   escort: 'bg-emerald-100 text-emerald-700',
 }
 
-export default function TopBar({ onMenuClick }) {
+export default function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const { user, role, signOut } = useAuth()
   const navigate = useNavigate()
 
@@ -33,7 +33,7 @@ export default function TopBar({ onMenuClick }) {
       <div className="ml-auto flex items-center gap-3">
         {user?.user_metadata?.avatar_url && (
           <img
-            src={user.user_metadata.avatar_url}
+            src={user.user_metadata.avatar_url as string}
             alt="프로필"
             className="h-8 w-8 rounded-full object-cover ring-2 ring-slate-200"
           />
@@ -41,7 +41,7 @@ export default function TopBar({ onMenuClick }) {
         <div className="hidden text-right sm:block">
           <div className="flex items-center justify-end gap-1.5">
             <p className="text-sm font-semibold text-slate-800 leading-none">
-              {user?.user_metadata?.name || user?.email?.split('@')[0] || '직원'}
+              {(user?.user_metadata?.name as string) || user?.email?.split('@')[0] || '직원'}
             </p>
             <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none ${ROLE_COLOR[role] ?? ROLE_COLOR.staff}`}>
               {ROLE_LABEL[role] ?? '직원'}

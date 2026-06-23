@@ -99,6 +99,7 @@ export interface CabinGrade {
   tax: number | null
   tip: number | null
   currency: string
+  agent: string | null
   sort_order: number
   created_at: string
 }

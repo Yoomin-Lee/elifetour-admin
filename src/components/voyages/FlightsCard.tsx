@@ -55,7 +55,7 @@ function extractIata(str: string): string {
   return m ? m[1] : (str?.trim().toUpperCase() ?? '')
 }
 
-function toInput(r: DraftFlight, voyageId: string, idx: number) {
+function toInput(r: DraftFlight, _voyageId: string, idx: number) {
   return {
     flight_no: r.flight_no || null,
     origin: r.origin || null,

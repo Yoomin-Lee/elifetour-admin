@@ -10,39 +10,42 @@ import PassengerForm from '../components/PassengerForm'
 import { statusOptions } from '../config/site'
 import { useAuth } from '../context/AuthContext'
 
-function formatDate(d) {
+function formatDate(d: string | null | undefined) {
   if (!d) return '-'
   return new Date(d).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-function formatMoney(n) {
+function formatMoney(n: number | null | undefined) {
   if (!n && n !== 0) return '-'
   return Number(n).toLocaleString('ko-KR') + '원'
 }
 
-function nights(a, b) {
+function nights(a: string | null | undefined, b: string | null | undefined) {
   if (!a || !b) return ''
-  const n = Math.round((new Date(b) - new Date(a)) / 86400000)
+  const n = Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000)
   return `${n}박${n + 1}일`
 }
 
+type Trip = Record<string, unknown>
+type Passenger = Record<string, unknown>
+
 export default function TripDetail() {
   const { canWrite } = useAuth()
-  const { id } = useParams()
+  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [trip, setTrip] = useState(null)
-  const [passengers, setPassengers] = useState([])
+  const [trip, setTrip] = useState<Trip | null>(null)
+  const [passengers, setPassengers] = useState<Passenger[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditTrip, setShowEditTrip] = useState(false)
   const [showAddPax, setShowAddPax] = useState(false)
-  const [editingPax, setEditingPax] = useState(null)
+  const [editingPax, setEditingPax] = useState<Passenger | null>(null)
   const [saving, setSaving] = useState(false)
   const [paxSearch, setPaxSearch] = useState('')
-  const [updatingBooking, setUpdatingBooking] = useState(null)
+  const [updatingBooking, setUpdatingBooking] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
-      const [t, pax] = await Promise.all([getTripById(id), getPassengers(id)])
+      const [t, pax] = await Promise.all([getTripById(id!), getPassengers(id!)])
       setTrip(t)
       setPassengers(pax)
     } catch { navigate('/trips') } finally { setLoading(false) }
@@ -50,10 +53,10 @@ export default function TripDetail() {
 
   useEffect(() => { load() }, [load])
 
-  async function handleUpdateTrip(form) {
+  async function handleUpdateTrip(form: Record<string, unknown>) {
     setSaving(true)
     try {
-      const updated = await updateTrip(id, form)
+      const updated = await updateTrip(id!, form)
       setTrip(updated)
       setShowEditTrip(false)
     } finally { setSaving(false) }
@@ -61,11 +64,11 @@ export default function TripDetail() {
 
   async function handleDeleteTrip() {
     if (!confirm('여행을 삭제하면 여행자 명단도 모두 삭제됩니다. 계속할까요?')) return
-    await deleteTrip(id)
+    await deleteTrip(id!)
     navigate('/trips')
   }
 
-  async function handleAddPax(form) {
+  async function handleAddPax(form: Record<string, unknown>) {
     setSaving(true)
     try {
       const created = await createPassenger({ ...form, trip_id: id })
@@ -74,22 +77,22 @@ export default function TripDetail() {
     } finally { setSaving(false) }
   }
 
-  async function handleUpdatePax(form) {
+  async function handleUpdatePax(form: Record<string, unknown>) {
     setSaving(true)
     try {
-      const updated = await updatePassenger(editingPax.id, form)
+      const updated = await updatePassenger((editingPax!.id as string), form)
       setPassengers((p) => p.map((x) => x.id === updated.id ? updated : x))
       setEditingPax(null)
     } finally { setSaving(false) }
   }
 
-  async function handleDeletePax(paxId) {
+  async function handleDeletePax(paxId: string) {
     if (!confirm('이 여행자를 삭제할까요?')) return
     await deletePassenger(paxId)
     setPassengers((p) => p.filter((x) => x.id !== paxId))
   }
 
-  async function handleBookingStatus(paxId, newStatus) {
+  async function handleBookingStatus(paxId: string, newStatus: string) {
     setUpdatingBooking(paxId)
     try {
       const updated = await updatePassenger(paxId, { booking_status: newStatus })
@@ -99,7 +102,8 @@ export default function TripDetail() {
     }
   }
 
-  const BOOKING_LABEL = { inquiry: '문의', confirmed: '계약', balance: '잔금', passport: '여권', departed: '출발' }
+  const BOOKING_LABEL: Record<string, string> = { inquiry: '문의', confirmed: '계약', balance: '잔금', passport: '여권', departed: '출발' }
+  const opts = statusOptions as Record<string, { value: string; label: string }[]>
 
   function exportCSV() {
     const headers = ['순번', '성명', '생년월일', '성별', '연락처', '여권번호', '여권만료일', '국적', '객실', '예약단계', '결제상태', '입금액', '특이사항', '메모']
@@ -107,7 +111,7 @@ export default function TripDetail() {
       i + 1, p.name, p.birth_date || '', p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '',
       p.phone || '', p.passport_no || '', p.passport_expire || '', p.nationality || '',
       p.room_type === 'single' ? '1인실' : p.room_type === 'triple' ? '3인실' : '2인실',
-      BOOKING_LABEL[p.booking_status] || '문의',
+      BOOKING_LABEL[p.booking_status as string] || '문의',
       p.payment_status === 'paid' ? '완납' : p.payment_status === 'partial' ? '일부납' : '미납',
       p.payment_amount || 0, p.special_request || '', p.notes || ''
     ])
@@ -115,19 +119,19 @@ export default function TripDetail() {
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `${trip?.title || '명단'}_여행자명단.csv`
+    a.download = `${(trip?.title as string) || '명단'}_여행자명단.csv`
     a.click()
   }
 
   const filtered = passengers.filter((p) =>
-    !paxSearch || p.name.includes(paxSearch) || (p.phone || '').includes(paxSearch) || (p.passport_no || '').includes(paxSearch)
+    !paxSearch || (p.name as string).includes(paxSearch) || ((p.phone as string) || '').includes(paxSearch) || ((p.passport_no as string) || '').includes(paxSearch)
   )
 
   const paidCount = passengers.filter((p) => p.payment_status === 'paid').length
   const partialCount = passengers.filter((p) => p.payment_status === 'partial').length
-  const bookingCounts = statusOptions.booking.map((o) => ({
+  const bookingCounts = opts.booking.map((o) => ({
     ...o,
-    count: passengers.filter((p) => (p.booking_status || 'inquiry') === o.value).length,
+    count: passengers.filter((p) => ((p.booking_status as string) || 'inquiry') === o.value).length,
   }))
 
   if (loading) return (
@@ -136,22 +140,20 @@ export default function TripDetail() {
 
   return (
     <div className="space-y-5">
-      {/* 브레드크럼 */}
       <div className="flex items-center gap-2 text-sm text-slate-500">
         <Link to="/trips" className="hover:text-brand">여행 일정</Link>
         <span>/</span>
-        <span className="text-slate-800 font-medium truncate max-w-xs">{trip?.title}</span>
+        <span className="text-slate-800 font-medium truncate max-w-xs">{trip?.title as string}</span>
       </div>
 
-      {/* 여행 정보 카드 */}
       <div className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-xl font-bold text-slate-800">{trip?.title}</h1>
-              <StatusBadge type="trip" value={trip?.status} />
+              <h1 className="text-xl font-bold text-slate-800">{trip?.title as string}</h1>
+              <StatusBadge type="trip" value={trip?.status as string} />
             </div>
-            <p className="text-slate-500">{trip?.destination}</p>
+            <p className="text-slate-500">{trip?.destination as string}</p>
           </div>
           {canWrite && (
             <div className="flex gap-2">
@@ -164,36 +166,35 @@ export default function TripDetail() {
         <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
           <div>
             <p className="label">출발일</p>
-            <p className="font-medium">{formatDate(trip?.depart_date)}</p>
+            <p className="font-medium">{formatDate(trip?.depart_date as string)}</p>
           </div>
           <div>
             <p className="label">귀국일</p>
-            <p className="font-medium">{formatDate(trip?.return_date)} <span className="text-slate-400 text-xs">({nights(trip?.depart_date, trip?.return_date)})</span></p>
+            <p className="font-medium">{formatDate(trip?.return_date as string)} <span className="text-slate-400 text-xs">({nights(trip?.depart_date as string, trip?.return_date as string)})</span></p>
           </div>
           <div>
             <p className="label">인원</p>
-            <p className="font-medium">{passengers.length}명 {trip?.max_pax > 0 && <span className="text-slate-400">/ 최대 {trip.max_pax}명</span>}</p>
+            <p className="font-medium">{passengers.length}명 {(trip?.max_pax as number) > 0 && <span className="text-slate-400">/ 최대 {trip!.max_pax as number}명</span>}</p>
           </div>
           <div>
             <p className="label">1인 요금</p>
-            <p className="font-medium">{trip?.price_per_person ? formatMoney(trip.price_per_person) : '-'}</p>
+            <p className="font-medium">{trip?.price_per_person ? formatMoney(trip.price_per_person as number) : '-'}</p>
           </div>
-          {trip?.manager && (
+          {Boolean(trip?.manager) && (
             <div>
               <p className="label">담당자</p>
-              <p className="font-medium">{trip.manager}</p>
+              <p className="font-medium">{trip!.manager as string}</p>
             </div>
           )}
-          {trip?.notes && (
+          {Boolean(trip?.notes) && (
             <div className="col-span-2 sm:col-span-4">
               <p className="label">메모</p>
-              <p className="text-slate-600 whitespace-pre-wrap">{trip.notes}</p>
+              <p className="text-slate-600 whitespace-pre-wrap">{trip!.notes as string}</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* 여행자 명단 */}
       <div className="card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
@@ -217,7 +218,6 @@ export default function TripDetail() {
           </div>
         </div>
 
-        {/* 검색 */}
         <div className="px-5 py-3 border-b border-slate-50">
           <input
             className="input max-w-xs text-sm"
@@ -227,7 +227,6 @@ export default function TripDetail() {
           />
         </div>
 
-        {/* 테이블 - 데스크탑 */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -255,14 +254,14 @@ export default function TripDetail() {
                   </td>
                 </tr>
               ) : filtered.map((p, i) => (
-                <tr key={p.id} className="hover:bg-slate-50/50 transition">
+                <tr key={p.id as string} className="hover:bg-slate-50/50 transition">
                   <td className="px-4 py-2.5 text-slate-400">{i + 1}</td>
-                  <td className="px-4 py-2.5 font-medium text-slate-800">{p.name}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{p.birth_date || '-'}</td>
+                  <td className="px-4 py-2.5 font-medium text-slate-800">{p.name as string}</td>
+                  <td className="px-4 py-2.5 text-slate-600">{(p.birth_date as string) || '-'}</td>
                   <td className="px-4 py-2.5 text-slate-600">{p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '-'}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{p.phone || '-'}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{p.passport_no || '-'}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{p.passport_expire || '-'}</td>
+                  <td className="px-4 py-2.5 text-slate-600">{(p.phone as string) || '-'}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{(p.passport_no as string) || '-'}</td>
+                  <td className="px-4 py-2.5 text-slate-600">{(p.passport_expire as string) || '-'}</td>
                   <td className="px-4 py-2.5 text-slate-600">
                     {p.room_type === 'single' ? '1인실' : p.room_type === 'triple' ? '3인실' : '2인실'}
                   </td>
@@ -270,31 +269,31 @@ export default function TripDetail() {
                     {canWrite ? (
                       <div className="relative inline-block">
                         <select
-                          value={p.booking_status || 'inquiry'}
-                          onChange={(e) => handleBookingStatus(p.id, e.target.value)}
+                          value={(p.booking_status as string) || 'inquiry'}
+                          onChange={(e) => handleBookingStatus(p.id as string, e.target.value)}
                           disabled={updatingBooking === p.id}
                           className="text-xs rounded px-1.5 py-0.5 pr-5 border border-slate-200 bg-white cursor-pointer appearance-none focus:outline-none focus:ring-1 focus:ring-brand disabled:opacity-50"
                         >
-                          {statusOptions.booking.map((o) => (
+                          {opts.booking.map((o) => (
                             <option key={o.value} value={o.value}>{o.label}</option>
                           ))}
                         </select>
                         <ChevronDown className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
                       </div>
                     ) : (
-                      <StatusBadge type="booking" value={p.booking_status || 'inquiry'} />
+                      <StatusBadge type="booking" value={(p.booking_status as string) || 'inquiry'} />
                     )}
                   </td>
                   <td className="px-4 py-2.5">
-                    <StatusBadge type="payment" value={p.payment_status} />
+                    <StatusBadge type="payment" value={p.payment_status as string} />
                   </td>
-                  <td className="px-4 py-2.5 text-slate-600">{p.payment_amount ? formatMoney(p.payment_amount) : '-'}</td>
-                  <td className="px-4 py-2.5 text-slate-500 max-w-[120px] truncate">{p.special_request || '-'}</td>
+                  <td className="px-4 py-2.5 text-slate-600">{p.payment_amount ? formatMoney(p.payment_amount as number) : '-'}</td>
+                  <td className="px-4 py-2.5 text-slate-500 max-w-[120px] truncate">{(p.special_request as string) || '-'}</td>
                   <td className="px-4 py-2.5 text-right">
                     {canWrite && (
                       <div className="flex justify-end gap-2">
                         <button className="text-xs text-brand hover:underline" onClick={() => setEditingPax(p)}>수정</button>
-                        <button className="text-xs text-red-400 hover:text-red-600" onClick={() => handleDeletePax(p.id)}>삭제</button>
+                        <button className="text-xs text-red-400 hover:text-red-600" onClick={() => handleDeletePax(p.id as string)}>삭제</button>
                       </div>
                     )}
                   </td>
@@ -304,36 +303,35 @@ export default function TripDetail() {
           </table>
         </div>
 
-        {/* 카드 - 모바일 */}
         <div className="md:hidden divide-y divide-slate-50">
           {filtered.length === 0 ? (
             <div className="py-10 text-center text-slate-400">
               {paxSearch ? '검색 결과 없음' : '등록된 여행자가 없습니다'}
             </div>
           ) : filtered.map((p, i) => (
-            <div key={p.id} className="px-5 py-4">
+            <div key={p.id as string} className="px-5 py-4">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <span className="text-xs text-slate-400 mr-2">#{i + 1}</span>
-                  <span className="font-semibold text-slate-800">{p.name}</span>
+                  <span className="font-semibold text-slate-800">{p.name as string}</span>
                   <span className="ml-2 text-xs text-slate-400">{p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : ''}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <StatusBadge type="booking" value={p.booking_status || 'inquiry'} />
-                  <StatusBadge type="payment" value={p.payment_status} />
+                  <StatusBadge type="booking" value={(p.booking_status as string) || 'inquiry'} />
+                  <StatusBadge type="payment" value={p.payment_status as string} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-1 text-xs text-slate-600">
-                <span className="flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{p.phone || '-'}</span>
-                <span className="flex items-center gap-1"><BookOpen className="h-3 w-3 shrink-0" />{p.passport_no || '-'}</span>
+                <span className="flex items-center gap-1"><Phone className="h-3 w-3 shrink-0" />{(p.phone as string) || '-'}</span>
+                <span className="flex items-center gap-1"><BookOpen className="h-3 w-3 shrink-0" />{(p.passport_no as string) || '-'}</span>
                 <span className="flex items-center gap-1"><BedDouble className="h-3 w-3 shrink-0" />{p.room_type === 'single' ? '1인실' : p.room_type === 'triple' ? '3인실' : '2인실'}</span>
-                <span className="flex items-center gap-1"><Banknote className="h-3 w-3 shrink-0" />{p.payment_amount ? formatMoney(p.payment_amount) : '미입금'}</span>
-                {p.special_request && <span className="col-span-2 flex items-center gap-1 text-amber-600"><AlertTriangle className="h-3 w-3 shrink-0" />{p.special_request}</span>}
+                <span className="flex items-center gap-1"><Banknote className="h-3 w-3 shrink-0" />{p.payment_amount ? formatMoney(p.payment_amount as number) : '미입금'}</span>
+                {Boolean(p.special_request) && <span className="col-span-2 flex items-center gap-1 text-amber-600"><AlertTriangle className="h-3 w-3 shrink-0" />{p.special_request as string}</span>}
               </div>
               {canWrite && (
                 <div className="flex gap-3 mt-3">
                   <button className="text-xs text-brand font-medium" onClick={() => setEditingPax(p)}>수정</button>
-                  <button className="text-xs text-red-400 font-medium" onClick={() => handleDeletePax(p.id)}>삭제</button>
+                  <button className="text-xs text-red-400 font-medium" onClick={() => handleDeletePax(p.id as string)}>삭제</button>
                 </div>
               )}
             </div>
@@ -341,11 +339,10 @@ export default function TripDetail() {
         </div>
       </div>
 
-      {/* 여행 수정 모달 */}
       {showEditTrip && (
         <Modal title="여행 정보 수정" onClose={() => setShowEditTrip(false)} wide>
           <TripForm
-            initial={trip}
+            initial={trip as Record<string, unknown>}
             onSubmit={handleUpdateTrip}
             onCancel={() => setShowEditTrip(false)}
             loading={saving}
@@ -353,7 +350,6 @@ export default function TripDetail() {
         </Modal>
       )}
 
-      {/* 여행자 추가 모달 */}
       {showAddPax && (
         <Modal title="여행자 추가" onClose={() => setShowAddPax(false)}>
           <PassengerForm
@@ -364,11 +360,10 @@ export default function TripDetail() {
         </Modal>
       )}
 
-      {/* 여행자 수정 모달 */}
       {editingPax && (
         <Modal title="여행자 정보 수정" onClose={() => setEditingPax(null)}>
           <PassengerForm
-            initial={editingPax}
+            initial={editingPax as Record<string, unknown>}
             onSubmit={handleUpdatePax}
             onCancel={() => setEditingPax(null)}
             loading={saving}

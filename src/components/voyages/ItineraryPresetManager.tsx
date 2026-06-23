@@ -82,9 +82,10 @@ function PresetItem({ preset, onSaved }: { preset: ItineraryPreset; onSaved: () 
     onError: () => toast.error('삭제에 실패했습니다'),
   })
 
-  function mark<T>(fn: (v: T) => void) {
+  function _mark<T>(fn: (v: T) => void) {
     return (v: T) => { fn(v); setDirty(true) }
   }
+  void _mark
 
   function updatePort(i: number, p: PresetPort) {
     const next = [...ports]; next[i] = p; setPorts(next); setDirty(true)

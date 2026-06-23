@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Check, X, Search, ToggleLeft, ToggleRight, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Search, ToggleLeft, ToggleRight, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import {
   fetchPartners,

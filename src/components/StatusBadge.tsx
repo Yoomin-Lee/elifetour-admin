@@ -1,6 +1,6 @@
 import { statusOptions } from '../config/site'
 
-const colorMap = {
+const colorMap: Record<string, string> = {
   blue:   'bg-blue-100 text-blue-700',
   green:  'bg-green-100 text-green-700',
   slate:  'bg-slate-100 text-slate-600',
@@ -10,8 +10,8 @@ const colorMap = {
   amber:  'bg-amber-100 text-amber-700',
 }
 
-export default function StatusBadge({ type, value }) {
-  const options = statusOptions[type] || []
+export default function StatusBadge({ type, value }: { type: string; value: string }) {
+  const options = (statusOptions as Record<string, { value: string; label: string; color: string }[]>)[type] || []
   const opt = options.find((o) => o.value === value) || { label: value, color: 'slate' }
   return (
     <span className={`badge ${colorMap[opt.color] || colorMap.slate}`}>

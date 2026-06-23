@@ -2,11 +2,21 @@ import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Ship, Anchor, Users, CreditCard, ChevronDown, Settings, X, Plus, AlertCircle, GripVertical, Clock, Lock, Flag, List, Layers } from 'lucide-react'
 import { fetchVoyageDashboardData } from '../lib/queries/voyages'
+import type { VoyageDashboardData } from '../lib/queries/voyages'
 
 const NAVY_CURSOR = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='20' viewBox='0 0 16 20'><path d='M3,2 L3,16 L6,12 L8,17 L10,16 L8,11 L13,11 Z' fill='%23172554' stroke='white' stroke-width='1.5' stroke-linejoin='round'/></svg>") 3 2, default`
 
-// 사용 가능한 카드 전체 목록
-const CARD_DEFS = [
+type ColorKey = 'blue' | 'orange' | 'purple' | 'cyan' | 'red' | 'green' | 'slate' | 'emerald'
+
+interface CardDef {
+  id: string
+  label: string
+  icon: React.ElementType
+  color: ColorKey
+  link?: string
+}
+
+const CARD_DEFS: CardDef[] = [
   { id: 'on-sale',            label: '판매중 항차',      icon: Ship,         color: 'purple',  link: '/voyages?tab=상품등록&status=판매중'         },
   { id: 'total-customers',    label: '총 예약 인원',     icon: Users,        color: 'blue'                                                         },
   { id: 'this-month-departs', label: '이번달 출발',      icon: Anchor,       color: 'cyan',    link: '/voyages?tab=상품등록&filter=this-month'     },
@@ -22,11 +32,11 @@ const CARD_DEFS = [
 const DEFAULT_IDS = ['this-month-departs', 'on-sale', 'this-month-pay', 'status-미오픈']
 const STORAGE_KEY = 'elifetour_dashboard_cards'
 
-function loadSavedIds() {
+function loadSavedIds(): string[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const ids = JSON.parse(raw)
+      const ids = JSON.parse(raw) as string[]
       const valid = ids.filter(id => CARD_DEFS.some(d => d.id === id))
       if (valid.length > 0) return valid
     }
@@ -34,39 +44,56 @@ function loadSavedIds() {
   return DEFAULT_IDS
 }
 
-function getCardProps(id, { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, statusCounts, loading }) {
+type DashData = VoyageDashboardData
+
+interface Computed extends DashData {
+  totalCustomers: number
+  overdueCount: number
+  loading: boolean
+}
+
+function getCardProps(id: string, c: Computed): { value?: string | number; color?: ColorKey; sub?: string | null } {
   switch (id) {
     case 'on-sale':
-      return { value: loading ? '…' : onSaleVoyages.length }
+      return { value: c.loading ? '…' : c.onSaleVoyages.length }
     case 'total-customers':
-      return { value: loading ? '…' : `${totalCustomers.toLocaleString('ko-KR')}명` }
+      return { value: c.loading ? '…' : `${c.totalCustomers.toLocaleString('ko-KR')}명` }
     case 'this-month-departs':
-      return { value: loading ? '…' : thisMonthDepartures.length }
+      return { value: c.loading ? '…' : c.thisMonthDepartures.length }
     case 'this-month-pay':
       return {
-        value: loading ? '…' : thisMonthPayments.length,
-        color: overdueCount > 0 ? 'red' : undefined,
-        sub: overdueCount > 0 ? `연체 ${overdueCount}건` : null,
+        value: c.loading ? '…' : c.thisMonthPayments.length,
+        color: c.overdueCount > 0 ? 'red' : undefined,
+        sub: c.overdueCount > 0 ? `연체 ${c.overdueCount}건` : null,
       }
     case 'overdue':
-      return { value: loading ? '…' : `${overdueCount}건` }
+      return { value: c.loading ? '…' : `${c.overdueCount}건` }
     case 'status-미오픈':
-      return { value: loading ? '…' : (statusCounts['미오픈'] ?? 0) }
+      return { value: c.loading ? '…' : (c.statusCounts['미오픈'] ?? 0) }
     case 'status-마감':
-      return { value: loading ? '…' : (statusCounts['마감'] ?? 0) }
+      return { value: c.loading ? '…' : (c.statusCounts['마감'] ?? 0) }
     case 'status-출발완료':
-      return { value: loading ? '…' : (statusCounts['출발완료'] ?? 0) }
+      return { value: c.loading ? '…' : (c.statusCounts['출발완료'] ?? 0) }
     case 'total-voyages':
-      return { value: loading ? '…' : Object.values(statusCounts).reduce((s, n) => s + n, 0) }
+      return { value: c.loading ? '…' : Object.values(c.statusCounts).reduce((s, n) => s + n, 0) }
     case 'cabin-remaining':
-      return { value: loading ? '…' : `${onSaleVoyages.reduce((s, v) => s + (v.cabin_remaining ?? 0), 0)}석` }
+      return { value: c.loading ? '…' : `${c.onSaleVoyages.reduce((s, v) => s + (v.cabin_remaining ?? 0), 0)}석` }
     default:
       return {}
   }
 }
 
-function StatCard({ label, value, icon: Icon, color, sub, link }) {
-  const colors = {
+interface StatCardProps {
+  label: string
+  value: string | number | undefined
+  icon: React.ElementType
+  color: ColorKey
+  sub?: string | null
+  link?: string
+}
+
+function StatCard({ label, value, icon: Icon, color, sub, link }: StatCardProps) {
+  const colors: Record<ColorKey, string> = {
     blue:    'bg-blue-50 text-blue-600',
     orange:  'bg-orange-50 text-orange-600',
     purple:  'bg-purple-50 text-purple-600',
@@ -91,7 +118,7 @@ function StatCard({ label, value, icon: Icon, color, sub, link }) {
   return link ? <Link to={link} style={{ cursor: NAVY_CURSOR }} className="block hover:opacity-90 transition">{inner}</Link> : inner
 }
 
-function SectionHeader({ title, badge, link, linkLabel }) {
+function SectionHeader({ title, badge, link, linkLabel }: { title: string; badge?: React.ReactNode; link?: string; linkLabel?: string }) {
   return (
     <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
       <div className="flex items-center gap-2">
@@ -107,13 +134,13 @@ function SectionHeader({ title, badge, link, linkLabel }) {
   )
 }
 
-function Empty({ message }) {
+function Empty({ message }: { message: string }) {
   return (
     <div className="flex items-center justify-center py-10 text-slate-400 text-sm">{message}</div>
   )
 }
 
-function DetailItem({ label, value }) {
+function DetailItem({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>
       <p className="text-xs text-slate-400 mb-0.5">{label}</p>
@@ -122,43 +149,45 @@ function DetailItem({ label, value }) {
   )
 }
 
-function formatDate(d) {
+function formatDate(d: string | null | undefined) {
   if (!d) return '-'
   return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
 }
 
-function formatAmount(amount, currency) {
+function formatAmount(amount: number | null | undefined, currency: string | null | undefined) {
   if (!amount) return '-'
-  const sym = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
-  const prefix = sym[currency] ?? (currency + ' ')
+  const sym: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
+  const prefix = (currency && sym[currency]) ?? ((currency ?? '') + ' ')
   return prefix + Number(amount).toLocaleString(currency === 'KRW' ? 'ko-KR' : 'en-US')
 }
 
-function cabinBadge(remaining, total) {
+void formatAmount
+
+function cabinBadge(remaining: number, total: number) {
   if (total === 0) return { text: '-', cls: 'text-slate-400' }
   if (remaining === 0) return { text: '마감', cls: 'text-red-500 font-semibold' }
   const cls = remaining / total > 0.2 ? 'text-emerald-600' : 'text-amber-600 font-medium'
   return { text: `${remaining} / ${total}석`, cls }
 }
 
-function isOverdue(dateStr) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return new Date(dateStr) < today
+function isOverdue(dateStr: string) {
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  return new Date(dateStr) < now
 }
 
 export default function Dashboard() {
-  const [dash, setDash]         = useState({ onSaleVoyages: [], thisMonthDepartures: [], thisMonthPayments: [], statusCounts: {} })
-  const [loading, setLoading]   = useState(true)
-  const [expandedId, setExpandedId] = useState(null)
+  const [dash, setDash] = useState<DashData>({ onSaleVoyages: [], thisMonthDepartures: [], thisMonthPayments: [], statusCounts: {} })
+  const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const [activeIds, setActiveIds] = useState(loadSavedIds)
-  const [editMode, setEditMode]   = useState(false)
-  const [beforeIds, setBeforeIds] = useState([])
+  const [activeIds, setActiveIds] = useState<string[]>(loadSavedIds)
+  const [editMode, setEditMode] = useState(false)
+  const [beforeIds, setBeforeIds] = useState<string[]>([])
   const [showAddMenu, setShowAddMenu] = useState(false)
-  const [draggedId, setDraggedId] = useState(null)
-  const [dragOverId, setDragOverId] = useState(null)
-  const addMenuRef = useRef(null)
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const addMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchVoyageDashboardData()
@@ -167,10 +196,9 @@ export default function Dashboard() {
       .finally(() => setLoading(false))
   }, [])
 
-  // 외부 클릭 시 추가 메뉴 닫기
   useEffect(() => {
-    function handleClick(e) {
-      if (addMenuRef.current && !addMenuRef.current.contains(e.target)) {
+    function handleClick(e: MouseEvent) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
         setShowAddMenu(false)
       }
     }
@@ -183,24 +211,24 @@ export default function Dashboard() {
   const overdueCount   = thisMonthPayments.filter(p => isOverdue(p.due_date)).length
 
   const { statusCounts } = dash
-  const computed = { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, statusCounts, loading }
+  const computed: Computed = { onSaleVoyages, thisMonthDepartures, thisMonthPayments, totalCustomers, overdueCount, statusCounts, loading }
 
   const inactiveIds = CARD_DEFS.filter(d => !activeIds.includes(d.id)).map(d => d.id)
 
-  function removeCard(id) {
+  function removeCard(id: string) {
     const next = activeIds.filter(i => i !== id)
     setActiveIds(next)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   }
 
-  function addCard(id) {
+  function addCard(id: string) {
     const next = [...activeIds, id]
     setActiveIds(next)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     setShowAddMenu(false)
   }
 
-  function handleDrop(targetId) {
+  function handleDrop(targetId: string) {
     if (!draggedId || draggedId === targetId) return
     const next = [...activeIds]
     const from = next.indexOf(draggedId)
@@ -231,7 +259,7 @@ export default function Dashboard() {
     exitEdit()
   }
 
-  function toggle(id) {
+  function toggle(id: string) {
     setExpandedId(prev => prev === id ? null : id)
   }
 
@@ -242,30 +270,16 @@ export default function Dashboard() {
         <p className="text-sm text-slate-500 mt-0.5">이라이프투어 항차 운영 현황</p>
       </div>
 
-      {/* 통계 카드 */}
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-xs font-medium text-slate-400">통계 요약</span>
           {editMode ? (
             <div className="flex items-center gap-3">
-              <button
-                onClick={cancelEdit}
-                className="text-xs text-slate-400 hover:text-slate-600 transition"
-              >
-                취소
-              </button>
-              <button
-                onClick={exitEdit}
-                className="text-xs font-medium text-brand hover:underline"
-              >
-                완료
-              </button>
+              <button onClick={cancelEdit} className="text-xs text-slate-400 hover:text-slate-600 transition">취소</button>
+              <button onClick={exitEdit} className="text-xs font-medium text-brand hover:underline">완료</button>
             </div>
           ) : (
-            <button
-              onClick={enterEdit}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition"
-            >
+            <button onClick={enterEdit} className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition">
               <Settings className="h-3.5 w-3.5" />
               편집
             </button>
@@ -339,7 +353,6 @@ export default function Dashboard() {
             )
           })}
 
-          {/* 편집 모드: 카드 추가 버튼 */}
           {editMode && inactiveIds.length > 0 && (
             <div className="relative" ref={addMenuRef}>
               <button
@@ -373,7 +386,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 판매중 항차 현황 */}
       <div>
         <div className="card overflow-hidden">
           <SectionHeader title="판매중 항차 현황" link="/voyages" linkLabel="항차 관리" />

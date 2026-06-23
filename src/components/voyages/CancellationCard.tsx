@@ -108,7 +108,7 @@ export default function CancellationCard({
 }) {
   const flightDDay  = dMinus(departureDate)
   const cruiseDDay  = boardingDate ? dMinus(boardingDate) : flightDDay
-  const today       = flightDDay  // 기존 호환성 유지용 (편집 모드)
+  void flightDDay  // 기존 호환성 유지용 (편집 모드)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DraftPolicy[]>([])
   const qc = useQueryClient()

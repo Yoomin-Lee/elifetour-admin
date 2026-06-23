@@ -2,7 +2,7 @@ import { supabase } from '../supabase'
 import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, Hotel, CabinGrade, PaymentSchedule } from '../../types/database'
 import type { VoyageFormValues } from '../schemas/voyage'
 
-type VoyageRef = Pick<Voyage, 'region' | 'departure_date'>
+type VoyageRef = Pick<Voyage, 'region' | 'departure_date' | 'boarding_date'>
 export type FlightRow = Flight & { voyages: VoyageRef }
 export type ItineraryRow = ItineraryDay & { voyages: VoyageRef }
 export type CancellationRow = CancellationPolicy & { voyages: VoyageRef }
@@ -393,7 +393,7 @@ export async function fetchCabinGrades(voyageId: string): Promise<CabinGrade[]> 
 
 export async function saveCabinGrades(
   voyageId: string,
-  grades: Array<{ id?: string; grade: string; total: number; reserved: number; price_per_person: number | null; ccf?: number | null; nccf?: number | null; tax?: number | null; tip?: number | null; currency: string; sort_order: number }>,
+  grades: Array<{ id?: string; grade: string; total: number; reserved: number; price_per_person: number | null; ccf?: number | null; nccf?: number | null; tax?: number | null; tip?: number | null; currency: string; agent?: string | null; sort_order: number }>,
   deletedIds: string[],
 ): Promise<void> {
   if (deletedIds.length > 0) {

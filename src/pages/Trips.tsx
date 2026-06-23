@@ -8,20 +8,20 @@ import Modal from '../components/Modal'
 import TripForm from '../components/TripForm'
 import { statusOptions } from '../config/site'
 
-function formatDate(d) {
+function formatDate(d: string | null | undefined) {
   if (!d) return '-'
   return new Date(d).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-function nights(depart, ret) {
+function nights(depart: string | null | undefined, ret: string | null | undefined) {
   if (!depart || !ret) return ''
-  const n = Math.round((new Date(ret) - new Date(depart)) / 86400000)
+  const n = Math.round((new Date(ret).getTime() - new Date(depart).getTime()) / 86400000)
   return `${n}박${n + 1}일`
 }
 
 export default function Trips() {
   const { user, canWrite } = useAuth()
-  const [trips, setTrips] = useState([])
+  const [trips, setTrips] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -38,7 +38,7 @@ export default function Trips() {
 
   useEffect(() => { load() }, [load])
 
-  async function handleCreate(form) {
+  async function handleCreate(form: Record<string, unknown>) {
     setSaving(true)
     try {
       const created = await createTrip(form, user?.id)
@@ -47,7 +47,7 @@ export default function Trips() {
     } finally { setSaving(false) }
   }
 
-  async function handleDelete(id, e) {
+  async function handleDelete(id: string, e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
     if (!confirm('이 여행을 삭제하면 여행자 명단도 모두 삭제됩니다. 계속할까요?')) return
@@ -55,9 +55,10 @@ export default function Trips() {
     setTrips((prev) => prev.filter((t) => t.id !== id))
   }
 
+  const opts = statusOptions as Record<string, { value: string; label: string }[]>
+
   return (
     <div className="space-y-5">
-      {/* 헤더 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-800">여행 일정</h1>
@@ -73,7 +74,6 @@ export default function Trips() {
         )}
       </div>
 
-      {/* 필터 */}
       <div className="flex flex-wrap gap-2">
         <input
           className="input max-w-xs"
@@ -84,7 +84,7 @@ export default function Trips() {
         <div className="relative">
           <select className="select w-auto appearance-none pr-9" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">전체 상태</option>
-            {statusOptions.trip.map((o) => (
+            {opts.trip.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
@@ -92,7 +92,6 @@ export default function Trips() {
         </div>
       </div>
 
-      {/* 여행 목록 */}
       {loading ? (
         <div className="flex justify-center py-16 text-slate-400">불러오는 중...</div>
       ) : trips.length === 0 ? (
@@ -105,32 +104,32 @@ export default function Trips() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {trips.map((trip) => (
             <Link
-              key={trip.id}
-              to={`/trips/${trip.id}`}
+              key={trip.id as string}
+              to={`/trips/${trip.id as string}`}
               className="card block p-5 hover:shadow-md transition group"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-800 truncate group-hover:text-brand transition">{trip.title}</p>
-                  <p className="text-sm text-slate-500 mt-0.5 truncate">{trip.destination}</p>
+                  <p className="font-semibold text-slate-800 truncate group-hover:text-brand transition">{trip.title as string}</p>
+                  <p className="text-sm text-slate-500 mt-0.5 truncate">{trip.destination as string}</p>
                 </div>
-                <StatusBadge type="trip" value={trip.status} />
+                <StatusBadge type="trip" value={trip.status as string} />
               </div>
               <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
                 <span>
-                  {formatDate(trip.depart_date)} ~ {formatDate(trip.return_date)}
+                  {formatDate(trip.depart_date as string)} ~ {formatDate(trip.return_date as string)}
                   {' '}
-                  <span className="text-slate-400">({nights(trip.depart_date, trip.return_date)})</span>
+                  <span className="text-slate-400">({nights(trip.depart_date as string, trip.return_date as string)})</span>
                 </span>
-                <span className="text-slate-400">{trip.manager && `담당 ${trip.manager}`}</span>
+                <span className="text-slate-400">{(trip.manager as string | undefined) && `담당 ${trip.manager as string}`}</span>
               </div>
-              {trip.max_pax > 0 && (
-                <p className="mt-1 text-xs text-slate-400">최대 {trip.max_pax}명</p>
+              {(trip.max_pax as number) > 0 && (
+                <p className="mt-1 text-xs text-slate-400">최대 {trip.max_pax as number}명</p>
               )}
               {canWrite && (
                 <button
                   className="mt-3 text-xs text-red-400 hover:text-red-600 hidden group-hover:block"
-                  onClick={(e) => handleDelete(trip.id, e)}
+                  onClick={(e) => handleDelete(trip.id as string, e)}
                 >
                   삭제
                 </button>
@@ -140,7 +139,6 @@ export default function Trips() {
         </div>
       )}
 
-      {/* 등록 모달 */}
       {showForm && (
         <Modal title="새 여행 등록" onClose={() => setShowForm(false)}>
           <TripForm

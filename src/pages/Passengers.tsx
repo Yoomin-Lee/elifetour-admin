@@ -4,22 +4,23 @@ import { Search, Phone, BookOpen, Users } from 'lucide-react'
 import { searchPassengers, getPassengersByVoyage } from '../lib/passengers'
 import { fetchVoyages } from '../lib/queries/voyages'
 import { voyageTitle } from '../types/database'
+import type { Voyage } from '../types/database'
 import StatusBadge from '../components/StatusBadge'
 import { YearSelect } from '../components/ui/year-select'
 import { FieldSelect } from '../components/ui/field-select'
 
-function formatMoney(n) {
+function formatMoney(n: number | null | undefined) {
   if (!n) return '-'
   return Number(n).toLocaleString('ko-KR') + '원'
 }
 
 export default function Passengers() {
-  const [allVoyages, setAllVoyages]       = useState([])
+  const [allVoyages, setAllVoyages]       = useState<Voyage[]>([])
   const [yearFilter, setYearFilter]       = useState('ALL')
   const [selectedVoyageId, setSelectedVoyageId] = useState('')
   const [query, setQuery]                 = useState('')
-  const [results, setResults]             = useState([])
-  const [mode, setMode]                   = useState(null) // 'voyage' | 'search'
+  const [results, setResults]             = useState<Record<string, unknown>[]>([])
+  const [mode, setMode]                   = useState<'voyage' | 'search' | null>(null)
   const [loading, setLoading]             = useState(false)
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function Passengers() {
   }, [])
 
   const years = useMemo(() => {
-    const ys = new Set()
+    const ys = new Set<string>()
     allVoyages.forEach(v => {
       const y = v.departure_date?.slice(0, 4)
       if (y) ys.add(y)
@@ -44,14 +45,14 @@ export default function Passengers() {
 
   const selectedVoyage = allVoyages.find(v => v.id === selectedVoyageId)
 
-  function handleYearChange(y) {
+  function handleYearChange(y: string) {
     setYearFilter(y)
     setSelectedVoyageId('')
     setResults([])
     setMode(null)
   }
 
-  function handleVoyageChange(id) {
+  function handleVoyageChange(id: string) {
     setSelectedVoyageId(id)
     setQuery('')
     if (!id) { setResults([]); setMode(null); return }
@@ -62,7 +63,7 @@ export default function Passengers() {
       .finally(() => setLoading(false))
   }
 
-  const handleSearch = useCallback(async (e) => {
+  const handleSearch = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
     setLoading(true)
@@ -84,16 +85,12 @@ export default function Passengers() {
         <p className="text-sm text-slate-500 mt-0.5">행사 선택 또는 이름·연락처·여권번호로 전체 조회</p>
       </div>
 
-      {/* 필터 영역 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
-        {/* 연도 드롭다운 */}
         <YearSelect
           value={yearFilter}
           years={years}
           onChange={handleYearChange}
         />
-
-        {/* 행사 드롭다운 */}
         <FieldSelect
           value={selectedVoyageId}
           options={filteredVoyages.map(v => ({ value: v.id, label: voyageTitle(v) }))}
@@ -101,10 +98,7 @@ export default function Passengers() {
           placeholder="행사 선택…"
           className="sm:w-64"
         />
-
         <div className="h-5 w-px bg-slate-200 hidden sm:block" />
-
-        {/* 텍스트 검색 */}
         <form onSubmit={handleSearch} className="flex gap-2 flex-1">
           <input
             className="input flex-1 max-w-xs"
@@ -118,7 +112,6 @@ export default function Passengers() {
         </form>
       </div>
 
-      {/* 결과 영역 */}
       {(mode || loading) && (
         <div className="card overflow-hidden">
           <div className="border-b border-slate-100 px-5 py-3">
@@ -144,7 +137,6 @@ export default function Passengers() {
             </div>
           ) : (
             <>
-              {/* 데스크탑 테이블 */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -168,28 +160,28 @@ export default function Passengers() {
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {results.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-2.5 font-medium text-slate-800">{p.name}</td>
-                        <td className="px-4 py-2.5 text-slate-600">{p.phone || '-'}</td>
-                        <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{p.passport_no || '-'}</td>
+                      <tr key={p.id as string} className="hover:bg-slate-50/50">
+                        <td className="px-4 py-2.5 font-medium text-slate-800">{p.name as string}</td>
+                        <td className="px-4 py-2.5 text-slate-600">{(p.phone as string) || '-'}</td>
+                        <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{(p.passport_no as string) || '-'}</td>
                         {isSearchMode && (
                           <>
                             <td className="px-4 py-2.5 text-slate-600 max-w-[140px] truncate">
-                              {p.eli_trips?.title || p.trips?.title || '-'}
+                              {((p.eli_trips as Record<string, string>)?.title) || ((p.trips as Record<string, string>)?.title) || '-'}
                             </td>
                             <td className="px-4 py-2.5 text-slate-600">
-                              {p.eli_trips?.depart_date || p.trips?.depart_date || '-'}
+                              {((p.eli_trips as Record<string, string>)?.depart_date) || ((p.trips as Record<string, string>)?.depart_date) || '-'}
                             </td>
                           </>
                         )}
                         <td className="px-4 py-2.5">
-                          <StatusBadge type="payment" value={p.payment_status} />
+                          <StatusBadge type="payment" value={p.payment_status as string} />
                         </td>
-                        <td className="px-4 py-2.5 text-slate-600">{formatMoney(p.payment_amount)}</td>
-                        <td className="px-4 py-2.5 text-slate-500 max-w-[100px] truncate">{p.special_request || '-'}</td>
+                        <td className="px-4 py-2.5 text-slate-600">{formatMoney(p.payment_amount as number)}</td>
+                        <td className="px-4 py-2.5 text-slate-500 max-w-[100px] truncate">{(p.special_request as string) || '-'}</td>
                         {isSearchMode && (
                           <td className="px-4 py-2.5 text-right">
-                            <Link to={`/trips/${p.trip_id}`} className="text-xs text-brand hover:underline">
+                            <Link to={`/trips/${p.trip_id as string}`} className="text-xs text-brand hover:underline">
                               여행 보기
                             </Link>
                           </td>
@@ -200,25 +192,24 @@ export default function Passengers() {
                 </table>
               </div>
 
-              {/* 모바일 카드 */}
               <div className="md:hidden divide-y divide-slate-50">
                 {results.map((p) => (
-                  <div key={p.id} className="px-5 py-4">
+                  <div key={p.id as string} className="px-5 py-4">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-slate-800">{p.name}</span>
-                      <StatusBadge type="payment" value={p.payment_status} />
+                      <span className="font-semibold text-slate-800">{p.name as string}</span>
+                      <StatusBadge type="payment" value={p.payment_status as string} />
                     </div>
                     {isSearchMode && (
                       <p className="text-xs text-slate-500">
-                        {p.eli_trips?.title || '-'} · {p.eli_trips?.depart_date || '-'}
+                        {((p.eli_trips as Record<string, string>)?.title) || '-'} · {((p.eli_trips as Record<string, string>)?.depart_date) || '-'}
                       </p>
                     )}
                     <div className="flex gap-4 text-xs text-slate-600 mt-1">
-                      <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{p.phone || '-'}</span>
-                      <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{p.passport_no || '-'}</span>
+                      <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{(p.phone as string) || '-'}</span>
+                      <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{(p.passport_no as string) || '-'}</span>
                     </div>
                     {isSearchMode && (
-                      <Link to={`/trips/${p.trip_id}`} className="mt-2 inline-block text-xs text-brand font-medium">
+                      <Link to={`/trips/${p.trip_id as string}`} className="mt-2 inline-block text-xs text-brand font-medium">
                         여행 보기 →
                       </Link>
                     )}

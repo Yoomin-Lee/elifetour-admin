@@ -8,18 +8,13 @@ export default function Layout() {
 
   return (
     <div className="flex h-dvh overflow-hidden bg-slate-50">
-      {/* 모바일 오버레이 */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-20 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* 사이드바 */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      {/* 메인 영역 */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto">

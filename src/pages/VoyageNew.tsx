@@ -27,7 +27,8 @@ function VoyageNewInner() {
   const navigate = useNavigate()
 
   const methods = useForm<VoyageFormValues>({
-    resolver: zodResolver(voyageFormSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(voyageFormSchema) as any,
     defaultValues: {
       status: '미오픈',
       cabin_total: 0,

@@ -1,8 +1,14 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { site } from '../config/site'
 
-const navItems = [
+interface NavItem {
+  to: string
+  label: string
+  end?: boolean
+  icon: React.ReactNode
+}
+
+const navItems: NavItem[] = [
   {
     to: '/dashboard',
     label: '대시보드',
@@ -24,7 +30,7 @@ const navItems = [
   },
 ]
 
-const voyageNavItems = [
+const voyageNavItems: NavItem[] = [
   {
     to: '/voyages',
     label: '항차 마스터',
@@ -36,7 +42,7 @@ const voyageNavItems = [
   },
 ]
 
-const adminNavItems = [
+const adminNavItems: NavItem[] = [
   {
     to: '/users',
     label: '직원 관리',
@@ -49,7 +55,7 @@ const adminNavItems = [
   },
 ]
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { isAdmin } = useAuth()
   const location = useLocation()
   const isCalendarActive = location.pathname === '/voyages' &&
@@ -62,7 +68,6 @@ export default function Sidebar({ open, onClose }) {
         open ? 'translate-x-0' : '-translate-x-full',
       ].join(' ')}
     >
-      {/* 로고 */}
       <div className="flex h-16 items-center justify-between px-5">
         <div className="flex flex-col gap-1.5">
           <img
@@ -92,7 +97,6 @@ export default function Sidebar({ open, onClose }) {
 
       <div className="mx-4 border-t border-white/10" />
 
-      {/* 기본 메뉴 */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {navItems.map((item) => (
           <NavLink
@@ -114,7 +118,6 @@ export default function Sidebar({ open, onClose }) {
           </NavLink>
         ))}
 
-        {/* 항차 관리 */}
         <div className="mx-1 my-3 border-t border-white/10" />
         <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">
           항차 관리
@@ -138,7 +141,6 @@ export default function Sidebar({ open, onClose }) {
             {item.label}
           </NavLink>
         ))}
-        {/* 달력 — 항차 마스터와 동일 레벨 */}
         <NavLink
           to="/voyages?tab=%EB%8B%AC%EB%A0%A5"
           onClick={onClose}
@@ -155,7 +157,6 @@ export default function Sidebar({ open, onClose }) {
           일정 달력
         </NavLink>
 
-        {/* 관리자 전용 메뉴 */}
         {isAdmin && (
           <>
             <div className="mx-1 my-3 border-t border-white/10" />
