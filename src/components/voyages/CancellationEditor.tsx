@@ -11,10 +11,14 @@ import { fetchCancellationPresets } from '@/lib/queries/cancellationPresets'
 import type { CancellationPresetDB } from '@/lib/queries/cancellationPresets'
 import { fetchMnSections } from '@/lib/queries/mnSections'
 import type { MnSection } from '@/lib/queries/mnSections'
+import { fetchAirlineOptions } from '@/lib/queries/airlineOptions'
+import { SelectOrInput } from '@/components/ui/select-or-input'
 import CancellationPresetManager from './CancellationPresetManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const CATEGORIES = ['크루즈', '항공', '호텔']
+const AGENTS = ['TMK', 'COSTA', 'ONLINE', 'DONGBO', 'VASCO', 'FLORENCE']
+const stripParens = (v: string) => v.replace(/\s*\(.*\)\s*$/, '')
 
 const EMPTY_POLICY = {
   category: '', start_d_minus: undefined, end_d_minus: undefined,
@@ -43,6 +47,12 @@ export default function CancellationEditor() {
     queryKey: ['mn-sections'],
     queryFn: fetchMnSections,
     select: (data) => data.filter(s => s.category === '취소료'),
+  })
+
+  const { data: airlineOptions = [] } = useQuery({
+    queryKey: ['airline-options'],
+    queryFn: fetchAirlineOptions,
+    select: data => data.map(r => r.label),
   })
 
   function mnSectionToPolicies(section: MnSection) {
@@ -246,6 +256,31 @@ export default function CancellationEditor() {
                       placeholder="-"
                     />
                   </div>
+                  <div>
+                    {watchedPolicies?.[i]?.category === '크루즈' && (
+                      <>
+                        <label className="label">에이전트</label>
+                        <FieldSelect
+                          value={watchedPolicies[i].fee_unit ?? ''}
+                          options={AGENTS}
+                          onChange={v => setValue(`policies.${i}.fee_unit`, v)}
+                          placeholder="-"
+                        />
+                      </>
+                    )}
+                    {watchedPolicies?.[i]?.category === '항공' && (
+                      <>
+                        <label className="label">항공사</label>
+                        <SelectOrInput
+                          value={watchedPolicies[i].fee_unit ?? ''}
+                          options={airlineOptions}
+                          onChange={v => setValue(`policies.${i}.fee_unit`, stripParens(v))}
+                          placeholder="항공사 선택"
+                        />
+                      </>
+                    )}
+                  </div>
+
                   <div>
                     <label className="label">시작 D-</label>
                     <Input
