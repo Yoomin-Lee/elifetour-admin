@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { YearSelect } from '@/components/ui/year-select'
 import type { Hotel } from '@/types/database'
 
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP'] as const
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY'] as const
 
 type HotelForm = {
   voyage_id: string

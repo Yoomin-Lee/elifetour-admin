@@ -25,7 +25,7 @@ import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
 import type { VoyageFlight } from '@/lib/queries/voyageFlights'
 
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP'] as const
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY'] as const
 
 function localDt(isoUtc: string, airportCode: string) {
   const tz = getAirportTimezone(airportCode)

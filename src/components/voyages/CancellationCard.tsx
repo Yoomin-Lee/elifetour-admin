@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { Button } from '@/components/ui/button'
 
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP']
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 import { cn } from '@/lib/utils'
 import { saveCancellationPolicy, deleteCancellationPolicy } from '@/lib/queries/voyages'
 import type { CancellationPolicy } from '@/types/database'

@@ -18,7 +18,7 @@ import { FieldSelect } from '@/components/ui/field-select'
 import { YearSelect } from '@/components/ui/year-select'
 import type { CancellationPolicy } from '@/types/database'
 
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP']
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 
 function calcDMinus(date?: string | null): number | null {
   if (!date) return null

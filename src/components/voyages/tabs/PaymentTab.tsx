@@ -22,7 +22,7 @@ import type { PaymentCategory, PaymentType, PaymentSchedule } from '@/types/data
 
 const CATEGORIES: PaymentCategory[] = ['CRUISE', 'FLIGHT', 'HOTEL']
 const PAYMENT_TYPES: PaymentType[] = ['DEPOSIT_1ST', 'DEPOSIT_2ND', 'BALANCE']
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD'] as const
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY'] as const
 
 const CATEGORY_LABEL: Record<PaymentCategory, string> = {
   CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔',

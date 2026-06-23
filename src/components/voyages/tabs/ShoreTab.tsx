@@ -17,7 +17,7 @@ import { FieldSelect } from '@/components/ui/field-select'
 import type { ItineraryDay } from '@/types/database'
 
 const CATEGORIES = ['크루즈', '항공', '호텔', '지상', '식사', '기타'] as const
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP'] as const
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY'] as const
 
 const CATEGORY_COLORS: Record<string, string> = {
   '크루즈': 'bg-blue-50 text-blue-700',

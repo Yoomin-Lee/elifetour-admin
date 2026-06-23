@@ -277,7 +277,7 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
                   <td className="py-1 pr-1">
                     <FieldSelect
                       value={draft.currency}
-                      options={['USD', 'EUR']}
+                      options={['KRW', 'USD', 'EUR', 'SGD', 'JPY']}
                       onChange={v => setField('currency', v)}
                       className="h-6 text-xs"
                     />
@@ -626,7 +626,7 @@ export default function CruiseTab() {
                             <label className="label">통화</label>
                             <FieldSelect
                               value={editForm.cabin_currency}
-                              options={['USD', 'EUR']}
+                              options={['KRW', 'USD', 'EUR', 'SGD', 'JPY']}
                               onChange={v => setField('cabin_currency', v)}
                               className="h-7 text-sm"
                             />
