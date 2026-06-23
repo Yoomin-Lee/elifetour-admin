@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
+import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
 
 function StatusSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false)
@@ -274,7 +275,7 @@ export default function ProductTab() {
                     </td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
-                    <td className="px-3 py-2 text-slate-600">{v.cruise_line ?? '—'}</td>
+                    <td className="px-3 py-2"><CruiseLineBadge value={v.cruise_line} /></td>
                     <td className="px-3 py-2 text-slate-600">{v.ship_name ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.airline ?? '—'}</td>
                     <td className="px-3 py-2">
