@@ -13,7 +13,7 @@ import CancellationPresetManager from './CancellationPresetManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const CATEGORIES = ['크루즈', '항공', '팁', '데포']
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP', 'JPY', 'AUD']
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 const FEE_TYPES = [
   { value: 'percent', label: '퍼센트' },
   { value: 'fixed',   label: '정액' },
