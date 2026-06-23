@@ -660,6 +660,37 @@ export default function CruiseTab() {
                     </td>
                   </tr>
 
+                  {/* 추가 등급 서브 행 (2번째 등급부터) */}
+                  {voyageGrades.length > 1 && voyageGrades.slice(1).map(g => (
+                    <tr key={`sub-${g.id}`}
+                      className={['border-b border-slate-50 bg-slate-50/60 hover:bg-slate-100/60 transition-colors', isCancelled ? 'opacity-50' : ''].join(' ')}
+                    >
+                      <td className="px-2 py-1" />
+                      <td className="px-3 py-1">
+                        <div className="ml-4 flex items-center gap-1.5 text-[10px] text-slate-300">
+                          <span>└</span>
+                        </div>
+                      </td>
+                      <td colSpan={5} />
+                      <td
+                        className="px-3 py-1 text-xs font-medium text-slate-600 cursor-pointer hover:text-brand transition-colors"
+                        onClick={() => toggleExpand(v.id)}
+                        title="선실 등급 현황 보기"
+                      >{g.grade}</td>
+                      <td className="px-2 py-1 text-right text-xs text-slate-600">{g.total || '—'}</td>
+                      <td className="px-2 py-1 text-right text-xs text-slate-600">{g.reserved || '—'}</td>
+                      <td className="px-2 py-1 text-right text-xs">
+                        <span className={g.total - g.reserved === 0 ? 'text-red-500 font-medium' : 'text-slate-600'}>
+                          {g.total - g.reserved}
+                        </span>
+                      </td>
+                      <td className="px-3 py-1 text-right text-xs text-slate-700">
+                        {formatPrice(calcTotal(g), g.currency)}
+                      </td>
+                      <td />
+                    </tr>
+                  ))}
+
                   {/* 인라인 편집 행 */}
                   {isEdit && (
                     <tr className="border-b border-slate-100">
