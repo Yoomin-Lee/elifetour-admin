@@ -206,7 +206,7 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
       _key: grade.id, _isNew: false, _deleted: false,
       id: grade.id, grade: grade.grade,
       total: grade.total, reserved: grade.reserved,
-      price_per_person: grade.price_per_person,
+      price_per_person: null,
       ccf: grade.ccf ?? null, nccf: grade.nccf ?? null,
       tax: grade.tax ?? null, tip: grade.tip ?? null,
       currency: grade.currency, sort_order: 0,
