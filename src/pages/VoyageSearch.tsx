@@ -32,9 +32,10 @@ function Skeleton({ className }: { className?: string }) {
 function VoyageSearchInner() {
   const [searchParams, setSearchParams] = useSearchParams()
   const voyageId = searchParams.get('voyage')
-  const { user, canWrite } = useAuth() as {
+  const { user, canWrite, isAdmin } = useAuth() as {
     user: { email?: string; user_metadata?: { name?: string; full_name?: string } } | null
     canWrite: boolean
+    isAdmin: boolean
   }
 
   const authorName =
@@ -176,8 +177,8 @@ function VoyageSearchInner() {
         </div>
       )}
 
-      {/* 선택된 행사 삭제 버튼 */}
-      {voyageId && selectedVoyage && canWrite && (
+      {/* 선택된 행사 삭제 버튼 — admin 전용 (RLS: delete voyages = admin only) */}
+      {voyageId && selectedVoyage && isAdmin && (
         <div className="flex justify-end">
           <button
             type="button"
