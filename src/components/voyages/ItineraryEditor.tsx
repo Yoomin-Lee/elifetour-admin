@@ -210,7 +210,7 @@ export default function ItineraryEditor() {
                           name={`itinerary.${i}.date`}
                           control={control}
                           render={({ field }) => (
-                            <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="날짜 선택" />
+                            <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="날짜" size="sm" />
                           )}
                         />
                         {dayErrors?.date && (

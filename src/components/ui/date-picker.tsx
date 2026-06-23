@@ -88,7 +88,7 @@ export function DatePicker({ value, onChange, placeholder = '날짜 선택', dis
           open ? 'border-brand ring-1 ring-brand shadow-sm' : '',
         ].join(' ')}
       >
-        <span className={value ? 'font-medium text-slate-800 tabular-nums' : 'text-slate-400'}>
+        <span className={`min-w-0 truncate ${value ? 'font-medium text-slate-800 tabular-nums' : 'text-slate-400'}`}>
           {displayDate || placeholder}
         </span>
         <Calendar className={`shrink-0 transition-colors ${sm ? 'h-3 w-3' : 'h-4 w-4'} ${open ? 'text-brand' : 'text-slate-300'}`} />
