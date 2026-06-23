@@ -1,9 +1,9 @@
-import { useState, useMemo, Fragment } from 'react'
+import { useState, useMemo, Fragment, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { YearSelect } from '@/components/ui/year-select'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Pencil, Check, X, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
+import { Search, Pencil, Check, X, ChevronDown, ChevronRight, ExternalLink, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades, fetchAllCabinGrades } from '@/lib/queries/voyages'
 import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
@@ -175,21 +175,25 @@ function formatPrice(price: number | null, currency: string): string {
 function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boolean }) {
   const qc = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
-  const [draft, setDraft] = useState<DraftGrade | null>(null)
+  const [drafts, setDrafts] = useState<DraftGrade[]>([])
+  const keyRef = useRef(0)
 
   const { data: grades = [], isLoading } = useQuery({
     queryKey: ['cabin-grades', voyageId],
     queryFn: () => fetchCabinGrades(voyageId),
   })
-  const grade = grades[0] ?? null
 
   const saveMut = useMutation({
     mutationFn: () => {
-      if (!draft) return saveCabinGrades(voyageId, [], grades.map(g => g.id))
-      const { _key, _isNew, _deleted, id, ...rest } = draft
-      const total = calcTotal(rest)
-      const toSave = [{ id: _isNew ? undefined : id, ...rest, grade: rest.grade || '기본', price_per_person: total }]
-      const deletedIds = grades.filter(g => g.id !== id).map(g => g.id)
+      const active = drafts.filter(d => !d._deleted)
+      const toSave = active.map(({ _key, _isNew, _deleted, id, ...rest }, idx) => ({
+        ...(!_isNew ? { id } : {}),
+        ...rest,
+        grade: rest.grade || '기본',
+        price_per_person: calcTotal(rest),
+        sort_order: idx,
+      }))
+      const deletedIds = drafts.filter(d => d._deleted && !d._isNew).map(d => d.id)
       return saveCabinGrades(voyageId, toSave, deletedIds)
     },
     onSuccess: () => {
@@ -202,38 +206,64 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
     onError: () => toast.error('저장에 실패했습니다'),
   })
 
-  function startEdit() {
-    setDraft(grade ? {
-      _key: grade.id, _isNew: false, _deleted: false,
-      id: grade.id, grade: grade.grade,
-      total: grade.total, reserved: grade.reserved,
-      price_per_person: null,
-      ccf: grade.ccf ?? null, nccf: grade.nccf ?? null,
-      tax: grade.tax ?? null, tip: grade.tip ?? null,
-      currency: grade.currency, sort_order: 0,
-    } : {
-      _key: 'new', _isNew: true, _deleted: false,
+  function makeDraft(): DraftGrade {
+    keyRef.current += 1
+    return {
+      _key: `new-${keyRef.current}`, _isNew: true, _deleted: false,
       id: '', grade: '', total: 0, reserved: 0,
       price_per_person: null, ccf: null, nccf: null, tax: null, tip: null,
-      currency: 'KRW', sort_order: 0,
-    })
+      currency: 'USD', sort_order: 0,
+    }
+  }
+
+  function startEdit() {
+    setDrafts(grades.length > 0
+      ? grades.map(g => ({
+          _key: g.id, _isNew: false, _deleted: false,
+          id: g.id, grade: g.grade,
+          total: g.total, reserved: g.reserved,
+          price_per_person: null,
+          ccf: g.ccf ?? null, nccf: g.nccf ?? null,
+          tax: g.tax ?? null, tip: g.tip ?? null,
+          currency: g.currency, sort_order: g.sort_order,
+        }))
+      : [makeDraft()]
+    )
     setIsEditing(true)
     saveMut.reset()
   }
 
-  function setField(field: keyof DraftGrade, value: unknown) {
-    setDraft(prev => prev ? { ...prev, [field]: value } : prev)
+  function addDraft() {
+    setDrafts(prev => [...prev, makeDraft()])
+  }
+
+  function removeDraft(key: string, isNew: boolean) {
+    if (isNew) {
+      setDrafts(prev => prev.filter(d => d._key !== key))
+    } else {
+      setDrafts(prev => prev.map(d => d._key === key ? { ...d, _deleted: true } : d))
+    }
+  }
+
+  function updateDraft(key: string, field: keyof DraftGrade, value: unknown) {
+    setDrafts(prev => prev.map(d => d._key === key ? { ...d, [field]: value } : d))
   }
 
   if (isLoading) return <div className="px-6 py-4 text-xs text-slate-400">불러오는 중…</div>
 
+  const visibleDrafts = drafts.filter(d => !d._deleted)
+
   return (
     <div className="bg-slate-50/70 border-t border-slate-200 px-4 py-3">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">선실 등급 현황</span>
         <div className="flex items-center gap-2">
           {isEditing ? (
             <>
+              <button onClick={addDraft}
+                className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1 transition">
+                <Plus className="h-3 w-3" />등급 추가
+              </button>
               <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}
                 className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-100 rounded px-2 py-1 transition disabled:opacity-40">
                 <Check className="h-3 w-3" />{saveMut.isPending ? '저장 중…' : '저장'}
@@ -251,82 +281,104 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
         </div>
       </div>
 
-      {!isEditing && !grade ? (
+      {/* 조회 모드 */}
+      {!isEditing && grades.length === 0 && (
         <p className="text-xs text-slate-400 py-2">
           등록된 등급이 없습니다.{canWrite && (
             <button onClick={startEdit} className="ml-2 text-brand hover:underline">추가하기</button>
           )}
         </p>
-      ) : isEditing && draft ? (
+      )}
+      {!isEditing && grades.length > 0 && (
+        <div className="divide-y divide-slate-100">
+          {grades.map(g => (
+            <div key={g.id} className="py-2 first:pt-0 last:pb-0">
+              <div className="flex gap-5 text-xs mb-1">
+                <span className="font-semibold text-slate-700 w-12">{g.grade}</span>
+                <span className="text-slate-400">보유 <span className="font-semibold text-slate-700">{g.total}</span></span>
+                <span className="text-slate-400">예약 <span className="font-semibold text-slate-700">{g.reserved}</span></span>
+                <span className="text-slate-400">잔여 <span className={`font-semibold ${g.total - g.reserved === 0 ? 'text-red-500' : 'text-slate-700'}`}>{g.total - g.reserved}</span></span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                {(['ccf', 'nccf', 'tax', 'tip'] as const).map((f, idx) => (
+                  <Fragment key={f}>
+                    <span className="text-slate-400">{f.toUpperCase()} <span className="text-slate-700 font-medium">{formatPrice(g[f], g.currency)}</span></span>
+                    {idx < 3 && <span className="text-slate-300">+</span>}
+                  </Fragment>
+                ))}
+                <span className="text-slate-300">=</span>
+                <span className="font-semibold text-brand">{formatPrice(calcTotal(g), g.currency)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 편집 모드 */}
+      {isEditing && (
         <div className="space-y-2">
-          {/* 편집 1행: 등급/캐빈 수량 */}
-          <div className="flex flex-wrap gap-2 items-end">
-            <div className="w-32">
-              <p className="text-[10px] text-slate-400 mb-0.5">등급</p>
-              <SelectOrInput value={draft.grade} onChange={v => setField('grade', v)} options={DEFAULT_GRADES} placeholder="등급…" />
-            </div>
-            {(['total', 'reserved'] as const).map(f => (
-              <div key={f} className="w-16">
-                <p className="text-[10px] text-slate-400 mb-0.5">{f === 'total' ? '보유' : '예약'}</p>
-                <input type="number" min={0} value={draft[f]}
-                  onChange={e => setField(f, Number(e.target.value))}
-                  className="input h-7 text-xs text-right w-full" />
-              </div>
-            ))}
-            <div className="w-16">
-              <p className="text-[10px] text-slate-400 mb-0.5">잔여</p>
-              <div className="h-7 flex items-center justify-end pr-2 text-xs text-slate-500">{draft.total - draft.reserved}</div>
-            </div>
-          </div>
-          {/* 편집 2행: 요금 계산식 */}
-          <div className="flex flex-wrap gap-2 items-end border-t border-slate-200 pt-2">
-            {(['ccf', 'nccf', 'tax', 'tip'] as const).map((f, idx) => (
-              <Fragment key={f}>
-                <div className="w-20">
-                  <p className="text-[10px] text-slate-400 mb-0.5">{f.toUpperCase()}</p>
-                  <input type="number" min={0} value={draft[f] ?? ''}
-                    onChange={e => setField(f, e.target.value ? Number(e.target.value) : null)}
-                    placeholder="—" className="input h-7 text-xs text-right w-full" />
+          {visibleDrafts.map(d => (
+            <div key={d._key} className="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
+              {/* 편집 1행: 등급 + 수량 + 삭제 */}
+              <div className="flex flex-wrap gap-2 items-end">
+                <div className="w-28">
+                  <p className="text-[10px] text-slate-400 mb-0.5">등급</p>
+                  <SelectOrInput value={d.grade} onChange={v => updateDraft(d._key, 'grade', v)} options={DEFAULT_GRADES} placeholder="등급…" />
                 </div>
-                {idx < 3 && <span className="text-slate-400 text-sm pb-1">+</span>}
-              </Fragment>
-            ))}
-            <span className="text-slate-400 text-sm pb-1">=</span>
-            <div className="w-24">
-              <p className="text-[10px] text-brand mb-0.5">캐빈가 총합</p>
-              <div className="h-7 flex items-center justify-end pr-2 text-xs font-semibold text-brand">
-                {formatPrice(calcTotal(draft), draft.currency)}
+                {(['total', 'reserved'] as const).map(f => (
+                  <div key={f} className="w-16">
+                    <p className="text-[10px] text-slate-400 mb-0.5">{f === 'total' ? '보유' : '예약'}</p>
+                    <input type="number" min={0} value={d[f]}
+                      onChange={e => updateDraft(d._key, f, Number(e.target.value))}
+                      className="input h-7 text-xs text-right w-full" />
+                  </div>
+                ))}
+                <div className="w-12">
+                  <p className="text-[10px] text-slate-400 mb-0.5">잔여</p>
+                  <div className="h-7 flex items-center justify-end pr-1 text-xs text-slate-500">{d.total - d.reserved}</div>
+                </div>
+                <div className="flex-1" />
+                <button
+                  onClick={() => removeDraft(d._key, d._isNew)}
+                  className="h-7 w-7 flex items-center justify-center rounded text-slate-300 hover:text-red-400 hover:bg-red-50 transition"
+                  title="등급 삭제"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              {/* 편집 2행: CCF/NCCF/TAX/TIP 계산식 */}
+              <div className="flex flex-wrap gap-2 items-end border-t border-slate-100 pt-2">
+                {(['ccf', 'nccf', 'tax', 'tip'] as const).map((f, fidx) => (
+                  <Fragment key={f}>
+                    <div className="w-20">
+                      <p className="text-[10px] text-slate-400 mb-0.5">{f.toUpperCase()}</p>
+                      <input type="number" min={0} value={d[f] ?? ''}
+                        onChange={e => updateDraft(d._key, f, e.target.value ? Number(e.target.value) : null)}
+                        placeholder="—" className="input h-7 text-xs text-right w-full" />
+                    </div>
+                    {fidx < 3 && <span className="text-slate-400 text-sm pb-1">+</span>}
+                  </Fragment>
+                ))}
+                <span className="text-slate-400 text-sm pb-1">=</span>
+                <div className="w-24">
+                  <p className="text-[10px] text-brand mb-0.5">캐빈가 총합</p>
+                  <div className="h-7 flex items-center justify-end pr-2 text-xs font-semibold text-brand">
+                    {formatPrice(calcTotal(d), d.currency)}
+                  </div>
+                </div>
+                <div className="w-20">
+                  <p className="text-[10px] text-slate-400 mb-0.5">통화</p>
+                  <FieldSelect value={d.currency} options={['KRW', 'USD', 'EUR', 'SGD', 'JPY']}
+                    onChange={v => updateDraft(d._key, 'currency', v)} className="h-7 text-xs" />
+                </div>
               </div>
             </div>
-            <div className="w-20">
-              <p className="text-[10px] text-slate-400 mb-0.5">통화</p>
-              <FieldSelect value={draft.currency} options={['KRW', 'USD', 'EUR', 'SGD', 'JPY']}
-                onChange={v => setField('currency', v)} className="h-7 text-xs" />
-            </div>
-          </div>
+          ))}
+          {visibleDrafts.length === 0 && (
+            <p className="text-xs text-slate-400 py-1">등급이 없습니다. 위에서 '등급 추가'를 눌러주세요.</p>
+          )}
         </div>
-      ) : grade ? (
-        <div className="space-y-1.5">
-          {/* 조회 1행: 등급/캐빈 수량 */}
-          <div className="flex gap-6 text-xs">
-            <span className="text-slate-400">등급 <span className="font-semibold text-slate-700">{grade.grade}</span></span>
-            <span className="text-slate-400">보유 <span className="font-semibold text-slate-700">{grade.total}</span></span>
-            <span className="text-slate-400">예약 <span className="font-semibold text-slate-700">{grade.reserved}</span></span>
-            <span className="text-slate-400">잔여 <span className={`font-semibold ${grade.total - grade.reserved === 0 ? 'text-red-500' : 'text-slate-700'}`}>{grade.total - grade.reserved}</span></span>
-          </div>
-          {/* 조회 2행: 계산식 */}
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            {(['ccf', 'nccf', 'tax', 'tip'] as const).map((f, idx) => (
-              <Fragment key={f}>
-                <span className="text-slate-400">{f.toUpperCase()} <span className="text-slate-700 font-medium">{formatPrice(grade[f], grade.currency)}</span></span>
-                {idx < 3 && <span className="text-slate-300">+</span>}
-              </Fragment>
-            ))}
-            <span className="text-slate-300">=</span>
-            <span className="font-semibold text-brand">{formatPrice(calcTotal(grade), grade.currency)}</span>
-          </div>
-        </div>
-      ) : null}
+      )}
     </div>
   )
 }
@@ -518,10 +570,14 @@ export default function CruiseTab() {
               <tr><td colSpan={13} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
             {ordered.map(v => {
-              const primaryGrade = gradeMap[v.id]?.[0] ?? null
-              const reserved   = primaryGrade ? primaryGrade.reserved : (v.cabin_total - v.cabin_remaining)
-              const remaining  = primaryGrade ? (primaryGrade.total - primaryGrade.reserved) : v.cabin_remaining
-              const total      = primaryGrade ? primaryGrade.total : v.cabin_total
+              const voyageGrades = gradeMap[v.id] ?? []
+              const primaryGrade = voyageGrades[0] ?? null
+              const totalCabin    = voyageGrades.length > 0 ? voyageGrades.reduce((s, g) => s + g.total, 0) : v.cabin_total
+              const reservedCabin = voyageGrades.length > 0 ? voyageGrades.reduce((s, g) => s + g.reserved, 0) : (v.cabin_total - v.cabin_remaining)
+              const remainingCabin = voyageGrades.length > 0 ? voyageGrades.reduce((s, g) => s + (g.total - g.reserved), 0) : v.cabin_remaining
+              const gradeLabel = voyageGrades.length === 0 ? '—'
+                : voyageGrades.length === 1 ? voyageGrades[0].grade
+                : `${voyageGrades[0].grade} 외 ${voyageGrades.length - 1}`
               const isCancelled = v.status === '취소'
               const isEdit     = editingId === v.id
               const isExpanded = expandedId === v.id
@@ -564,12 +620,12 @@ export default function CruiseTab() {
                     <td className="px-3 py-2"><CruiseLineBadge value={v.cruise_line} /></td>
                     <td className="px-3 py-2 text-slate-600 truncate">{v.ship_name ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-600 truncate">{v.agent ?? '—'}</td>
-                    <td className="px-3 py-2 text-slate-600">{primaryGrade?.grade ?? '—'}</td>
-                    <td className="px-2 py-2 text-right text-slate-700">{total || '—'}</td>
-                    <td className="px-2 py-2 text-right text-slate-700">{primaryGrade ? reserved : (v.cabin_total - v.cabin_remaining) || '—'}</td>
+                    <td className="px-3 py-2 text-slate-600">{gradeLabel}</td>
+                    <td className="px-2 py-2 text-right text-slate-700">{totalCabin || '—'}</td>
+                    <td className="px-2 py-2 text-right text-slate-700">{reservedCabin || '—'}</td>
                     <td className="px-2 py-2 text-right">
-                      <span className={remaining === 0 ? 'text-red-500 font-medium' : 'text-slate-700'}>
-                        {remaining}
+                      <span className={remainingCabin === 0 ? 'text-red-500 font-medium' : 'text-slate-700'}>
+                        {remainingCabin}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-right text-slate-700">
