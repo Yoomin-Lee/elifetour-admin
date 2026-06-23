@@ -142,7 +142,7 @@ export default function BasicInfoSection() {
               />
             </Field>
 
-            <Field label="항공사 (가는 편)" error={errors.airline?.message}>
+            <Field label="항공사" error={errors.airline?.message}>
               <div className="flex gap-1">
                 <div className="flex-1">
                   <Controller
@@ -169,7 +169,7 @@ export default function BasicInfoSection() {
               </div>
             </Field>
 
-            <Field label="항공사 (오는 편)" error={errors.airline_return?.message}>
+            <Field label="항공사" error={errors.airline_return?.message}>
               <Controller
                 name="airline_return"
                 control={control}

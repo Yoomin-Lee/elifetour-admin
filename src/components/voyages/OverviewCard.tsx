@@ -218,7 +218,7 @@ export default function OverviewCard({
                 })()}
               </div>
             </ERow>
-            <ERow label="항공사 (가는 편)">
+            <ERow label="항공사">
               <SelectOrInput
                 value={f.airline}
                 options={airlineOptions}
@@ -226,7 +226,7 @@ export default function OverviewCard({
                 className="h-7 text-sm"
               />
             </ERow>
-            <ERow label="항공사 (오는 편)">
+            <ERow label="항공사">
               <SelectOrInput
                 value={f.airline_return}
                 options={airlineOptions}
@@ -285,8 +285,8 @@ export default function OverviewCard({
           <Row label="귀국일"    value={formatDate(voyage.return_date)} />
           <Row label="승선일"    value={voyage.boarding_date ? formatDate(voyage.boarding_date) : '-'} />
           <Row label="여행 기간" value={calcNights(voyage.departure_date, voyage.return_date)} />
-          <Row label="항공사 (가는 편)" value={voyage.airline} />
-          <Row label="항공사 (오는 편)" value={voyage.airline_return} />
+          <Row label="항공사" value={voyage.airline} />
+          <Row label="항공사" value={voyage.airline_return} />
           <Row label="선사"      value={<CruiseLineBadge value={voyage.cruise_line} />} />
           <Row label="크루즈"    value={voyage.ship_name} />
           <Row label="보유 캐빈" value={voyage.cabin_total ? `${voyage.cabin_total}개` : '-'} />
