@@ -124,6 +124,10 @@ type CruiseForm = {
   cabin_remaining: string
   cabin_grade: string
   cabin_price: string
+  cabin_ccf: string
+  cabin_nccf: string
+  cabin_tax: string
+  cabin_tip: string
   cabin_currency: string
 }
 function toForm(v: Voyage): CruiseForm {
@@ -135,6 +139,10 @@ function toForm(v: Voyage): CruiseForm {
     cabin_remaining: String(v.cabin_remaining ?? ''),
     cabin_grade: '',
     cabin_price: '',
+    cabin_ccf: '',
+    cabin_nccf: '',
+    cabin_tax: '',
+    cabin_tip: '',
     cabin_currency: 'KRW',
   }
 }
@@ -143,7 +151,15 @@ function toForm(v: Voyage): CruiseForm {
 type DraftGrade = {
   _key: string; _isNew: boolean; _deleted: boolean
   id: string; grade: string; total: number; reserved: number
-  price_per_person: number | null; currency: string; sort_order: number
+  price_per_person: number | null
+  ccf: number | null; nccf: number | null; tax: number | null; tip: number | null
+  currency: string; sort_order: number
+}
+
+function calcTotal(g: { ccf: number | null; nccf: number | null; tax: number | null; tip: number | null; price_per_person: number | null }): number | null {
+  const sum = (g.ccf ?? 0) + (g.nccf ?? 0) + (g.tax ?? 0) + (g.tip ?? 0)
+  if (sum > 0) return sum
+  return g.price_per_person
 }
 const DEFAULT_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
 
@@ -170,7 +186,8 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
     mutationFn: () => {
       if (!draft) return saveCabinGrades(voyageId, [], grades.map(g => g.id))
       const { _key, _isNew, _deleted, id, ...rest } = draft
-      const toSave = [{ id: _isNew ? undefined : id, ...rest, grade: rest.grade || '기본' }]
+      const total = calcTotal(rest)
+      const toSave = [{ id: _isNew ? undefined : id, ...rest, grade: rest.grade || '기본', price_per_person: total }]
       const deletedIds = grades.filter(g => g.id !== id).map(g => g.id)
       return saveCabinGrades(voyageId, toSave, deletedIds)
     },
@@ -190,11 +207,14 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
       id: grade.id, grade: grade.grade,
       total: grade.total, reserved: grade.reserved,
       price_per_person: grade.price_per_person,
+      ccf: grade.ccf ?? null, nccf: grade.nccf ?? null,
+      tax: grade.tax ?? null, tip: grade.tip ?? null,
       currency: grade.currency, sort_order: 0,
     } : {
       _key: 'new', _isNew: true, _deleted: false,
       id: '', grade: '', total: 0, reserved: 0,
-      price_per_person: null, currency: 'KRW', sort_order: 0,
+      price_per_person: null, ccf: null, nccf: null, tax: null, tip: null,
+      currency: 'KRW', sort_order: 0,
     })
     setIsEditing(true)
     saveMut.reset()
@@ -238,15 +258,19 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-[520px] w-full text-xs">
+          <table className="min-w-[640px] w-full text-xs">
             <thead>
               <tr className="text-slate-400 border-b border-slate-200">
-                <th className="py-1.5 text-left font-medium w-28">등급</th>
-                <th className="py-1.5 text-right font-medium w-14">보유</th>
-                <th className="py-1.5 text-right font-medium w-14">예약</th>
-                <th className="py-1.5 text-right font-medium w-14">잔여</th>
-                <th className="py-1.5 text-right font-medium w-28">1인 요금</th>
-                <th className="py-1.5 text-right font-medium w-16">통화</th>
+                <th className="py-1.5 text-left font-medium w-24">등급</th>
+                <th className="py-1.5 text-right font-medium w-12">보유</th>
+                <th className="py-1.5 text-right font-medium w-12">예약</th>
+                <th className="py-1.5 text-right font-medium w-12">잔여</th>
+                <th className="py-1.5 text-right font-medium w-24">CCF</th>
+                <th className="py-1.5 text-right font-medium w-24">NCCF</th>
+                <th className="py-1.5 text-right font-medium w-24">TAX</th>
+                <th className="py-1.5 text-right font-medium w-24">TIP</th>
+                <th className="py-1.5 text-right font-medium w-28 text-brand">캐빈가 (총합)</th>
+                <th className="py-1.5 text-right font-medium w-14">통화</th>
               </tr>
             </thead>
             <tbody>
@@ -269,10 +293,15 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
                       className="input h-6 text-xs text-right w-full" />
                   </td>
                   <td className="py-1 text-right text-slate-500">{draft.total - draft.reserved}</td>
-                  <td className="py-1 pr-1">
-                    <input type="number" min={0} value={draft.price_per_person ?? ''}
-                      onChange={e => setField('price_per_person', e.target.value ? Number(e.target.value) : null)}
-                      placeholder="—" className="input h-6 text-xs text-right w-full" />
+                  {(['ccf', 'nccf', 'tax', 'tip'] as const).map(field => (
+                    <td key={field} className="py-1 pr-1">
+                      <input type="number" min={0} value={draft[field] ?? ''}
+                        onChange={e => setField(field, e.target.value ? Number(e.target.value) : null)}
+                        placeholder="—" className="input h-6 text-xs text-right w-full" />
+                    </td>
+                  ))}
+                  <td className="py-1 text-right font-semibold text-brand">
+                    {formatPrice(calcTotal(draft), draft.currency)}
                   </td>
                   <td className="py-1 pr-1">
                     <FieldSelect
@@ -293,7 +322,11 @@ function GradesPanel({ voyageId, canWrite }: { voyageId: string; canWrite: boole
                       {grade.total - grade.reserved}
                     </span>
                   </td>
-                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.price_per_person, grade.currency)}</td>
+                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.ccf, grade.currency)}</td>
+                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.nccf, grade.currency)}</td>
+                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.tax, grade.currency)}</td>
+                  <td className="py-1.5 text-right text-slate-600">{formatPrice(grade.tip, grade.currency)}</td>
+                  <td className="py-1.5 text-right font-semibold text-brand">{formatPrice(calcTotal(grade), grade.currency)}</td>
                   <td className="py-1.5 text-right text-slate-400">{grade.currency}</td>
                 </tr>
               )}
@@ -313,7 +346,7 @@ export default function CruiseTab() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<CruiseForm>({
     cruise_line: '', ship_name: '', agent: '', cabin_total: '', cabin_remaining: '',
-    cabin_grade: '', cabin_price: '', cabin_currency: 'KRW',
+    cabin_grade: '', cabin_price: '', cabin_ccf: '', cabin_nccf: '', cabin_tax: '', cabin_tip: '', cabin_currency: 'KRW',
   })
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const qc = useQueryClient()
@@ -349,23 +382,26 @@ export default function CruiseTab() {
       })
       const existing = gradeMap[id]?.[0]
       const gradeToSave = editForm.cabin_grade || existing?.grade
-      const priceToSave = editForm.cabin_price !== ''
-        ? Number(editForm.cabin_price)
-        : (existing?.price_per_person ?? null)
-      if (gradeToSave || editForm.cabin_price !== '') {
+      const ccf  = editForm.cabin_ccf  !== '' ? Number(editForm.cabin_ccf)  : (existing?.ccf  ?? null)
+      const nccf = editForm.cabin_nccf !== '' ? Number(editForm.cabin_nccf) : (existing?.nccf ?? null)
+      const tax  = editForm.cabin_tax  !== '' ? Number(editForm.cabin_tax)  : (existing?.tax  ?? null)
+      const tip  = editForm.cabin_tip  !== '' ? Number(editForm.cabin_tip)  : (existing?.tip  ?? null)
+      const total = calcTotal({ ccf, nccf, tax, tip, price_per_person: existing?.price_per_person ?? null })
+      const hasCabinData = gradeToSave || editForm.cabin_ccf !== '' || editForm.cabin_nccf !== '' || editForm.cabin_tax !== '' || editForm.cabin_tip !== ''
+      if (hasCabinData) {
         const finalGrade = gradeToSave || '기본'
         const currencyToSave = editForm.cabin_currency || existing?.currency || 'KRW'
         if (existing) {
           await saveCabinGrades(id, [{
             id: existing.id, grade: finalGrade,
             total: existing.total, reserved: existing.reserved,
-            price_per_person: priceToSave,
+            price_per_person: total, ccf, nccf, tax, tip,
             currency: currencyToSave, sort_order: 0,
           }], [])
         } else {
           await saveCabinGrades(id, [{
             grade: finalGrade, total: 0, reserved: 0,
-            price_per_person: priceToSave,
+            price_per_person: total, ccf, nccf, tax, tip,
             currency: currencyToSave, sort_order: 0,
           }], [])
         }
@@ -387,6 +423,10 @@ export default function CruiseTab() {
       ...toForm(v),
       cabin_grade:    g?.grade    ?? '',
       cabin_price:    g?.price_per_person != null ? String(g.price_per_person) : '',
+      cabin_ccf:      g?.ccf  != null ? String(g.ccf)  : '',
+      cabin_nccf:     g?.nccf != null ? String(g.nccf) : '',
+      cabin_tax:      g?.tax  != null ? String(g.tax)  : '',
+      cabin_tip:      g?.tip  != null ? String(g.tip)  : '',
       cabin_currency: g?.currency ?? 'KRW',
     })
     setEditingId(v.id)
@@ -540,7 +580,7 @@ export default function CruiseTab() {
                       </span>
                     </td>
                     <td className="px-3 py-2 text-right text-slate-700">
-                      {primaryGrade ? formatPrice(primaryGrade.price_per_person, primaryGrade.currency) : '—'}
+                      {primaryGrade ? formatPrice(calcTotal(primaryGrade), primaryGrade.currency) : '—'}
                     </td>
                     <td className="px-3 py-2 text-right">
                       {!isEdit && canWrite && (
@@ -611,17 +651,18 @@ export default function CruiseTab() {
                             <label className="label">잔여 캐빈</label>
                             <Input type="number" min={0} value={editForm.cabin_remaining} onChange={set('cabin_remaining')} className="h-7 text-sm" />
                           </div>
-                          <div className="w-24">
-                            <label className="label">캐빈가 (1인)</label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={editForm.cabin_price}
-                              onChange={set('cabin_price')}
-                              placeholder="가격"
-                              className="h-7 text-sm"
-                            />
-                          </div>
+                          {(['ccf', 'nccf', 'tax', 'tip'] as const).map(f => (
+                            <div key={f} className="w-20">
+                              <label className="label">{f.toUpperCase()}</label>
+                              <Input
+                                type="number" min={0}
+                                value={editForm[`cabin_${f}` as keyof CruiseForm] ?? ''}
+                                onChange={e => setEditForm(prev => ({ ...prev, [`cabin_${f}`]: e.target.value }))}
+                                placeholder="—"
+                                className="h-7 text-sm"
+                              />
+                            </div>
+                          ))}
                           <div className="w-20">
                             <label className="label">통화</label>
                             <FieldSelect

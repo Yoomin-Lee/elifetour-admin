@@ -376,7 +376,7 @@ export async function fetchCabinGrades(voyageId: string): Promise<CabinGrade[]> 
 
 export async function saveCabinGrades(
   voyageId: string,
-  grades: Array<{ id?: string; grade: string; total: number; reserved: number; price_per_person: number | null; currency: string; sort_order: number }>,
+  grades: Array<{ id?: string; grade: string; total: number; reserved: number; price_per_person: number | null; ccf?: number | null; nccf?: number | null; tax?: number | null; tip?: number | null; currency: string; sort_order: number }>,
   deletedIds: string[],
 ): Promise<void> {
   if (deletedIds.length > 0) {

@@ -94,6 +94,10 @@ export interface CabinGrade {
   total: number
   reserved: number
   price_per_person: number | null
+  ccf: number | null
+  nccf: number | null
+  tax: number | null
+  tip: number | null
   currency: string
   sort_order: number
   created_at: string
