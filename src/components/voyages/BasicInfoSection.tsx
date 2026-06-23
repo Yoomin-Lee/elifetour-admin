@@ -174,18 +174,30 @@ export default function BasicInfoSection() {
             </Field>
 
             <Field label="항공사" error={errors.airline_return?.message}>
-              <Controller
-                name="airline_return"
-                control={control}
-                render={({ field }) => (
-                  <SelectOrInput
-                    value={field.value ?? ''}
-                    options={airlineOptions}
-                    onChange={field.onChange}
-                    placeholder="항공사 선택 또는 직접 입력"
+              <div className="flex gap-1">
+                <div className="flex-1">
+                  <Controller
+                    name="airline_return"
+                    control={control}
+                    render={({ field }) => (
+                      <SelectOrInput
+                        value={field.value ?? ''}
+                        options={airlineOptions}
+                        onChange={field.onChange}
+                        placeholder="항공사 선택 또는 직접 입력"
+                      />
+                    )}
                   />
-                )}
-              />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAirlineManagerOpen(true)}
+                  className="flex items-center justify-center rounded-lg border border-slate-200 px-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+                  title="항공사 목록 관리"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+              </div>
             </Field>
 
             <Field label="크루즈 선박명" error={errors.ship_name?.message}>
