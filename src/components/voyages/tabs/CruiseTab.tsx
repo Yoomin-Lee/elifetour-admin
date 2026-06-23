@@ -663,6 +663,7 @@ export default function CruiseTab() {
                         {saveMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
+                        {/* 1행: 선사·선박·에이전트·캐빈 수량 */}
                         <div className="flex flex-wrap gap-x-3 gap-y-2 mb-2">
                           <div className="w-36">
                             <label className="label">선사</label>
@@ -696,6 +697,17 @@ export default function CruiseTab() {
                               placeholder="에이전트…"
                             />
                           </div>
+                          <div className="w-20">
+                            <label className="label">보유 캐빈</label>
+                            <Input type="number" min={0} value={editForm.cabin_total} onChange={set('cabin_total')} className="h-7 text-sm" />
+                          </div>
+                          <div className="w-20">
+                            <label className="label">잔여 캐빈</label>
+                            <Input type="number" min={0} value={editForm.cabin_remaining} onChange={set('cabin_remaining')} className="h-7 text-sm" />
+                          </div>
+                        </div>
+                        {/* 2행: 캐빈가 계산식 (▶ 패널에서 등급별 상세 관리) */}
+                        <div className="flex flex-wrap gap-x-3 gap-y-2 mb-2 border-t border-slate-200 pt-2">
                           <div className="w-24">
                             <label className="label">캐빈등급</label>
                             <SelectOrInput
@@ -705,14 +717,6 @@ export default function CruiseTab() {
                               options={CABIN_GRADES}
                               placeholder="등급…"
                             />
-                          </div>
-                          <div className="w-20">
-                            <label className="label">보유 캐빈</label>
-                            <Input type="number" min={0} value={editForm.cabin_total} onChange={set('cabin_total')} className="h-7 text-sm" />
-                          </div>
-                          <div className="w-20">
-                            <label className="label">잔여 캐빈</label>
-                            <Input type="number" min={0} value={editForm.cabin_remaining} onChange={set('cabin_remaining')} className="h-7 text-sm" />
                           </div>
                           {(['ccf', 'nccf', 'tax', 'tip'] as const).map(f => (
                             <div key={f} className="w-20">
@@ -757,7 +761,7 @@ export default function CruiseTab() {
                   )}
 
                   {/* 등급별 현황 패널 */}
-                  {isExpanded && !isEdit && (
+                  {isExpanded && (
                     <tr className="border-b border-slate-200">
                       <td colSpan={13} className="p-0">
                         <GradesPanel voyageId={v.id} canWrite={canWrite} />
