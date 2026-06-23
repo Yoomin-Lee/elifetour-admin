@@ -19,6 +19,9 @@ import type { VoyageFormValues } from '@/lib/schemas/voyage'
 const CATEGORIES = ['크루즈', '항공', '호텔']
 const AGENTS = ['TMK', 'COSTA', 'ONLINE', 'DONGBO', 'VASCO', 'FLORENCE']
 const stripParens = (v: string) => v.replace(/\s*\(.*\)\s*$/, '')
+const LEGACY_CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
+const cleanFeeUnit = (v: string | undefined | null) =>
+  LEGACY_CURRENCIES.includes(v ?? '') ? '' : (v ?? '')
 
 const EMPTY_POLICY = {
   category: '', start_d_minus: undefined, end_d_minus: undefined,
@@ -92,10 +95,11 @@ export default function CancellationEditor() {
   }
 
   function applyPreset(preset: CancellationPresetDB, mode: 'replace' | 'append') {
+    const policies = preset.policies.map(p => ({ ...p, fee_unit: cleanFeeUnit(p.fee_unit) }))
     if (mode === 'replace') {
-      replace(preset.policies as any)
+      replace(policies as any)
     } else {
-      preset.policies.forEach(p => append(p as any))
+      policies.forEach(p => append(p as any))
     }
     setImportMsg(`${preset.label} — ${preset.policies.length}개 구간 불러옴`)
     setTimeout(() => setImportMsg(null), 4000)
@@ -252,7 +256,10 @@ export default function CancellationEditor() {
                     <FieldSelect
                       value={watchedPolicies?.[i]?.category ?? ''}
                       options={CATEGORIES}
-                      onChange={v => setValue(`policies.${i}.category`, v)}
+                      onChange={v => {
+                        setValue(`policies.${i}.category`, v)
+                        setValue(`policies.${i}.fee_unit`, '')
+                      }}
                       placeholder="-"
                     />
                   </div>
