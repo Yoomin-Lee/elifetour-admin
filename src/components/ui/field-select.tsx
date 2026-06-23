@@ -45,7 +45,7 @@ export function FieldSelect({ value, options, onChange, placeholder, className, 
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-20 mt-1 min-w-full overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <div className="absolute left-0 top-full z-20 mt-1 min-w-full max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
             {normalized.map(o => (
               <button
                 key={o.value}

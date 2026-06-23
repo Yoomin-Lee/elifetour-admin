@@ -8,6 +8,23 @@ import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const STATUSES = ['미오픈', '판매중', '마감', '출발완료', '취소'] as const
 
+const REGIONS = [
+  '동북아', '싱가포르', '두바이', '미서부', '알래스카',
+  '서부지중해', '동부지중해', '카리브해', '북유럽', '개기일식', '홍콩', '호주',
+] as const
+
+const AIRLINES = [
+  { value: 'OZ',    label: 'OZ (아시아나항공)' },
+  { value: 'KE',    label: 'KE (대한항공)' },
+  { value: 'SQ',    label: 'SQ (싱가포르항공)' },
+  { value: 'SQ/KE', label: 'SQ/KE (싱가포르/대한)' },
+  { value: 'EK/EK', label: 'EK/EK (에미레이트)' },
+  { value: 'QR/QR', label: 'QR/QR (카타르항공)' },
+  { value: 'LH/LH', label: 'LH/LH (루프트한자)' },
+  { value: 'TK/TK', label: 'TK/TK (터키항공)' },
+  { value: 'DL/DL', label: 'DL/DL (델타항공)' },
+] as const
+
 function Field({
   label, error, children,
 }: {
@@ -35,7 +52,18 @@ export default function BasicInfoSection() {
       <CardContent>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="지역 / 상품명 *" error={errors.region?.message}>
-            <Input {...register('region')} placeholder="예: 서부지중해" />
+            <Controller
+              name="region"
+              control={control}
+              render={({ field }) => (
+                <FieldSelect
+                  value={field.value ?? ''}
+                  options={REGIONS as unknown as string[]}
+                  onChange={field.onChange}
+                  placeholder="상품명 선택"
+                />
+              )}
+            />
           </Field>
 
           <Field label="상태" error={errors.status?.message}>
@@ -95,7 +123,18 @@ export default function BasicInfoSection() {
           </Field>
 
           <Field label="항공사" error={errors.airline?.message}>
-            <Input {...register('airline')} placeholder="예: 대한항공" />
+            <Controller
+              name="airline"
+              control={control}
+              render={({ field }) => (
+                <FieldSelect
+                  value={field.value ?? ''}
+                  options={AIRLINES as unknown as { value: string; label: string }[]}
+                  onChange={field.onChange}
+                  placeholder="항공사 선택"
+                />
+              )}
+            />
           </Field>
 
           <Field label="선사" error={errors.cruise_line?.message}>

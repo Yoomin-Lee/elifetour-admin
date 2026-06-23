@@ -417,7 +417,7 @@ export default function Dashboard() {
 
                     {isOpen && (
                       <div className="px-5 py-4 bg-slate-50/70 border-t border-slate-100 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
-                        <DetailItem label="귀항일"   value={formatDate(v.return_date)} />
+                        <DetailItem label="귀국일"   value={formatDate(v.return_date)} />
                         <DetailItem label="크루즈사" value={v.cruise_line} />
                         <DetailItem label="항공사"   value={v.airline} />
                         <DetailItem label="인솔자"   value={v.tour_leader} />

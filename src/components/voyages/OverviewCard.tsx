@@ -22,6 +22,23 @@ const STATUS_VARIANT: Record<VoyageStatus, 'default' | 'success' | 'destructive'
 
 const STATUSES: VoyageStatus[] = ['미오픈', '판매중', '마감', '출발완료', '취소']
 
+const REGIONS = [
+  '동북아', '싱가포르', '두바이', '미서부', '알래스카',
+  '서부지중해', '동부지중해', '카리브해', '북유럽', '개기일식', '홍콩', '호주',
+]
+
+const AIRLINES = [
+  { value: 'OZ',    label: 'OZ (아시아나항공)' },
+  { value: 'KE',    label: 'KE (대한항공)' },
+  { value: 'SQ',    label: 'SQ (싱가포르항공)' },
+  { value: 'SQ/KE', label: 'SQ/KE (싱가포르/대한)' },
+  { value: 'EK/EK', label: 'EK/EK (에미레이트)' },
+  { value: 'QR/QR', label: 'QR/QR (카타르항공)' },
+  { value: 'LH/LH', label: 'LH/LH (루프트한자)' },
+  { value: 'TK/TK', label: 'TK/TK (터키항공)' },
+  { value: 'DL/DL', label: 'DL/DL (델타항공)' },
+]
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex gap-2 py-1.5 border-b border-slate-50 last:border-0">
@@ -153,7 +170,12 @@ export default function OverviewCard({
           )}
           <dl>
             <ERow label="지역/상품명">
-              <Input value={f.region} onChange={set('region')} className="h-7 text-sm" />
+              <FieldSelect
+                value={f.region}
+                options={REGIONS}
+                onChange={v => setF(p => ({ ...p, region: v }))}
+                className="h-7 text-sm"
+              />
             </ERow>
             <ERow label="상태">
               <FieldSelect
@@ -194,7 +216,12 @@ export default function OverviewCard({
               </div>
             </ERow>
             <ERow label="항공사">
-              <Input value={f.airline} onChange={set('airline')} placeholder="대한항공" className="h-7 text-sm" />
+              <FieldSelect
+                value={f.airline}
+                options={AIRLINES}
+                onChange={v => setF(p => ({ ...p, airline: v }))}
+                className="h-7 text-sm"
+              />
             </ERow>
             <ERow label="선사">
               <Input value={f.cruise_line} onChange={set('cruise_line')} placeholder="MSC" className="h-7 text-sm" />
