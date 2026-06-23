@@ -124,21 +124,21 @@ export async function createVoyageWithChildren(values: VoyageFormValues): Promis
   if (flights.length > 0) {
     const { error } = await sb()
       .from('flights')
-      .insert(flights.map((f, i) => ({ ...f, voyage_id: id, sort_order: f.sort_order || i + 1 })))
+      .insert(flights.map((f, i) => ({ ...f, voyage_id: id, sort_order: i + 1 })))
     if (error) throw error
   }
 
   if (itinerary.length > 0) {
     const { error } = await sb()
       .from('itinerary_days')
-      .insert(itinerary.map((d, i) => ({ ...d, voyage_id: id, sort_order: d.sort_order || i + 1 })))
+      .insert(itinerary.map((d, i) => ({ ...d, voyage_id: id, sort_order: i + 1 })))
     if (error) throw error
   }
 
   if (policies.length > 0) {
     const { error } = await sb()
       .from('cancellation_policies')
-      .insert(policies.map((p, i) => ({ ...p, voyage_id: id, sort_order: p.sort_order || i + 1 })))
+      .insert(policies.map((p, i) => ({ ...p, voyage_id: id, sort_order: i + 1 })))
     if (error) throw error
   }
 
