@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Check, ChevronsUpDown, Search } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
+import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
 import { cn } from '@/lib/utils'
 import { voyageTitle } from '@/types/database'
 import type { Voyage } from '@/types/database'
@@ -65,7 +66,8 @@ export default function VoyageCombobox({ voyages, selectedId, onSelect, loading 
                 )}
               >
                 <Check className={cn('h-4 w-4 shrink-0', v.id === selectedId ? 'opacity-100 text-brand' : 'opacity-0')} />
-                {voyageTitle(v)}
+                <span className="flex-1 truncate">{voyageTitle(v)}</span>
+                <CruiseLineBadge value={v.cruise_line} />
               </button>
             ))
           )}

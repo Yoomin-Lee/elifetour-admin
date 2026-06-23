@@ -2,32 +2,32 @@ const CRUISE_MAP: { match: string[]; label: string; className: string }[] = [
   {
     match: ['costa'],
     label: 'COSTA',
-    className: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+    className: 'bg-amber-50 text-amber-600 border border-amber-200',
   },
   {
     match: ['royal', 'caribbean'],
     label: 'ROYAL',
-    className: 'bg-sky-100 text-sky-700 border border-sky-200',
+    className: 'bg-sky-50 text-sky-600 border border-sky-200',
   },
   {
     match: ['holland', 'hal'],
     label: 'HAL',
-    className: 'bg-indigo-700 text-white border border-indigo-800',
+    className: 'bg-indigo-50 text-indigo-600 border border-indigo-200',
   },
   {
     match: ['msc'],
     label: 'MSC',
-    className: 'bg-green-100 text-green-700 border border-green-200',
+    className: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
   },
   {
     match: ['norwegian', 'ncl'],
     label: 'NCL',
-    className: 'bg-orange-100 text-orange-700 border border-orange-200',
+    className: 'bg-orange-50 text-orange-600 border border-orange-200',
   },
   {
     match: ['princess'],
     label: 'PRINCESS',
-    className: 'bg-pink-100 text-pink-700 border border-pink-200',
+    className: 'bg-rose-50 text-rose-500 border border-rose-200',
   },
 ]
 
