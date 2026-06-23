@@ -14,17 +14,16 @@ import { TimePicker } from '@/components/ui/time-picker'
 import { Button } from '@/components/ui/button'
 import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
+import { SelectOrInput } from '@/components/ui/select-or-input'
 import type { ItineraryDay } from '@/types/database'
 
-const CATEGORIES = ['크루즈', '항공', '호텔', '지상', '식사', '기타'] as const
+const CATEGORIES = ['랜드', '쇼렉스', '자유']
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY'] as const
 
 const CATEGORY_COLORS: Record<string, string> = {
-  '크루즈': 'bg-blue-50 text-blue-700',
-  '항공':   'bg-sky-50 text-sky-700',
-  '호텔':   'bg-amber-50 text-amber-700',
-  '지상':   'bg-green-50 text-green-700',
-  '식사':   'bg-orange-50 text-orange-700',
+  '랜드':   'bg-green-50 text-green-700',
+  '쇼렉스': 'bg-blue-50 text-blue-700',
+  '자유':   'bg-amber-50 text-amber-700',
 }
 
 type ShoreForm = {
@@ -137,10 +136,13 @@ function ShoreFormFields({
         <Input value={form.port} onChange={set('port')} placeholder="Barcelona" className="h-7 text-sm" />
       </div>
       <div>
-        <SelectField label="구분" value={form.category} onChange={set('category')}>
-          <option value="">—</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </SelectField>
+        <label className="label">구분</label>
+        <SelectOrInput
+          value={form.category}
+          options={CATEGORIES}
+          onChange={v => setForm(prev => ({ ...prev, category: v }))}
+          placeholder="구분"
+        />
       </div>
       <div>
         <label className="label">입항</label>

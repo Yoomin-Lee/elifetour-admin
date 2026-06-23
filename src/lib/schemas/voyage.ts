@@ -18,6 +18,9 @@ export const itinerarySchema = z.object({
   port:           z.string().min(1, '기항지 필수'),
   arrival_time:   z.string().optional(),
   departure_time: z.string().optional(),
+  category:       z.string().optional(),
+  cost:           z.coerce.number().nullable().optional(),
+  cost_currency:  z.string().optional(),
   summary:        z.string().optional(),
   sort_order:     z.coerce.number().default(0),
 })

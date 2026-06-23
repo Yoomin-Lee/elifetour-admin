@@ -29,7 +29,7 @@ const TABS = [
   { key: '취소료',   label: '취소료'   },
   { key: '지상',     label: '지상'     },
   { key: '히스토리', label: '히스토리' },
-  { key: 'MN',       label: 'MN'       },
+  { key: 'MN',       label: '취소료 규정' },
   { key: '달력',     label: '달력'     },
   { key: '결제',     label: '결제'     },
 ] as const

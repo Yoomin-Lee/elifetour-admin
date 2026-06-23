@@ -8,9 +8,21 @@ import { Input } from '@/components/ui/input'
 import { TimePicker } from '@/components/ui/time-picker'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
+import { SelectOrInput } from '@/components/ui/select-or-input'
+import { FieldSelect } from '@/components/ui/field-select'
 import { formatDate, formatTime } from '@/lib/utils'
 import { saveItineraryDay, deleteItineraryDay } from '@/lib/queries/voyages'
 import type { ItineraryDay } from '@/types/database'
+
+const ITINERARY_CATEGORIES = ['랜드', '쇼렉스', '자유']
+
+const CURRENCY_OPTIONS = [
+  { value: 'KRW', label: 'KRW' },
+  { value: 'USD', label: 'USD' },
+  { value: 'EUR', label: 'EUR' },
+  { value: 'SGD', label: 'SGD' },
+  { value: 'JPY', label: 'JPY' },
+]
 
 const SEA_DAY = '해상'
 
@@ -171,7 +183,29 @@ export default function ItineraryCard({
                       <label className="label">출발</label>
                       <TimePicker size="sm" value={r.departure_time} onChange={v => upd(r._key, 'departure_time', v)} />
                     </div>
-                    <div className="col-span-4 sm:col-span-5">
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="label">구분</label>
+                      <SelectOrInput
+                        value={r.category}
+                        options={ITINERARY_CATEGORIES}
+                        onChange={v => upd(r._key, 'category', v)}
+                        placeholder="구분"
+                      />
+                    </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="label">통화</label>
+                      <FieldSelect
+                        value={r.cost_currency || 'USD'}
+                        options={CURRENCY_OPTIONS}
+                        onChange={v => upd(r._key, 'cost_currency', v)}
+                        className="h-7 text-sm"
+                      />
+                    </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="label">비용(인당)</label>
+                      <Input value={r.cost} onChange={e => upd(r._key, 'cost', e.target.value)} placeholder="0" className="h-7 text-sm" />
+                    </div>
+                    <div className="col-span-2 sm:col-span-2">
                       <label className="label">비고</label>
                       <Input value={r.summary} onChange={e => upd(r._key, 'summary', e.target.value)} placeholder="주요 관광지, 이동 정보 등" className="h-7 text-sm" />
                     </div>
@@ -220,6 +254,7 @@ export default function ItineraryCard({
                   <TableHead className="w-8">#</TableHead>
                   <TableHead className="whitespace-nowrap">날짜</TableHead>
                   <TableHead>기항지</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">구분</TableHead>
                   <TableHead className="whitespace-nowrap hidden sm:table-cell">도착</TableHead>
                   <TableHead className="whitespace-nowrap hidden sm:table-cell">출발</TableHead>
                   <TableHead className="hidden sm:table-cell">비고</TableHead>
@@ -236,6 +271,13 @@ export default function ItineraryCard({
                       <TableCell className="text-slate-400 text-xs">{i + 1}</TableCell>
                       <TableCell className="whitespace-nowrap font-medium">{formatDate(d.date)}</TableCell>
                       <TableCell className={isSea ? 'italic' : 'font-medium'}>{d.port}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {d.category ? (
+                          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-600">
+                            {d.category}
+                          </span>
+                        ) : null}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap hidden sm:table-cell">{formatTime(d.arrival_time)}</TableCell>
                       <TableCell className="whitespace-nowrap hidden sm:table-cell">{formatTime(d.departure_time)}</TableCell>
                       <TableCell className="hidden sm:table-cell text-slate-500 text-xs max-w-48 truncate">{d.summary ?? ''}</TableCell>

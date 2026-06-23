@@ -7,13 +7,26 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
+import { SelectOrInput } from '@/components/ui/select-or-input'
+import { FieldSelect } from '@/components/ui/field-select'
 import { fetchItineraryPresets } from '@/lib/queries/itineraryPresets'
 import type { ItineraryPreset } from '@/lib/queries/itineraryPresets'
 import ItineraryPresetManager from './ItineraryPresetManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
+const ITINERARY_CATEGORIES = ['랜드', '쇼렉스', '자유']
+
+const CURRENCY_OPTIONS = [
+  { value: 'KRW', label: 'KRW' },
+  { value: 'USD', label: 'USD' },
+  { value: 'EUR', label: 'EUR' },
+  { value: 'SGD', label: 'SGD' },
+  { value: 'JPY', label: 'JPY' },
+]
+
 const EMPTY_DAY = {
-  date: '', port: '', arrival_time: '', departure_time: '', summary: '', sort_order: 0,
+  date: '', port: '', arrival_time: '', departure_time: '',
+  category: '', cost: null as number | null, cost_currency: 'USD', summary: '', sort_order: 0,
 }
 
 export default function ItineraryEditor() {
@@ -37,6 +50,9 @@ export default function ItineraryEditor() {
       port: p.port,
       arrival_time: p.arrival_time,
       departure_time: p.departure_time,
+      category: '',
+      cost: null as number | null,
+      cost_currency: 'USD',
       summary: p.summary,
       sort_order: i + 1,
     }))
@@ -220,9 +236,47 @@ export default function ItineraryEditor() {
                           )}
                         />
                       </div>
-                      <div className="col-span-2 sm:col-span-5">
+                      <div className="col-span-1">
+                        <label className="label">구분</label>
+                        <Controller
+                          name={`itinerary.${i}.category`}
+                          control={control}
+                          render={({ field }) => (
+                            <SelectOrInput
+                              value={field.value ?? ''}
+                              options={ITINERARY_CATEGORIES}
+                              onChange={field.onChange}
+                              placeholder="구분"
+                            />
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <label className="label">통화</label>
+                        <Controller
+                          name={`itinerary.${i}.cost_currency`}
+                          control={control}
+                          render={({ field }) => (
+                            <FieldSelect
+                              value={field.value ?? 'USD'}
+                              options={CURRENCY_OPTIONS}
+                              onChange={field.onChange}
+                              className="h-7 text-sm"
+                            />
+                          )}
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <label className="label">비용(인당)</label>
+                        <Input
+                          {...register(`itinerary.${i}.cost`)}
+                          placeholder="0"
+                          className="h-7 text-sm"
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
                         <label className="label">비고</label>
-                        <Input {...register(`itinerary.${i}.summary`)} placeholder="주요 관광지, 이동 정보 등" />
+                        <Input {...register(`itinerary.${i}.summary`)} placeholder="주요 관광지, 이동 정보 등" className="h-7 text-sm" />
                       </div>
                     </div>
                     <button
