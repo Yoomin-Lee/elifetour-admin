@@ -77,10 +77,9 @@ function fromSchedule(s: PaymentSchedule): DraftCell {
 function formatAmount(amount: string, currency: string): string {
   const n = Number(amount)
   if (!n) return '—'
-  if (currency === 'KRW') return `₩${n.toLocaleString()}`
-  if (currency === 'USD') return `$${n.toLocaleString()}`
-  if (currency === 'EUR') return `€${n.toLocaleString()}`
-  return `${n.toLocaleString()} ${currency}`
+  const sym: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
+  const prefix = sym[currency] ?? (currency + ' ')
+  return prefix + n.toLocaleString(currency === 'KRW' ? 'ko-KR' : 'en-US')
 }
 
 export default function PaymentTab() {

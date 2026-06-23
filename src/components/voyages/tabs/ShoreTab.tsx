@@ -62,8 +62,9 @@ function toForm(r: ItineraryDay & { voyage_id: string }): ShoreForm {
 
 function formatCost(cost: number | null, currency: string | null): string {
   if (!cost) return '—'
-  const sym = currency === 'KRW' ? '₩' : currency === 'EUR' ? '€' : currency === 'SGD' ? 'S$' : '$'
-  return `${sym}${cost.toLocaleString()}`
+  const sym: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
+  const prefix = sym[currency ?? ''] ?? ((currency ?? '') + ' ')
+  return prefix + cost.toLocaleString(currency === 'KRW' ? 'ko-KR' : 'en-US')
 }
 
 // 드롭다운 공통 래퍼

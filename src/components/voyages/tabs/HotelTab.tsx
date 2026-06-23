@@ -52,8 +52,9 @@ function calcDDay(departure: string): string {
 
 function formatRate(rate: number | null, currency: string): string {
   if (!rate) return '—'
-  const sym = currency === 'KRW' ? '₩' : currency === 'EUR' ? '€' : currency === 'SGD' ? 'S$' : '$'
-  return `${sym}${rate.toLocaleString()}`
+  const sym: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
+  const prefix = sym[currency] ?? (currency + ' ')
+  return prefix + rate.toLocaleString(currency === 'KRW' ? 'ko-KR' : 'en-US')
 }
 
 function HotelFormFields({

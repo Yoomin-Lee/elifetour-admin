@@ -35,11 +35,9 @@ function localDt(isoUtc: string, airportCode: string) {
 
 function formatFare(fare: number | null, currency: string): string {
   if (!fare) return '—'
-  const amount = fare.toLocaleString()
-  if (currency === 'KRW') return `₩${amount}`
-  if (currency === 'USD') return `$${amount}`
-  if (currency === 'EUR') return `€${amount}`
-  return `${amount} ${currency}`
+  const sym: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
+  const prefix = sym[currency] ?? (currency + ' ')
+  return prefix + fare.toLocaleString(currency === 'KRW' ? 'ko-KR' : 'en-US')
 }
 
 type FlightForm = {

@@ -129,8 +129,9 @@ function formatDate(d) {
 
 function formatAmount(amount, currency) {
   if (!amount) return '-'
-  if (currency === 'KRW') return `${Number(amount).toLocaleString('ko-KR')} 원`
-  return `${currency} ${Number(amount).toLocaleString('en-US')}`
+  const sym = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
+  const prefix = sym[currency] ?? (currency + ' ')
+  return prefix + Number(amount).toLocaleString(currency === 'KRW' ? 'ko-KR' : 'en-US')
 }
 
 function cabinBadge(remaining, total) {
