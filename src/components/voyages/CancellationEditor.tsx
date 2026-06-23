@@ -9,6 +9,8 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { fetchCancellationPresets } from '@/lib/queries/cancellationPresets'
 import type { CancellationPresetDB } from '@/lib/queries/cancellationPresets'
+import { fetchMnSections } from '@/lib/queries/mnSections'
+import type { MnSection } from '@/lib/queries/mnSections'
 import CancellationPresetManager from './CancellationPresetManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
@@ -34,6 +36,7 @@ export default function CancellationEditor() {
   const [dropUp, setDropUp] = useState(false)
   const [managerOpen, setManagerOpen] = useState(false)
   const [pendingPreset, setPendingPreset] = useState<CancellationPresetDB | null>(null)
+  const [pendingMn, setPendingMn] = useState<MnSection | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const presetBtnRef = useRef<HTMLDivElement>(null)
 
@@ -41,6 +44,48 @@ export default function CancellationEditor() {
     queryKey: ['cancellation-presets'],
     queryFn: fetchCancellationPresets,
   })
+
+  const { data: mnSections = [] } = useQuery({
+    queryKey: ['mn-sections'],
+    queryFn: fetchMnSections,
+    select: (data) => data.filter(s => s.category === '취소료'),
+  })
+
+  function mnSectionToPolicies(section: MnSection) {
+    return section.rows
+      .filter(r => r.d || r.fee)
+      .map((r, i) => ({
+        category: '크루즈' as const,
+        fee_description: r.d ?? '',
+        note: [r.fee, r.note].filter(Boolean).join(' | '),
+        start_d_minus: undefined,
+        end_d_minus: undefined,
+        reference_date: '',
+        fee_type: undefined as 'percent' | 'fixed' | 'free' | undefined,
+        fee_value: undefined,
+        fee_unit: '',
+        sort_order: i,
+      }))
+  }
+
+  function applyMnSection(section: MnSection, mode: 'replace' | 'append') {
+    const rows = mnSectionToPolicies(section)
+    if (mode === 'replace') replace(rows as any)
+    else rows.forEach(r => append(r as any))
+    setImportMsg(`${section.title} — ${rows.length}개 구간 불러옴`)
+    setTimeout(() => setImportMsg(null), 4000)
+    setPendingPreset(null)
+    setPresetOpen(false)
+  }
+
+  function handleMnSelect(section: MnSection) {
+    if (fields.length > 0) {
+      setPendingMn(section)
+      setPresetOpen(false)
+    } else {
+      applyMnSection(section, 'replace')
+    }
+  }
 
   function applyPreset(preset: CancellationPresetDB, mode: 'replace' | 'append') {
     if (mode === 'replace') {
@@ -96,21 +141,43 @@ export default function CancellationEditor() {
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
                   <div className={`absolute left-0 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden flex flex-col ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
-                    <div className="overflow-y-auto max-h-56">
-                      {presets.length === 0 && (
+                    <div className="overflow-y-auto max-h-64 scrollbar-navy">
+                      {mnSections.length > 0 && (
+                        <>
+                          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">취소료 규정</p>
+                          {mnSections.map(s => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => handleMnSelect(s)}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-brand/5 transition"
+                            >
+                              <span className="font-medium text-slate-700">{s.title}</span>
+                              <span className="ml-1.5 text-slate-400">{s.rows.length}구간</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {presets.length > 0 && (
+                        <>
+                          {mnSections.length > 0 && <div className="my-1 border-t border-slate-100" />}
+                          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">저장된 프리셋</p>
+                          {presets.map(p => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => handlePresetSelect(p)}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-slate-50 transition"
+                            >
+                              <span className="font-medium text-slate-700">{p.label}</span>
+                              <span className="ml-1.5 text-slate-400">{p.policies.length}구간</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {mnSections.length === 0 && presets.length === 0 && (
                         <p className="px-3 py-2 text-xs text-slate-400">등록된 취소료가 없습니다</p>
                       )}
-                      {presets.map(p => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => handlePresetSelect(p)}
-                          className="w-full px-3 py-2 text-left text-xs hover:bg-slate-50 transition"
-                        >
-                          <span className="font-medium text-slate-700">{p.label}</span>
-                          <span className="ml-1.5 text-slate-400">{p.policies.length}구간</span>
-                        </button>
-                      ))}
                     </div>
                     <div className="border-t border-slate-100 shrink-0">
                       <button
@@ -134,32 +201,32 @@ export default function CancellationEditor() {
 
         <CardContent>
           {/* 프리셋 적용 확인 */}
-          {pendingPreset && (
+          {(pendingPreset || pendingMn) && (
             <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
               <p className="text-sm text-amber-800 font-medium mb-2">
                 이미 입력된 취소료가 있습니다. 어떻게 처리할까요?
               </p>
               <p className="text-xs text-amber-600 mb-3">
-                선택한 취소료: <span className="font-semibold">{pendingPreset.label}</span>
+                선택한 취소료: <span className="font-semibold">{pendingPreset ? pendingPreset.label : pendingMn!.title}</span>
               </p>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => applyPreset(pendingPreset, 'replace')}
+                  onClick={() => pendingPreset ? applyPreset(pendingPreset, 'replace') : applyMnSection(pendingMn!, 'replace')}
                   className="rounded px-3 py-1.5 text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition"
                 >
                   기존 삭제 후 불러오기
                 </button>
                 <button
                   type="button"
-                  onClick={() => applyPreset(pendingPreset, 'append')}
+                  onClick={() => pendingPreset ? applyPreset(pendingPreset, 'append') : applyMnSection(pendingMn!, 'append')}
                   className="rounded px-3 py-1.5 text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-100 transition"
                 >
                   기존 유지하고 추가
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPendingPreset(null)}
+                  onClick={() => { setPendingPreset(null); setPendingMn(null) }}
                   className="rounded px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-100 transition"
                 >
                   취소
