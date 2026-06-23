@@ -14,13 +14,8 @@ import type { MnSection } from '@/lib/queries/mnSections'
 import CancellationPresetManager from './CancellationPresetManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
-const CATEGORIES = ['크루즈', '항공', '팁', '데포']
+const CATEGORIES = ['크루즈', '항공', '호텔']
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
-const FEE_TYPES = [
-  { value: 'percent', label: '퍼센트' },
-  { value: 'fixed',   label: '정액' },
-  { value: 'free',    label: '무료' },
-]
 
 const EMPTY_POLICY = {
   category: '', start_d_minus: undefined, end_d_minus: undefined,
@@ -284,15 +279,6 @@ export default function CancellationEditor() {
                   <div className="col-span-2">
                     <label className="label">취소료 설명</label>
                     <Input {...register(`policies.${i}.fee_description`)} placeholder="예: 크루즈요금 25%" />
-                  </div>
-                  <div>
-                    <label className="label">유형</label>
-                    <FieldSelect
-                      value={watchedPolicies?.[i]?.fee_type ?? ''}
-                      options={FEE_TYPES}
-                      onChange={v => setValue(`policies.${i}.fee_type`, (v || undefined) as 'percent' | 'fixed' | 'free' | undefined)}
-                      placeholder="-"
-                    />
                   </div>
                   <div>
                     <label className="label">값</label>
