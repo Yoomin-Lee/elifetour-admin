@@ -110,7 +110,7 @@ export async function deleteHistoryLog(id: string): Promise<void> {
 // ── Create ────────────────────────────────────────────────────────────────
 
 export async function createVoyageWithChildren(values: VoyageFormValues): Promise<Voyage> {
-  const { flights, itinerary, policies, cabin_grade, cabin_ccf, cabin_nccf, cabin_tax, cabin_tip, cabin_currency, ...voyageData } = values
+  const { flights, itinerary, policies, cabin_grades, ...voyageData } = values
 
   const { data: voyage, error: ve } = await sb()
     .from('voyages')
@@ -142,21 +142,23 @@ export async function createVoyageWithChildren(values: VoyageFormValues): Promis
     if (error) throw error
   }
 
-  const ccf = cabin_ccf ?? null
-  const nccf = cabin_nccf ?? null
-  const tax = cabin_tax ?? null
-  const tip = cabin_tip ?? null
-  const total = (Number(ccf) || 0) + (Number(nccf) || 0) + (Number(tax) || 0) + (Number(tip) || 0)
-  if (total > 0 || cabin_grade) {
-    await saveCabinGrades(id, [{
-      grade: cabin_grade || '기본',
-      total: Number(voyageData.cabin_total) || 0,
-      reserved: 0,
-      price_per_person: total || null,
-      ccf, nccf, tax, tip,
-      currency: cabin_currency || 'USD',
-      sort_order: 0,
-    }], [])
+  if (cabin_grades.length > 0) {
+    await saveCabinGrades(id, cabin_grades.map((g, i) => {
+      const price = (Number(g.ccf) || 0) + (Number(g.nccf) || 0) + (Number(g.tax) || 0) + (Number(g.tip) || 0)
+      return {
+        grade:            g.grade || '기본',
+        total:            g.total || 0,
+        reserved:         g.reserved || 0,
+        price_per_person: price || null,
+        ccf:              g.ccf ?? null,
+        nccf:             g.nccf ?? null,
+        tax:              g.tax ?? null,
+        tip:              g.tip ?? null,
+        currency:         g.currency || 'USD',
+        agent:            g.agent || null,
+        sort_order:       i,
+      }
+    }), [])
   }
 
   return voyage as Voyage

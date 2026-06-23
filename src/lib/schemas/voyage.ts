@@ -35,6 +35,20 @@ export const policySchema = z.object({
   sort_order:     z.coerce.number().default(0),
 })
 
+export const cabinGradeItemSchema = z.object({
+  grade:    z.string().default(''),
+  total:    z.coerce.number().min(0).default(0),
+  reserved: z.coerce.number().min(0).default(0),
+  ccf:      z.coerce.number().nullable().optional(),
+  nccf:     z.coerce.number().nullable().optional(),
+  tax:      z.coerce.number().nullable().optional(),
+  tip:      z.coerce.number().nullable().optional(),
+  currency: z.string().default('USD'),
+  agent:    z.string().optional(),
+})
+
+export type CabinGradeItem = z.infer<typeof cabinGradeItemSchema>
+
 export const voyageFormSchema = z.object({
   region:          z.string().min(1, '지역/상품명을 입력하세요'),
   status:          z.enum(['미오픈', '판매중', '마감', '출발완료', '취소']),
@@ -49,12 +63,7 @@ export const voyageFormSchema = z.object({
   customer_count:  z.coerce.number().min(0).default(0),
   tour_leader:     z.string().optional(),
   hotel:           z.string().optional(),
-  cabin_grade:     z.string().optional(),
-  cabin_ccf:       z.coerce.number().nullable().optional(),
-  cabin_nccf:      z.coerce.number().nullable().optional(),
-  cabin_tax:       z.coerce.number().nullable().optional(),
-  cabin_tip:       z.coerce.number().nullable().optional(),
-  cabin_currency:  z.string().default('USD'),
+  cabin_grades:    z.array(cabinGradeItemSchema).default([]),
   flights:         z.array(flightSchema).default([]),
   itinerary:       z.array(itinerarySchema).default([]),
   policies:        z.array(policySchema).default([]),
