@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Plus, Trash2, ChevronDown, FileText, Settings } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
+import { FieldSelect } from '@/components/ui/field-select'
 import { Button } from '@/components/ui/button'
 import { fetchCancellationPresets } from '@/lib/queries/cancellationPresets'
 import type { CancellationPresetDB } from '@/lib/queries/cancellationPresets'
@@ -13,6 +13,11 @@ import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const CATEGORIES = ['크루즈', '항공', '팁', '데포']
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'GBP', 'JPY', 'AUD']
+const FEE_TYPES = [
+  { value: 'percent', label: '퍼센트' },
+  { value: 'fixed',   label: '정액' },
+  { value: 'free',    label: '무료' },
+]
 
 const EMPTY_POLICY = {
   category: '', start_d_minus: undefined, end_d_minus: undefined,
@@ -21,7 +26,8 @@ const EMPTY_POLICY = {
 }
 
 export default function CancellationEditor() {
-  const { register } = useFormContext<VoyageFormValues>()
+  const { register, watch, setValue } = useFormContext<VoyageFormValues>()
+  const watchedPolicies = watch('policies')
   const { fields, append, remove, replace } = useFieldArray<VoyageFormValues, 'policies'>({ name: 'policies' })
   const [presetOpen, setPresetOpen] = useState(false)
   const [dropUp, setDropUp] = useState(false)
@@ -171,13 +177,12 @@ export default function CancellationEditor() {
                 <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
                   <div>
                     <label className="label">구분</label>
-                    <div className="relative">
-                      <Select {...register(`policies.${i}.category`)} className="appearance-none pr-7">
-                        <option value="">-</option>
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </Select>
-                      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                    </div>
+                    <FieldSelect
+                      value={watchedPolicies?.[i]?.category ?? ''}
+                      options={CATEGORIES}
+                      onChange={v => setValue(`policies.${i}.category`, v)}
+                      placeholder="-"
+                    />
                   </div>
                   <div>
                     <label className="label">시작 D-</label>
@@ -193,13 +198,12 @@ export default function CancellationEditor() {
                   </div>
                   <div>
                     <label className="label">통화</label>
-                    <div className="relative">
-                      <Select {...register(`policies.${i}.fee_unit`)} className="appearance-none pr-7">
-                        <option value="">-</option>
-                        {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </Select>
-                      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                    </div>
+                    <FieldSelect
+                      value={watchedPolicies?.[i]?.fee_unit ?? ''}
+                      options={CURRENCIES}
+                      onChange={v => setValue(`policies.${i}.fee_unit`, v)}
+                      placeholder="-"
+                    />
                   </div>
                   <div className="col-span-2">
                     <label className="label">기준일 직접 지정 <span className="text-slate-400 font-normal">(비워두면 자동)</span></label>
@@ -211,15 +215,12 @@ export default function CancellationEditor() {
                   </div>
                   <div>
                     <label className="label">유형</label>
-                    <div className="relative">
-                      <Select {...register(`policies.${i}.fee_type`)} className="appearance-none pr-7">
-                        <option value="">-</option>
-                        <option value="percent">퍼센트</option>
-                        <option value="fixed">정액</option>
-                        <option value="free">무료</option>
-                      </Select>
-                      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                    </div>
+                    <FieldSelect
+                      value={watchedPolicies?.[i]?.fee_type ?? ''}
+                      options={FEE_TYPES}
+                      onChange={v => setValue(`policies.${i}.fee_type`, (v || undefined) as 'percent' | 'fixed' | 'free' | undefined)}
+                      placeholder="-"
+                    />
                   </div>
                   <div>
                     <label className="label">값</label>
