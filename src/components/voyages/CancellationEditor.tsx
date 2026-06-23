@@ -281,7 +281,7 @@ export default function CancellationEditor() {
             </div>
           )}
 
-          {fields.length === 0 && !pendingPreset && (
+          {fields.length === 0 && !pendingPreset && !pendingMn && (
             <p className="py-4 text-center text-sm text-slate-400">취소료 불러오기 또는 구간을 직접 추가하세요</p>
           )}
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePolicyDragEnd}>
