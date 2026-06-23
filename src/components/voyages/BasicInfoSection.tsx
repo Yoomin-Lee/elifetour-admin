@@ -8,23 +8,15 @@ import { Label } from '@/components/ui/label'
 import { DatePicker } from '@/components/ui/date-picker'
 import { FieldSelect } from '@/components/ui/field-select'
 import { SelectOrInput } from '@/components/ui/select-or-input'
+
 import { fetchRegionOptions } from '@/lib/queries/regionOptions'
+import { fetchAirlineOptions } from '@/lib/queries/airlineOptions'
 import RegionManager from './RegionManager'
+import AirlineManager from './AirlineManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const STATUSES = ['미오픈', '판매중', '마감', '출발완료', '취소'] as const
 
-const AIRLINES = [
-  { value: 'OZ',    label: 'OZ (아시아나항공)' },
-  { value: 'KE',    label: 'KE (대한항공)' },
-  { value: 'SQ',    label: 'SQ (싱가포르항공)' },
-  { value: 'SQ/KE', label: 'SQ/KE (싱가포르/대한)' },
-  { value: 'EK/EK', label: 'EK/EK (에미레이트)' },
-  { value: 'QR/QR', label: 'QR/QR (카타르항공)' },
-  { value: 'LH/LH', label: 'LH/LH (루프트한자)' },
-  { value: 'TK/TK', label: 'TK/TK (터키항공)' },
-  { value: 'DL/DL', label: 'DL/DL (델타항공)' },
-] as const
 
 function Field({
   label, error, children,
@@ -43,12 +35,19 @@ function Field({
 export default function BasicInfoSection() {
   const { register, control, formState: { errors }, watch, setValue } = useFormContext<VoyageFormValues>()
   const [regionManagerOpen, setRegionManagerOpen] = useState(false)
+  const [airlineManagerOpen, setAirlineManagerOpen] = useState(false)
 
   const cabinTotal = watch('cabin_total')
 
   const { data: regionOptions = [] } = useQuery({
     queryKey: ['region-options'],
     queryFn: fetchRegionOptions,
+    select: data => data.map(r => r.label),
+  })
+
+  const { data: airlineOptions = [] } = useQuery({
+    queryKey: ['airline-options'],
+    queryFn: fetchAirlineOptions,
     select: data => data.map(r => r.label),
   })
 
@@ -143,16 +142,43 @@ export default function BasicInfoSection() {
               />
             </Field>
 
-            <Field label="항공사" error={errors.airline?.message}>
+            <Field label="항공사 (가는 편)" error={errors.airline?.message}>
+              <div className="flex gap-1">
+                <div className="flex-1">
+                  <Controller
+                    name="airline"
+                    control={control}
+                    render={({ field }) => (
+                      <SelectOrInput
+                        value={field.value ?? ''}
+                        options={airlineOptions}
+                        onChange={field.onChange}
+                        placeholder="항공사 선택 또는 직접 입력"
+                      />
+                    )}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAirlineManagerOpen(true)}
+                  className="flex items-center justify-center rounded-lg border border-slate-200 px-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+                  title="항공사 목록 관리"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+              </div>
+            </Field>
+
+            <Field label="항공사 (오는 편)" error={errors.airline_return?.message}>
               <Controller
-                name="airline"
+                name="airline_return"
                 control={control}
                 render={({ field }) => (
-                  <FieldSelect
+                  <SelectOrInput
                     value={field.value ?? ''}
-                    options={AIRLINES as unknown as { value: string; label: string }[]}
+                    options={airlineOptions}
                     onChange={field.onChange}
-                    placeholder="항공사 선택"
+                    placeholder="항공사 선택 또는 직접 입력"
                   />
                 )}
               />
@@ -200,6 +226,9 @@ export default function BasicInfoSection() {
 
       {regionManagerOpen && (
         <RegionManager onClose={() => setRegionManagerOpen(false)} />
+      )}
+      {airlineManagerOpen && (
+        <AirlineManager onClose={() => setAirlineManagerOpen(false)} />
       )}
     </>
   )

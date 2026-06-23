@@ -1,16 +1,19 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Pencil, Check, X } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
+import { SelectOrInput } from '@/components/ui/select-or-input'
 import { DatePicker } from '@/components/ui/date-picker'
 import { formatDate, calcNights } from '@/lib/utils'
 import { voyageTitle } from '@/types/database'
 import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
 import { updateVoyage } from '@/lib/queries/voyages'
+import { fetchRegionOptions } from '@/lib/queries/regionOptions'
+import { fetchAirlineOptions } from '@/lib/queries/airlineOptions'
 import type { Voyage, VoyageStatus, ItineraryDay } from '@/types/database'
 
 const STATUS_VARIANT: Record<VoyageStatus, 'default' | 'success' | 'destructive' | 'warning' | 'info' | 'outline'> = {
@@ -23,22 +26,7 @@ const STATUS_VARIANT: Record<VoyageStatus, 'default' | 'success' | 'destructive'
 
 const STATUSES: VoyageStatus[] = ['미오픈', '판매중', '마감', '출발완료', '취소']
 
-const REGIONS = [
-  '동북아', '싱가포르', '두바이', '미서부', '알래스카',
-  '서부지중해', '동부지중해', '카리브해', '북유럽', '개기일식', '홍콩', '호주',
-]
 
-const AIRLINES = [
-  { value: 'OZ',    label: 'OZ (아시아나항공)' },
-  { value: 'KE',    label: 'KE (대한항공)' },
-  { value: 'SQ',    label: 'SQ (싱가포르항공)' },
-  { value: 'SQ/KE', label: 'SQ/KE (싱가포르/대한)' },
-  { value: 'EK/EK', label: 'EK/EK (에미레이트)' },
-  { value: 'QR/QR', label: 'QR/QR (카타르항공)' },
-  { value: 'LH/LH', label: 'LH/LH (루프트한자)' },
-  { value: 'TK/TK', label: 'TK/TK (터키항공)' },
-  { value: 'DL/DL', label: 'DL/DL (델타항공)' },
-]
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -62,6 +50,7 @@ type Form = {
   region: string
   status: VoyageStatus
   airline: string
+  airline_return: string
   cruise_line: string
   ship_name: string
   departure_date: string
@@ -79,6 +68,7 @@ function toForm(v: Voyage): Form {
     region: v.region,
     status: v.status,
     airline: v.airline ?? '',
+    airline_return: v.airline_return ?? '',
     cruise_line: v.cruise_line ?? '',
     ship_name: v.ship_name ?? '',
     departure_date: v.departure_date,
@@ -111,11 +101,23 @@ export default function OverviewCard({
   const [f, setF] = useState<Form>(toForm(voyage))
   const qc = useQueryClient()
 
+  const { data: regionOptions = [] } = useQuery({
+    queryKey: ['region-options'],
+    queryFn: fetchRegionOptions,
+    select: data => data.map(r => r.label),
+  })
+  const { data: airlineOptions = [] } = useQuery({
+    queryKey: ['airline-options'],
+    queryFn: fetchAirlineOptions,
+    select: data => data.map(r => r.label),
+  })
+
   const mut = useMutation({
     mutationFn: () => updateVoyage(voyage.id, {
       region: f.region,
       status: f.status,
       airline: f.airline || null,
+      airline_return: f.airline_return || null,
       cruise_line: f.cruise_line || null,
       ship_name: f.ship_name || null,
       departure_date: f.departure_date,
@@ -171,9 +173,9 @@ export default function OverviewCard({
           )}
           <dl>
             <ERow label="지역/상품명">
-              <FieldSelect
+              <SelectOrInput
                 value={f.region}
-                options={REGIONS}
+                options={regionOptions}
                 onChange={v => setF(p => ({ ...p, region: v }))}
                 className="h-7 text-sm"
               />
@@ -216,11 +218,19 @@ export default function OverviewCard({
                 })()}
               </div>
             </ERow>
-            <ERow label="항공사">
-              <FieldSelect
+            <ERow label="항공사 (가는 편)">
+              <SelectOrInput
                 value={f.airline}
-                options={AIRLINES}
+                options={airlineOptions}
                 onChange={v => setF(p => ({ ...p, airline: v }))}
+                className="h-7 text-sm"
+              />
+            </ERow>
+            <ERow label="항공사 (오는 편)">
+              <SelectOrInput
+                value={f.airline_return}
+                options={airlineOptions}
+                onChange={v => setF(p => ({ ...p, airline_return: v }))}
                 className="h-7 text-sm"
               />
             </ERow>
@@ -275,7 +285,8 @@ export default function OverviewCard({
           <Row label="귀국일"    value={formatDate(voyage.return_date)} />
           <Row label="승선일"    value={voyage.boarding_date ? formatDate(voyage.boarding_date) : '-'} />
           <Row label="여행 기간" value={calcNights(voyage.departure_date, voyage.return_date)} />
-          <Row label="항공사"    value={voyage.airline} />
+          <Row label="항공사 (가는 편)" value={voyage.airline} />
+          <Row label="항공사 (오는 편)" value={voyage.airline_return} />
           <Row label="선사"      value={<CruiseLineBadge value={voyage.cruise_line} />} />
           <Row label="크루즈"    value={voyage.ship_name} />
           <Row label="보유 캐빈" value={voyage.cabin_total ? `${voyage.cabin_total}개` : '-'} />

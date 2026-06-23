@@ -6,6 +6,7 @@ export interface Voyage {
   region: string
   status: VoyageStatus
   airline: string | null
+  airline_return: string | null
   cruise_line: string | null
   ship_name: string | null
   departure_date: string

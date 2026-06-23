@@ -56,6 +56,7 @@ export const voyageFormSchema = z.object({
   region:          z.string().min(1, '지역/상품명을 입력하세요'),
   status:          z.enum(['미오픈', '판매중', '마감', '출발완료', '취소']),
   airline:         z.string().optional(),
+  airline_return:  z.string().optional(),
   cruise_line:     z.string().optional(),
   ship_name:       z.string().optional(),
   departure_date:  z.string().min(1, '출발일을 입력하세요'),
