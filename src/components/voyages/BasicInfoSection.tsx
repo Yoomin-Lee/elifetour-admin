@@ -100,47 +100,15 @@ export default function BasicInfoSection() {
               />
             </Field>
 
-            <Field label="출발일 *" error={errors.departure_date?.message}>
-              <Controller
-                name="departure_date"
-                control={control}
-                render={({ field }) => (
-                  <DatePicker
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    placeholder="출발일 선택"
-                  />
-                )}
-              />
-            </Field>
+            <div className="space-y-4">
+              <Field label="선사" error={errors.cruise_line?.message}>
+                <Input {...register('cruise_line')} placeholder="예: MSC" />
+              </Field>
 
-            <Field label="귀국일" error={errors.return_date?.message}>
-              <Controller
-                name="return_date"
-                control={control}
-                render={({ field }) => (
-                  <DatePicker
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    placeholder="귀국일 선택"
-                  />
-                )}
-              />
-            </Field>
-
-            <Field label="승선일" error={errors.boarding_date?.message}>
-              <Controller
-                name="boarding_date"
-                control={control}
-                render={({ field }) => (
-                  <DatePicker
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    placeholder="크루즈 승선일 선택"
-                  />
-                )}
-              />
-            </Field>
+              <Field label="크루즈 선박명" error={errors.ship_name?.message}>
+                <Input {...register('ship_name')} placeholder="예: WORLD EUROPA" />
+              </Field>
+            </div>
 
             <div className="space-y-4">
               <Field label="항공사" error={errors.airline?.message}>
@@ -186,15 +154,47 @@ export default function BasicInfoSection() {
               </Field>
             </div>
 
-            <div className="space-y-4">
-              <Field label="선사" error={errors.cruise_line?.message}>
-                <Input {...register('cruise_line')} placeholder="예: MSC" />
-              </Field>
+            <Field label="출발일 *" error={errors.departure_date?.message}>
+              <Controller
+                name="departure_date"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    placeholder="출발일 선택"
+                  />
+                )}
+              />
+            </Field>
 
-              <Field label="크루즈 선박명" error={errors.ship_name?.message}>
-                <Input {...register('ship_name')} placeholder="예: WORLD EUROPA" />
-              </Field>
-            </div>
+            <Field label="귀국일" error={errors.return_date?.message}>
+              <Controller
+                name="return_date"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    placeholder="귀국일 선택"
+                  />
+                )}
+              />
+            </Field>
+
+            <Field label="승선일" error={errors.boarding_date?.message}>
+              <Controller
+                name="boarding_date"
+                control={control}
+                render={({ field }) => (
+                  <DatePicker
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    placeholder="크루즈 승선일 선택"
+                  />
+                )}
+              />
+            </Field>
 
             <Field label="인솔자" error={errors.tour_leader?.message}>
               <Input {...register('tour_leader')} placeholder="미정" />
