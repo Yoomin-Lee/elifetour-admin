@@ -10,6 +10,7 @@ import BasicInfoSection from '@/components/voyages/BasicInfoSection'
 import FlightsEditor from '@/components/voyages/FlightsEditor'
 import ItineraryEditor from '@/components/voyages/ItineraryEditor'
 import CancellationEditor from '@/components/voyages/CancellationEditor'
+import CabinPriceSection from '@/components/voyages/CabinPriceSection'
 import { Button } from '@/components/ui/button'
 
 const queryClient = new QueryClient()
@@ -75,6 +76,7 @@ function VoyageNewInner() {
 
         <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
           <BasicInfoSection />
+          <CabinPriceSection />
           <FlightsEditor />
           <ItineraryEditor />
           <CancellationEditor />
