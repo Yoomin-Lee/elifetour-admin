@@ -513,7 +513,7 @@ export default function CruiseTab() {
               <th className="px-2 py-2.5 w-8" />
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-32">행사명</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">승선일</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">하선일</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">귀국일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">선사</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">크루즈</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">에이전트</th>
