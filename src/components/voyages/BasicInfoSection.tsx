@@ -35,11 +35,9 @@ function Field({
 }
 
 export default function BasicInfoSection() {
-  const { register, control, formState: { errors }, watch, setValue } = useFormContext<VoyageFormValues>()
+  const { register, control, formState: { errors } } = useFormContext<VoyageFormValues>()
   const [regionManagerOpen, setRegionManagerOpen] = useState(false)
   const [airlineManagerOpen, setAirlineManagerOpen] = useState(false)
-
-  const cabinTotal = watch('cabin_total')
 
   const { data: regionOptions = [] } = useQuery({
     queryKey: ['region-options'],
@@ -208,23 +206,6 @@ export default function BasicInfoSection() {
 
             <Field label="인솔자" error={errors.tour_leader?.message}>
               <Input {...register('tour_leader')} placeholder="미정" />
-            </Field>
-
-            <Field label="보유 캐빈" error={errors.cabin_total?.message}>
-              <Input
-                type="number"
-                min={0}
-                {...register('cabin_total', {
-                  onChange: (e) => {
-                    const v = Number(e.target.value)
-                    setValue('cabin_remaining', v)
-                  },
-                })}
-              />
-            </Field>
-
-            <Field label="잔여 캐빈" error={errors.cabin_remaining?.message}>
-              <Input type="number" min={0} max={cabinTotal || undefined} {...register('cabin_remaining')} />
             </Field>
 
             <Field label="고객 수" error={errors.customer_count?.message}>

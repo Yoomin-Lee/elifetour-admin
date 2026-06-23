@@ -32,12 +32,13 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
   const currency = values?.currency ?? 'USD'
   const grade = values?.grade ?? ''
   const agent = values?.agent ?? ''
+  const remaining = (Number(values?.total) || 0) - (Number(values?.reserved) || 0)
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 space-y-2">
-      {/* 1행: 등급 · 보유 · 에이전트 · 통화 · 삭제 */}
+      {/* 1행: 캐빈등급 / 에이전트 / 보유 / 예약 / 잔여 */}
       <div className="flex flex-wrap items-end gap-2">
-        <div className="w-36">
+        <div className="min-w-[88px] flex-1">
           <p className="text-[10px] text-slate-400 mb-0.5">캐빈 등급</p>
           <SelectOrInput
             value={grade}
@@ -46,16 +47,7 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
             placeholder="등급 선택"
           />
         </div>
-        <div className="w-20">
-          <p className="text-[10px] text-slate-400 mb-0.5">보유</p>
-          <Input
-            type="number" min={0}
-            {...register(`cabin_grades.${index}.total`)}
-            placeholder="0"
-            className="h-7 text-sm text-right"
-          />
-        </div>
-        <div className="w-32">
+        <div className="min-w-[88px] flex-1">
           <p className="text-[10px] text-slate-400 mb-0.5">에이전트</p>
           <SelectOrInput
             value={agent}
@@ -64,15 +56,29 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
             placeholder="에이전트"
           />
         </div>
-        <div className="flex-1" />
-        <div className="w-20">
-          <p className="text-[10px] text-slate-400 mb-0.5">통화</p>
-          <FieldSelect
-            value={currency}
-            options={CURRENCIES}
-            onChange={v => setValue(`cabin_grades.${index}.currency`, v)}
-            className="h-7 text-sm"
+        <div className="w-14">
+          <p className="text-[10px] text-slate-400 mb-0.5">보유</p>
+          <Input
+            type="number" min={0}
+            {...register(`cabin_grades.${index}.total`)}
+            placeholder="0"
+            className="h-7 text-sm text-right"
           />
+        </div>
+        <div className="w-14">
+          <p className="text-[10px] text-slate-400 mb-0.5">예약</p>
+          <Input
+            type="number" min={0}
+            {...register(`cabin_grades.${index}.reserved`)}
+            placeholder="0"
+            className="h-7 text-sm text-right"
+          />
+        </div>
+        <div className="w-14">
+          <p className="text-[10px] text-slate-400 mb-0.5">잔여</p>
+          <div className={`h-7 flex items-center justify-end pr-2 text-sm font-medium rounded-lg border border-slate-200 bg-white ${remaining < 0 ? 'text-red-500' : 'text-slate-700'}`}>
+            {remaining}
+          </div>
         </div>
         <button
           type="button"
@@ -83,11 +89,11 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
         </button>
       </div>
 
-      {/* 2행: CCF + NCCF + TAX + TIP = 캐빈가 */}
+      {/* 2행: CCF + NCCF + TAX + TIP = 캐빈가 / 통화 */}
       <div className="flex flex-wrap items-end gap-2 pt-1 border-t border-slate-200">
         {PRICE_FIELDS.map((f, i) => (
           <Fragment key={f}>
-            <div className="w-20">
+            <div className="w-16">
               <p className="text-[10px] text-slate-400 mb-0.5">{f.toUpperCase()}</p>
               <Input
                 type="number" min={0}
@@ -100,11 +106,20 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
           </Fragment>
         ))}
         <span className="text-slate-400 pb-1 text-sm">=</span>
-        <div className="w-28">
+        <div className="w-24">
           <p className="text-[10px] text-brand mb-0.5">캐빈가</p>
           <div className="h-7 flex items-center justify-end pr-3 text-sm font-semibold text-brand border border-slate-200 rounded-lg bg-white">
             {formatPrice(values?.ccf, values?.nccf, values?.tax, values?.tip, currency)}
           </div>
+        </div>
+        <div className="w-20">
+          <p className="text-[10px] text-slate-400 mb-0.5">통화</p>
+          <FieldSelect
+            value={currency}
+            options={CURRENCIES}
+            onChange={v => setValue(`cabin_grades.${index}.currency`, v)}
+            className="h-7 text-sm"
+          />
         </div>
       </div>
     </div>
