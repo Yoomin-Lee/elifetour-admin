@@ -5,6 +5,7 @@ import { Plus, Trash2, ChevronDown, FileText, Settings } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { fetchCancellationPresets } from '@/lib/queries/cancellationPresets'
 import type { CancellationPresetDB } from '@/lib/queries/cancellationPresets'
@@ -207,7 +208,11 @@ export default function CancellationEditor() {
                   </div>
                   <div className="col-span-2">
                     <label className="label">기준일 직접 지정 <span className="text-slate-400 font-normal">(비워두면 자동)</span></label>
-                    <Input type="date" {...register(`policies.${i}.reference_date`)} className="h-[38px]" />
+                    <DatePicker
+                      value={watchedPolicies?.[i]?.reference_date ?? ''}
+                      onChange={v => setValue(`policies.${i}.reference_date`, v)}
+                      placeholder="기준일 선택"
+                    />
                   </div>
                   <div className="col-span-2">
                     <label className="label">취소료 설명</label>
