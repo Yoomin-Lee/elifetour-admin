@@ -1,13 +1,15 @@
 import { z } from 'zod'
 
+const emptyToUndef = z.string().optional().transform(v => v === '' ? undefined : v)
+
 export const flightSchema = z.object({
   flight_no:      z.string().optional(),
   origin:         z.string().optional(),
   destination:    z.string().optional(),
-  departure_date: z.string().optional(),
-  arrival_date:   z.string().optional(),
-  departure_time: z.string().optional(),
-  arrival_time:   z.string().optional(),
+  departure_date: emptyToUndef,
+  arrival_date:   emptyToUndef,
+  departure_time: emptyToUndef,
+  arrival_time:   emptyToUndef,
   duration:       z.string().optional(),
   fare:           z.coerce.number().nullable().optional(),
   sort_order:     z.coerce.number().default(0),
@@ -29,7 +31,7 @@ export const policySchema = z.object({
   category:       z.string().optional(),
   start_d_minus:  z.coerce.number().nullable().optional(),
   end_d_minus:    z.coerce.number().nullable().optional(),
-  reference_date: z.string().optional(),
+  reference_date: emptyToUndef,
   fee_description:z.string().optional(),
   fee_type:       z.enum(['percent', 'fixed', 'free']).nullable().optional(),
   fee_value:      z.coerce.number().nullable().optional(),

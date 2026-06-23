@@ -65,7 +65,7 @@ function VoyageSearchInner() {
     deleteMutation.mutate(voyageId!)
   }
 
-  const voyagesQuery = useQuery({ queryKey: ['voyages'], queryFn: fetchVoyages })
+  const voyagesQuery = useQuery({ queryKey: ['voyages'], queryFn: fetchVoyages, refetchOnMount: 'always' })
 
   const years = useMemo(() => {
     const ys = new Set<string>()
