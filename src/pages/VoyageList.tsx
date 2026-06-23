@@ -7,6 +7,7 @@ import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
 import type { VoyageStatus } from '@/types/database'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } })
@@ -125,7 +126,7 @@ function VoyageListInner() {
                   </td>
                   <td className="hidden px-4 py-3 text-slate-600 sm:table-cell">{formatDate(v.departure_date)}</td>
                   <td className="hidden px-4 py-3 text-slate-600 md:table-cell">{formatDate(v.return_date)}</td>
-                  <td className="hidden px-4 py-3 text-slate-600 lg:table-cell">{v.cruise_line ?? '-'}</td>
+                  <td className="hidden px-4 py-3 lg:table-cell"><CruiseLineBadge value={v.cruise_line} /></td>
                   <td className="hidden px-4 py-3 text-right sm:table-cell">
                     <span className={v.cabin_remaining === 0 ? 'text-red-500 font-semibold' : 'text-slate-700'}>
                       {v.cabin_remaining}

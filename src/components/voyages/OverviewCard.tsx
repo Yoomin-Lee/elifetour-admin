@@ -9,6 +9,7 @@ import { FieldSelect } from '@/components/ui/field-select'
 import { DatePicker } from '@/components/ui/date-picker'
 import { formatDate, calcNights } from '@/lib/utils'
 import { voyageTitle } from '@/types/database'
+import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
 import { updateVoyage } from '@/lib/queries/voyages'
 import type { Voyage, VoyageStatus, ItineraryDay } from '@/types/database'
 
@@ -275,7 +276,7 @@ export default function OverviewCard({
           <Row label="승선일"    value={voyage.boarding_date ? formatDate(voyage.boarding_date) : '-'} />
           <Row label="여행 기간" value={calcNights(voyage.departure_date, voyage.return_date)} />
           <Row label="항공사"    value={voyage.airline} />
-          <Row label="선사"      value={voyage.cruise_line} />
+          <Row label="선사"      value={<CruiseLineBadge value={voyage.cruise_line} />} />
           <Row label="크루즈"    value={voyage.ship_name} />
           <Row label="보유 캐빈" value={voyage.cabin_total ? `${voyage.cabin_total}개` : '-'} />
           <Row label="잔여 캐빈" value={

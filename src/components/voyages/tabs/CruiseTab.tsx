@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Search, Pencil, Check, X, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { fetchVoyages, updateVoyage, fetchCabinGrades, saveCabinGrades, fetchAllCabinGrades } from '@/lib/queries/voyages'
+import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
 import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
@@ -560,7 +561,7 @@ export default function CruiseTab() {
                     </td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.boarding_date ?? v.departure_date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
-                    <td className="px-3 py-2 text-slate-600 truncate">{v.cruise_line ?? '—'}</td>
+                    <td className="px-3 py-2"><CruiseLineBadge value={v.cruise_line} /></td>
                     <td className="px-3 py-2 text-slate-600 truncate">{v.ship_name ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-600 truncate">{v.agent ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-600">{primaryGrade?.grade ?? '—'}</td>
