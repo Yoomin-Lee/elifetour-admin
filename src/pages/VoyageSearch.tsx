@@ -177,13 +177,13 @@ function VoyageSearchInner() {
       )}
 
       {/* 선택된 행사 삭제 버튼 */}
-      {voyageId && !isLoading && selectedVoyage && canWrite && (
+      {voyageId && selectedVoyage && canWrite && (
         <div className="flex justify-end">
           <button
             type="button"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-500 transition disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 transition disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
             {deleteMutation.isPending ? '삭제 중…' : '행사 삭제'}
