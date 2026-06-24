@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, ChevronDown, X, Save } from 'lucide-react'
 import { toast } from 'sonner'
@@ -113,7 +113,7 @@ function PresetItem({ preset }: { preset: CancellationPresetDB }) {
     mutationFn: () => deleteCancellationPreset(preset.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['cancellation-presets'] })
-      toast.success('삭제됐습니다')
+      toast.success('삭제되었습니다')
     },
     onError: () => toast.error('삭제에 실패했습니다'),
   })

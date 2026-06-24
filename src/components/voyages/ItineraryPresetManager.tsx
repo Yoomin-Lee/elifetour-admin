@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, ChevronDown, X, Save, GripVertical } from 'lucide-react'
 import { toast } from 'sonner'
@@ -100,7 +100,7 @@ function SortablePresetItem({ preset, onSaved }: { preset: ItineraryPreset; onSa
 
   const deleteMut = useMutation({
     mutationFn: () => deleteItineraryPreset(preset.id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['itinerary-presets'] }); toast.success('삭제됐습니다') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['itinerary-presets'] }); toast.success('삭제되었습니다') },
     onError: () => toast.error('삭제에 실패했습니다'),
   })
 

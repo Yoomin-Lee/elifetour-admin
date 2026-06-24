@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Trash2, Pencil, Check, X } from 'lucide-react'
@@ -31,7 +31,7 @@ export default function OptionsManager({ title, queryKey, fetchFn, addFn, delete
 
   const delMut = useMutation({
     mutationFn: (id: string) => deleteFn(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: [queryKey] }); toast.success('삭제됐습니다') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: [queryKey] }); toast.success('삭제되었습니다') },
     onError: () => toast.error('삭제에 실패했습니다'),
   })
 

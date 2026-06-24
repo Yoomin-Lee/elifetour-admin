@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+﻿import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -223,7 +223,7 @@ export default function PaymentTab() {
       qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
       setDeleteTarget(null)
       const snap = ctx?.snapshot
-      toast.success('삭제됐습니다', snap ? {
+      toast.success('삭제되었습니다', snap ? {
         action: {
           label: '되돌리기',
           onClick: () => restorePaymentSchedule(snap)

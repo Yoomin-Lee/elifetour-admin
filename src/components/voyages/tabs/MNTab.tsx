@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, RotateCcw, AlertTriangle, ExternalLink, GripVertical } from 'lucide-react'
@@ -690,7 +690,7 @@ export default function MNTab() {
       qc.invalidateQueries({ queryKey: ['mn-sections'] })
       qc.invalidateQueries({ queryKey: ['mn-sections-deleted'] })
       setDeleteTarget(null)
-      toast.success('삭제됐습니다', {
+      toast.success('삭제되었습니다', {
         action: {
           label: '되돌리기',
           onClick: () => restoreMut.mutate(id),
@@ -714,7 +714,7 @@ export default function MNTab() {
     mutationFn: hardDeleteMnSection,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['mn-sections-deleted'] })
-      toast.success('영구 삭제됐습니다')
+      toast.success('영구 삭제되었습니다')
     },
     onError: () => toast.error('영구 삭제에 실패했습니다'),
   })

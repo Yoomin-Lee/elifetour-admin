@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -104,7 +104,7 @@ export default function HistoryCard({
       .catch(() => toast.error('복원에 실패했습니다'))
     toast.custom(id => (
       <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg shadow-slate-200/60 text-sm min-w-[260px]">
-        <span className="text-slate-700 flex-1">히스토리가 삭제됐습니다.</span>
+        <span className="text-slate-700 flex-1">히스토리가 삭제되었습니다.</span>
         <button
           onClick={() => { toast.dismiss(id); restore() }}
           className="shrink-0 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark transition"

@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from 'react'
+﻿import { useState, useMemo, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -215,7 +215,7 @@ export default function FlightsTab() {
       qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
       setDeleteTarget(null)
       const snap = ctx?.snapshot
-      toast.success('삭제됐습니다', snap ? {
+      toast.success('삭제되었습니다', snap ? {
         action: {
           label: '되돌리기',
           onClick: () => restoreVoyageFlight(snap)
