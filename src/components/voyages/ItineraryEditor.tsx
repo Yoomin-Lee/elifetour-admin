@@ -248,7 +248,7 @@ export default function ItineraryEditor() {
                         </div>
                       </div>
                       {/* Row 2: 구분 | 통화 | 비용 | 비고 */}
-                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-[78px_56px_80px_1fr]">
+                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-[68px_72px_76px_1fr]">
                         <div>
                           <label className="label">구분</label>
                           <Controller
@@ -281,7 +281,7 @@ export default function ItineraryEditor() {
                           />
                         </div>
                         <div>
-                          <label className="label">비용(인당)</label>
+                          <label className="label">비용 (인당)</label>
                           <Controller
                             name={`itinerary.${i}.cost`}
                             control={control}
