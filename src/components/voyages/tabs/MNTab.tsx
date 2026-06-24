@@ -33,12 +33,11 @@ import type { MnSection, MnRow } from '@/lib/queries/mnSections'
 import { Button } from '@/components/ui/button'
 import { FieldSelect } from '@/components/ui/field-select'
 
-const CATEGORIES = ['취소료', 'MSC상세', '팁'] as const
+const CATEGORIES = ['취소료', '팁'] as const
 type Category = typeof CATEGORIES[number]
 
 const CATEGORY_LABELS: Record<Category, string> = {
   '취소료': '선사별 크루즈 취소료 규정',
-  'MSC상세': 'MSC World Europa 취소 수수료 규정',
   '팁': '선내 팁 규정 (1박당 / 인당)',
 }
 
@@ -175,7 +174,11 @@ function SectionForm({
   isPending: boolean
   bare?: boolean
 }) {
-  const [form, setForm] = useState(initial)
+  const [form, setForm] = useState({
+    ...initial,
+    // 'MSC상세'는 '취소료'로 통합 (레거시 카테고리 자동 마이그레이션)
+    category: initial.category === 'MSC상세' ? '취소료' : initial.category,
+  })
 
   return (
     <div className={bare ? 'space-y-3' : 'space-y-3 rounded-lg border border-brand/30 bg-brand/5 p-4'}>
@@ -736,7 +739,10 @@ export default function MNTab() {
         <h1 className="text-lg font-bold text-slate-800">취소료 규정</h1>
 
         {CATEGORIES.map(cat => {
-          const catSections = sections.filter(s => s.category === cat)
+          // '취소료' 그룹은 레거시 'MSC상세' 섹션도 함께 표시
+          const catSections = cat === '취소료'
+            ? sections.filter(s => s.category === '취소료' || s.category === 'MSC상세')
+            : sections.filter(s => s.category === cat)
           return (
             <CategoryGroup
               key={cat}
