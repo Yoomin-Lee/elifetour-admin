@@ -15,6 +15,14 @@ interface DatePickerProps {
   size?: 'default' | 'sm'
 }
 
+function focusNextInput(el: HTMLElement) {
+  const all = Array.from(document.querySelectorAll<HTMLElement>(
+    'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])'
+  ))
+  const idx = all.indexOf(el)
+  if (idx !== -1 && idx + 1 < all.length) all[idx + 1].focus()
+}
+
 const WEEK_DAYS = ['일','월','화','수','목','금','토']
 const YEARS_PER_PAGE = 12
 
@@ -90,7 +98,7 @@ export function DatePicker({ value, onChange, placeholder = '날짜 선택', dis
     if (newEntry.length === 6) {
       tryConvert(newEntry)
       setQuickEntry(null)
-      inputRef.current?.blur()
+      if (inputRef.current) focusNextInput(inputRef.current)
     }
   }
 
@@ -120,6 +128,7 @@ export function DatePicker({ value, onChange, placeholder = '날짜 선택', dis
   function selectDay(day: Date) {
     onChange(format(day, 'yyyy-MM-dd'))
     setOpen(false)
+    if (inputRef.current) focusNextInput(inputRef.current)
   }
 
   function enterYearMode() {
