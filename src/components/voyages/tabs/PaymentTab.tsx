@@ -121,7 +121,7 @@ export default function PaymentTab() {
   const [drafts, setDrafts] = useState<Record<DraftKey, DraftCell>>({})
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null)
   const [extraCounts, setExtraCounts] = useState({ PAYMENT: 0 })
-  const [refundCardCount, setRefundCardCount] = useState(0)
+  const [refundCardCounts, setRefundCardCounts] = useState<Record<PaymentCategory, number>>({ CRUISE: 0, FLIGHT: 0, HOTEL: 0, LAND: 0, INSURANCE: 0 })
   const qc = useQueryClient()
 
   const { data: voyages = [] } = useQuery({
@@ -180,13 +180,16 @@ export default function PaymentTab() {
     const paymentExtra = depositNums.length > 0 ? Math.max(0, Math.max(...depositNums) - 2) : 0
     setExtraCounts({ PAYMENT: paymentExtra })
 
-    const refundNums = schedules
-      .filter(s => (s.section ?? 'PAYMENT') === 'REFUND')
-      .map(s => s.payment_type)
-      .filter(pt => /^REFUND_(\d+)$/.test(pt))
-      .map(pt => parseInt(pt.replace('REFUND_', ''), 10))
-    const rCount = refundNums.length > 0 ? Math.max(...refundNums) : 0
-    setRefundCardCount(rCount)
+    const newRefundCounts: Record<PaymentCategory, number> = { CRUISE: 0, FLIGHT: 0, HOTEL: 0, LAND: 0, INSURANCE: 0 }
+    for (const c of CATEGORIES) {
+      const nums = schedules
+        .filter(s => (s.section ?? 'PAYMENT') === 'REFUND' && s.category === c)
+        .map(s => s.payment_type)
+        .filter(pt => /^REFUND_(\d+)$/.test(pt))
+        .map(pt => parseInt(pt.replace('REFUND_', ''), 10))
+      newRefundCounts[c] = nums.length > 0 ? Math.max(...nums) : 0
+    }
+    setRefundCardCounts(newRefundCounts)
 
     const next: Record<DraftKey, DraftCell> = {}
 
@@ -202,14 +205,16 @@ export default function PaymentTab() {
       }
     }
 
-    // 환불 섹션: REFUND_1, REFUND_2, ... 카드
-    for (let i = 1; i <= rCount; i++) {
-      const pt = `REFUND_${i}`
-      const key = makeDraftKey('REFUND', 'CRUISE', pt)
-      const existing = schedules.find(s =>
-        s.payment_type === pt && (s.section ?? 'PAYMENT') === 'REFUND'
-      )
-      next[key] = existing ? fromSchedule(existing) : emptyCell()
+    // 환불 섹션: 카테고리별 REFUND_1, REFUND_2, ... 카드
+    for (const c of CATEGORIES) {
+      for (let i = 1; i <= newRefundCounts[c]; i++) {
+        const pt = `REFUND_${i}`
+        const key = makeDraftKey('REFUND', c, pt)
+        const existing = schedules.find(s =>
+          s.category === c && s.payment_type === pt && (s.section ?? 'PAYMENT') === 'REFUND'
+        )
+        next[key] = existing ? fromSchedule(existing) : emptyCell()
+      }
     }
 
     setDrafts(next)
@@ -286,13 +291,13 @@ export default function PaymentTab() {
     })
   }
 
-  function addRefundCard() {
-    const newCount = refundCardCount + 1
+  function addRefundCard(category: PaymentCategory) {
+    const newCount = refundCardCounts[category] + 1
     const pt = `REFUND_${newCount}`
-    setRefundCardCount(newCount)
+    setRefundCardCounts(prev => ({ ...prev, [category]: newCount }))
     setDrafts(prev => ({
       ...prev,
-      [makeDraftKey('REFUND', 'CRUISE', pt)]: emptyCell(),
+      [makeDraftKey('REFUND', category, pt)]: emptyCell(),
     }))
   }
 
@@ -546,23 +551,35 @@ export default function PaymentTab() {
           {/* 환불 섹션 */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">환불</h3>
-            {refundCardCount === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-8 text-center text-xs text-slate-400">
-                환불 내역이 없습니다
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-3">
-                {Array.from({ length: refundCardCount }, (_, i) => {
-                  const pt = `REFUND_${i + 1}`
-                  const rKey = makeDraftKey('REFUND', 'CRUISE', pt)
-                  const rCell = getCell('REFUND', 'CRUISE', pt)
-                  const rIsEdit = editing === rKey
-                  return (
-                    <div key={rKey} className={`rounded-xl border p-3 w-[200px] min-h-[80px] transition-all ${
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px] border-collapse">
+                <thead>
+                  <tr>
+                    {CATEGORIES.map(c => (
+                      <th key={c} className="pb-3 px-2 text-center">
+                        <span className={`inline-block text-xs font-bold rounded-full px-3 py-1 border ${CATEGORY_STYLE[c].header}`}>
+                          {CATEGORY_LABEL[c]}
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {CATEGORIES.map(c => (
+                      <td key={c} className="px-2 py-3 align-top w-[200px]">
+                        <div className="space-y-2">
+                          {Array.from({ length: refundCardCounts[c] }, (_, i) => {
+                            const pt = `REFUND_${i + 1}`
+                            const rKey = makeDraftKey('REFUND', c, pt)
+                            const rCell = getCell('REFUND', c, pt)
+                            const rIsEdit = editing === rKey
+                            return (
+                    <div key={rKey} className={`rounded-xl border p-3 min-h-[80px] transition-all ${
                       rIsEdit
                         ? 'border-brand/40 bg-brand/5 shadow-sm'
                         : rCell.due_date
-                        ? 'border-slate-300 bg-slate-50'
+                        ? CATEGORY_STYLE[c].card
                         : 'border-dashed border-slate-200 bg-slate-50/50'
                     }`}>
                       {rIsEdit ? (
@@ -680,20 +697,23 @@ export default function PaymentTab() {
                           + 추가
                         </button>
                       )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-            <div>
-              <button
-                type="button"
-                onClick={addRefundCard}
-                className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-200 px-3 py-1.5 text-xs text-slate-500 hover:border-brand hover:text-brand transition"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                환불 추가
-              </button>
+                            </div>
+                            )
+                          })}
+                          <button
+                            type="button"
+                            onClick={() => addRefundCard(c)}
+                            className="w-full flex items-center justify-center gap-1 rounded-lg border border-dashed border-slate-200 py-1.5 text-xs text-slate-400 hover:border-brand hover:text-brand transition"
+                          >
+                            <Plus className="h-3 w-3" />
+                            추가
+                          </button>
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
