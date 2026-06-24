@@ -125,6 +125,7 @@ export interface PaymentSchedule {
   voyage_id: string
   category: PaymentCategory
   payment_type: PaymentType
+  section: string        // 'PAYMENT' | 'REFUND'
   amount: number
   currency: string
   due_date: string       // YYYY-MM-DD

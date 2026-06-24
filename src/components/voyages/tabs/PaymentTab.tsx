@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input'
 import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
 import { voyageTitle } from '@/types/database'
-import type { PaymentCategory, PaymentType, PaymentSchedule } from '@/types/database'
+import type { PaymentCategory, PaymentSchedule } from '@/types/database'
 
 const CATEGORIES: PaymentCategory[] = ['CRUISE', 'FLIGHT', 'HOTEL', 'LAND', 'INSURANCE']
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY'] as const
@@ -66,10 +66,17 @@ type DraftCell = {
   is_completed: boolean
   memo: string
 }
-type DraftKey = string  // `${category}_${payment_type}`
+type DraftKey = string  // `${section}_${category}_${payment_type}`
 
-function makeDraftKey(category: PaymentCategory, pt: PaymentType): DraftKey {
-  return `${category}_${pt}`
+function makeDraftKey(section: string, category: PaymentCategory, pt: string): DraftKey {
+  return `${section}_${category}_${pt}`
+}
+
+function getPaymentTypes(extra: number): string[] {
+  const rows: string[] = ['DEPOSIT_1ST', 'DEPOSIT_2ND']
+  for (let i = 3; i <= 2 + extra; i++) rows.push(`DEPOSIT_${i}`)
+  rows.push('BALANCE')
+  return rows
 }
 
 function emptyCell(): DraftCell {
@@ -113,15 +120,8 @@ export default function PaymentTab() {
   const [editing, setEditing] = useState<DraftKey | null>(null)
   const [drafts, setDrafts] = useState<Record<DraftKey, DraftCell>>({})
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null)
-  const [extraDepositCount, setExtraDepositCount] = useState(0)
+  const [extraCounts, setExtraCounts] = useState({ PAYMENT: 0, REFUND: 0 })
   const qc = useQueryClient()
-
-  const paymentTypes = useMemo((): string[] => {
-    const rows: string[] = ['DEPOSIT_1ST', 'DEPOSIT_2ND']
-    for (let i = 3; i <= 2 + extraDepositCount; i++) rows.push(`DEPOSIT_${i}`)
-    rows.push('BALANCE')
-    return rows
-  }, [extraDepositCount])
 
   const { data: voyages = [] } = useQuery({
     queryKey: ['voyages'],
@@ -170,24 +170,31 @@ export default function PaymentTab() {
 
   useEffect(() => {
     if (!voyageId) return
-    // DB에 저장된 추가 데포짓 번호(DEPOSIT_3, DEPOSIT_4 …) 추출
-    const extraNums = schedules
-      .map(s => s.payment_type)
-      .filter(pt => /^DEPOSIT_(\d+)$/.test(pt))
-      .map(pt => parseInt(pt.replace('DEPOSIT_', ''), 10))
-    const newExtraCount = extraNums.length > 0 ? Math.max(...extraNums) - 2 : 0
-    setExtraDepositCount(Math.max(0, newExtraCount))
 
-    const allTypes: string[] = ['DEPOSIT_1ST', 'DEPOSIT_2ND']
-    for (let i = 3; i <= 2 + Math.max(0, newExtraCount); i++) allTypes.push(`DEPOSIT_${i}`)
-    allTypes.push('BALANCE')
+    const calcExtra = (sec: string) => {
+      const nums = schedules
+        .filter(s => (s.section ?? 'PAYMENT') === sec)
+        .map(s => s.payment_type)
+        .filter(pt => /^DEPOSIT_(\d+)$/.test(pt))
+        .map(pt => parseInt(pt.replace('DEPOSIT_', ''), 10))
+      return nums.length > 0 ? Math.max(0, Math.max(...nums) - 2) : 0
+    }
+
+    const paymentExtra = calcExtra('PAYMENT')
+    const refundExtra = calcExtra('REFUND')
+    setExtraCounts({ PAYMENT: paymentExtra, REFUND: refundExtra })
 
     const next: Record<DraftKey, DraftCell> = {}
-    for (const c of CATEGORIES) {
-      for (const pt of allTypes) {
-        const key = makeDraftKey(c, pt)
-        const existing = schedules.find(s => s.category === c && s.payment_type === pt)
-        next[key] = existing ? fromSchedule(existing) : emptyCell()
+    for (const sec of ['PAYMENT', 'REFUND'] as const) {
+      const allTypes = getPaymentTypes(sec === 'PAYMENT' ? paymentExtra : refundExtra)
+      for (const c of CATEGORIES) {
+        for (const pt of allTypes) {
+          const key = makeDraftKey(sec, c, pt)
+          const existing = schedules.find(s =>
+            s.category === c && s.payment_type === pt && (s.section ?? 'PAYMENT') === sec
+          )
+          next[key] = existing ? fromSchedule(existing) : emptyCell()
+        }
       }
     }
     setDrafts(next)
@@ -196,11 +203,12 @@ export default function PaymentTab() {
 
   const upsertMut = useMutation({
     mutationFn: ({ key, cell }: { key: DraftKey; cell: DraftCell }) => {
-      const [cat, ...rest] = key.split('_')
+      const [secPart, catPart, ...rest] = key.split('_')
       return upsertPaymentSchedule({
         voyage_id: voyageId,
-        category: cat as PaymentCategory,
-        payment_type: rest.join('_') as PaymentType,
+        category: catPart as PaymentCategory,
+        payment_type: rest.join('_'),
+        section: secPart,
         amount: Number(cell.amount) || 0,
         currency: cell.currency,
         due_date: cell.due_date,
@@ -250,21 +258,21 @@ export default function PaymentTab() {
     onError: () => toast.error('변경에 실패했습니다'),
   })
 
-  function addDepositRow() {
-    const newCount = extraDepositCount + 1
+  function addDepositRow(section: 'PAYMENT' | 'REFUND') {
+    const newCount = extraCounts[section] + 1
     const newPt = `DEPOSIT_${2 + newCount}`
-    setExtraDepositCount(newCount)
+    setExtraCounts(prev => ({ ...prev, [section]: newCount }))
     setDrafts(prev => {
       const next = { ...prev }
       for (const c of CATEGORIES) {
-        next[makeDraftKey(c, newPt)] = emptyCell()
+        next[makeDraftKey(section, c, newPt)] = emptyCell()
       }
       return next
     })
   }
 
-  function getCell(c: PaymentCategory, pt: PaymentType): DraftCell {
-    return drafts[makeDraftKey(c, pt)] ?? emptyCell()
+  function getCell(section: string, c: PaymentCategory, pt: string): DraftCell {
+    return drafts[makeDraftKey(section, c, pt)] ?? emptyCell()
   }
 
   function updateCell(key: DraftKey, patch: Partial<DraftCell>) {
@@ -334,7 +342,13 @@ export default function PaymentTab() {
       )}
 
       {voyageId && !isLoading && (
-        <div className="space-y-3">
+        <div className="space-y-8">
+        {(['PAYMENT', 'REFUND'] as const).map(section => {
+          const pts = getPaymentTypes(extraCounts[section])
+          const sectionLabel = section === 'PAYMENT' ? '결제' : '환불'
+          return (
+          <div key={section} className="space-y-3">
+            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">{sectionLabel}</h3>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px] border-collapse">
             <thead>
@@ -350,16 +364,16 @@ export default function PaymentTab() {
               </tr>
             </thead>
             <tbody>
-              {paymentTypes.map((pt, ptIdx) => (
-                <tr key={pt} className={ptIdx < paymentTypes.length - 1 ? 'border-b border-slate-100' : ''}>
+              {pts.map((pt, ptIdx) => (
+                <tr key={pt} className={ptIdx < pts.length - 1 ? 'border-b border-slate-100' : ''}>
                   <td className="pr-3 py-3 align-top">
                     <span className="text-xs font-semibold text-slate-500 leading-none">
                       {paymentTypeLabel(pt)}
                     </span>
                   </td>
                   {CATEGORIES.map(c => {
-                    const key = makeDraftKey(c, pt)
-                    const cell = getCell(c, pt)
+                    const key = makeDraftKey(section, c, pt)
+                    const cell = getCell(section, c, pt)
                     const isEdit = editing === key
 
                     return (
@@ -469,7 +483,7 @@ export default function PaymentTab() {
                                 {cell.id && (
                                   <button
                                     type="button"
-                                    onClick={() => cell.id && setDeleteTarget({ id: cell.id, label: `${CATEGORY_LABEL[c]} ${paymentTypeLabel(pt)}` })}
+                                    onClick={() => cell.id && setDeleteTarget({ id: cell.id, label: `${sectionLabel} ${CATEGORY_LABEL[c]} ${paymentTypeLabel(pt)}` })}
                                     className="px-1.5 text-[11px] opacity-40 hover:opacity-100 hover:text-red-500 rounded hover:bg-red-50 transition"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -498,13 +512,16 @@ export default function PaymentTab() {
         <div>
           <button
             type="button"
-            onClick={addDepositRow}
+            onClick={() => addDepositRow(section)}
             className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-200 px-3 py-1.5 text-xs text-slate-500 hover:border-brand hover:text-brand transition"
           >
             <Plus className="h-3.5 w-3.5" />
             데포짓 추가
           </button>
         </div>
+          </div>
+          )
+        })}
         </div>
       )}
 

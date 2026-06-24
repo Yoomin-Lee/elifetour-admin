@@ -54,6 +54,7 @@ export interface UpsertPaymentSchedulePayload {
   voyage_id: string
   category: PaymentCategory
   payment_type: PaymentType
+  section: string
   amount: number
   currency: string
   due_date: string
@@ -68,7 +69,7 @@ export async function upsertPaymentSchedule(
     .from('payment_schedules')
     .upsert(
       { ...payload, updated_at: new Date().toISOString() },
-      { onConflict: 'voyage_id,category,payment_type' },
+      { onConflict: 'voyage_id,category,payment_type,section' },
     )
     .select()
     .single()
