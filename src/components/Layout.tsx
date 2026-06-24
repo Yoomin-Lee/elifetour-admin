@@ -1,10 +1,16 @@
-import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const mainRef = useRef<HTMLElement>(null)
+  const { pathname, search } = useLocation()
+
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0)
+  }, [pathname, search])
 
   return (
     <div className="flex h-dvh overflow-hidden bg-slate-50">
@@ -17,7 +23,7 @@ export default function Layout() {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto">
+        <main ref={mainRef} className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-7xl p-4 md:p-6">
             <Outlet />
           </div>
