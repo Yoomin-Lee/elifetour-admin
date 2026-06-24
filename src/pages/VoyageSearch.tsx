@@ -216,7 +216,7 @@ function VoyageSearchInner() {
           {/* 오른쪽: 캐빈가 + 항공 + 취소료 */}
           <div className="flex flex-col gap-4">
             <CabinPriceCard grades={cabinGradesQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
-            <FlightsCard flights={flightsQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
+            <FlightsCard flights={flightsQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} airline={selectedVoyage.airline} airlineReturn={selectedVoyage.airline_return} />
             <CancellationCard
               policies={cancellationQuery.data ?? []}
               departureDate={selectedVoyage.departure_date}

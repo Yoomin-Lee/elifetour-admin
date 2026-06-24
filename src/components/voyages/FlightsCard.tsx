@@ -176,10 +176,14 @@ export default function FlightsCard({
   flights,
   voyageId,
   canWrite = true,
+  airline,
+  airlineReturn,
 }: {
   flights: Flight[]
   voyageId: string
   canWrite?: boolean
+  airline?: string | null
+  airlineReturn?: string | null
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DraftFlight[]>([])
@@ -232,7 +236,14 @@ export default function FlightsCard({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>항공</CardTitle>
+          <div>
+            <CardTitle>항공</CardTitle>
+            {(airline || airlineReturn) && (
+              <p className="mt-0.5 text-xs text-slate-500">
+                {airline && airlineReturn ? `${airline} / ${airlineReturn}` : (airline ?? airlineReturn)}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-1">
             <Button type="button" size="sm" variant="outline" onClick={addRow} disabled={saveMut.isPending}>
               <Plus className="h-3.5 w-3.5" /> 행 추가
@@ -280,7 +291,14 @@ export default function FlightsCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>항공</CardTitle>
+        <div>
+          <CardTitle>항공</CardTitle>
+          {(airline || airlineReturn) && (
+            <p className="mt-0.5 text-xs text-slate-500">
+              {airline && airlineReturn ? `${airline} / ${airlineReturn}` : (airline ?? airlineReturn)}
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">{flights.length}편</span>
           {canWrite && (
