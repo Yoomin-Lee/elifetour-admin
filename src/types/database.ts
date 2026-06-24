@@ -12,6 +12,7 @@ export interface Voyage {
   departure_date: string
   return_date: string | null
   boarding_date: string | null
+  duration: string | null
   cabin_total: number
   cabin_remaining: number
   customer_count: number

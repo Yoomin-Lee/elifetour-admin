@@ -8,6 +8,7 @@ import VoyageCombobox from '@/components/voyages/VoyageCombobox'
 import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
 import OverviewCard from '@/components/voyages/OverviewCard'
+import CabinPriceCard from '@/components/voyages/CabinPriceCard'
 import FlightsCard from '@/components/voyages/FlightsCard'
 import ItineraryCard from '@/components/voyages/ItineraryCard'
 import CancellationCard from '@/components/voyages/CancellationCard'
@@ -18,6 +19,7 @@ import {
   fetchItinerary,
   fetchCancellationPolicies,
   fetchHistory,
+  fetchCabinGrades,
   deleteVoyage,
 } from '@/lib/queries/voyages'
 
@@ -104,9 +106,14 @@ function VoyageSearchInner() {
     queryFn: () => fetchHistory(voyageId!),
     enabled: !!voyageId,
   })
+  const cabinGradesQuery = useQuery({
+    queryKey: ['cabin-grades', voyageId],
+    queryFn: () => fetchCabinGrades(voyageId!),
+    enabled: !!voyageId,
+  })
 
   const selectedVoyage = voyagesQuery.data?.find(v => v.id === voyageId)
-  const isLoading = flightsQuery.isLoading || itineraryQuery.isLoading || cancellationQuery.isLoading || historyQuery.isLoading
+  const isLoading = flightsQuery.isLoading || itineraryQuery.isLoading || cancellationQuery.isLoading || historyQuery.isLoading || cabinGradesQuery.isLoading
 
   return (
     <div className="space-y-5">
@@ -206,8 +213,9 @@ function VoyageSearchInner() {
               canWrite={canWrite}
             />
           </div>
-          {/* 오른쪽: 항공 + 취소료 */}
+          {/* 오른쪽: 캐빈가 + 항공 + 취소료 */}
           <div className="flex flex-col gap-4">
+            <CabinPriceCard grades={cabinGradesQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
             <FlightsCard flights={flightsQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
             <CancellationCard
               policies={cancellationQuery.data ?? []}
