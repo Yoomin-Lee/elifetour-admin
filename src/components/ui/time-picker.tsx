@@ -25,18 +25,21 @@ export function TimePicker({
   const hhRef = useRef<HTMLInputElement>(null)
   const mmRef = useRef<HTMLInputElement>(null)
 
-  // digit-entry counters: reset to 0 on focus, incremented per digit pressed
+  // digit-entry counters: reset to 0 on focus
   const hhCount = useRef(0)
   const mmCount = useRef(0)
-  // stores the first digit entered so we can combine without stale-closure issues
+  // first digit storage
   const hhFirst = useRef('')
   const mmFirst = useRef('')
-  // skip blur normalization when focus moves programmatically (avoids stale-closure overwrite)
-  const skipHhBlur = useRef(false)
-  const skipMmBlur = useRef(false)
+  // pending value refs: updated synchronously with every setHh/setMm call so
+  // blur handlers always read the latest intended value, not a stale closure.
+  const hhPending = useRef(value?.split(':')[0] ?? '')
+  const mmPending = useRef(value?.split(':')[1] ?? '')
 
   useEffect(() => {
     const [h = '', m = ''] = (value ?? '').split(':')
+    hhPending.current = h
+    mmPending.current = m
     setHh(h)
     setMm(m)
   }, [value])
@@ -58,6 +61,7 @@ export function TimePicker({
       e.preventDefault()
       hhCount.current = 0
       hhFirst.current = ''
+      hhPending.current = ''
       setHh('')
       if (!mm) onChange('')
       return
@@ -76,15 +80,16 @@ export function TimePicker({
       // 3 이상이면 앞에 0 자동 추가 후 MM으로 이동
       if (Number(digit) > 2) {
         const val = '0' + digit
+        hhPending.current = val
         setHh(val)
         hhCount.current = 0
         hhFirst.current = ''
         commit(val, mm)
-        skipHhBlur.current = true
         mmRef.current?.focus()
         mmRef.current?.select()
       } else {
         hhFirst.current = digit
+        hhPending.current = digit
         setHh(digit)
         hhCount.current = 1
       }
@@ -92,23 +97,26 @@ export function TimePicker({
       // 두 번째 자리
       const combined = hhFirst.current + digit
       const val = Math.min(Number(combined), 23).toString().padStart(2, '0')
+      hhPending.current = val
       setHh(val)
       hhCount.current = 0
       hhFirst.current = ''
       commit(val, mm)
-      skipHhBlur.current = true
       mmRef.current?.focus()
       mmRef.current?.select()
     }
   }
 
   function handleHhBlur() {
-    if (skipHhBlur.current) { skipHhBlur.current = false; return }
     hhCount.current = 0
     hhFirst.current = ''
-    if (!hh && !mm) { onChange(''); return }
-    if (!hh) return
-    const val = Math.min(Number(hh), 23).toString().padStart(2, '0')
+    // hhPending.current reflects the latest intended value (set synchronously in keydown),
+    // avoiding the stale-closure problem where setHh() hasn't flushed yet.
+    const curHh = hhPending.current
+    if (!curHh && !mm) { onChange(''); return }
+    if (!curHh) return
+    const val = Math.min(Number(curHh), 23).toString().padStart(2, '0')
+    hhPending.current = val
     setHh(val)
     commit(val, mm)
   }
@@ -126,6 +134,7 @@ export function TimePicker({
       e.preventDefault()
       mmCount.current = 0
       mmFirst.current = ''
+      mmPending.current = ''
       setMm('')
       commit(hh, '')
       return
@@ -144,34 +153,38 @@ export function TimePicker({
       // 6 이상이면 앞에 0 자동 추가
       if (Number(digit) > 5) {
         const val = '0' + digit
+        mmPending.current = val
         setMm(val)
         mmCount.current = 0
         mmFirst.current = ''
         commit(hh, val)
-        if (mmRef.current) { skipMmBlur.current = true; focusNextInput(mmRef.current) }
+        if (mmRef.current) focusNextInput(mmRef.current)
       } else {
         mmFirst.current = digit
+        mmPending.current = digit
         setMm(digit)
         mmCount.current = 1
       }
     } else {
       const combined = mmFirst.current + digit
       const val = Math.min(Number(combined), 59).toString().padStart(2, '0')
+      mmPending.current = val
       setMm(val)
       mmCount.current = 0
       mmFirst.current = ''
       commit(hh, val)
-      if (mmRef.current) { skipMmBlur.current = true; focusNextInput(mmRef.current) }
+      if (mmRef.current) focusNextInput(mmRef.current)
     }
   }
 
   function handleMmBlur() {
-    if (skipMmBlur.current) { skipMmBlur.current = false; return }
     mmCount.current = 0
     mmFirst.current = ''
-    if (!hh && !mm) { onChange(''); return }
-    if (!mm) return
-    const val = Math.min(Number(mm), 59).toString().padStart(2, '0')
+    const curMm = mmPending.current
+    if (!hh && !curMm) { onChange(''); return }
+    if (!curMm) return
+    const val = Math.min(Number(curMm), 59).toString().padStart(2, '0')
+    mmPending.current = val
     setMm(val)
     commit(hh, val)
   }
@@ -227,7 +240,7 @@ export function TimePicker({
         <button
           type="button"
           tabIndex={-1}
-          onClick={() => { setHh(''); setMm(''); onChange('') }}
+          onClick={() => { setHh(''); setMm(''); hhPending.current = ''; mmPending.current = ''; onChange('') }}
           className="ml-0.5 text-slate-300 hover:text-slate-500 transition leading-none text-base"
         >
           ×
