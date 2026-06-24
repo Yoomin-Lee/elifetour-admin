@@ -49,10 +49,10 @@ export async function fetchVoyageFlights(voyageId: string): Promise<VoyageFlight
   return data ?? []
 }
 
-export async function fetchAllVoyageFlights(): Promise<(VoyageFlight & { voyages: { region: string; departure_date: string } })[]> {
+export async function fetchAllVoyageFlights(): Promise<(VoyageFlight & { voyages: { region: string; departure_date: string; airline: string | null; airline_return: string | null } | null })[]> {
   const { data, error } = await sb()
     .from('voyage_flights')
-    .select('*, voyages(region, departure_date)')
+    .select('*, voyages(region, departure_date, airline, airline_return)')
     .order('sort_order')
 
   if (error) throw error

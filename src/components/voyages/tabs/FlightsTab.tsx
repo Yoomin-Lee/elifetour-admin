@@ -33,6 +33,14 @@ function localDt(isoUtc: string, airportCode: string) {
   return { display: { date: format(zoned, 'MM/dd'), time: format(zoned, 'HH:mm') }, form: { date: format(zoned, 'yyyy-MM-dd'), time: format(zoned, 'HH:mm') } }
 }
 
+function airlineLabel(v: { airline?: string | null; airline_return?: string | null } | null): string | null {
+  const a = v?.airline?.trim() || null
+  const b = v?.airline_return?.trim() || null
+  if (!a && !b) return null
+  if (a && b) return `${a} / ${b}`
+  return a ?? b
+}
+
 function formatFare(fare: number | null, currency: string): string {
   if (!fare) return '—'
   const sym: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
@@ -366,11 +374,18 @@ export default function FlightsTab() {
                       {r.voyages ? (
                         <button
                           onClick={() => navigate(`/voyages?tab=항차검색&voyage=${r.voyage_id}`)}
-                          className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition"
+                          className="group flex items-center gap-1 text-left font-medium text-slate-800 hover:text-brand transition"
                           title="항차 상세에서 보기"
                         >
-                          {voyageTitle(r.voyages)}
-                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
+                          <span>
+                            <span className="block">{voyageTitle(r.voyages)}</span>
+                            {airlineLabel(r.voyages) && (
+                              <span className="block text-[10px] font-normal text-slate-400 group-hover:text-brand/60">
+                                {airlineLabel(r.voyages)}
+                              </span>
+                            )}
+                          </span>
+                          <ExternalLink className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-60 transition" />
                         </button>
                       ) : '—'}
                     </td>
