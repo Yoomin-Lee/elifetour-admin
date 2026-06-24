@@ -276,7 +276,11 @@ export default function ProductTab() {
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
                     <td className="px-3 py-2"><CruiseLineBadge value={v.cruise_line} /></td>
                     <td className="px-3 py-2 text-slate-600">{v.ship_name ?? '—'}</td>
-                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.airline ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">
+                      {v.airline && v.airline_return
+                        ? `${v.airline} / ${v.airline_return}`
+                        : (v.airline ?? v.airline_return ?? '—')}
+                    </td>
                     <td className="px-3 py-2">
                       <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_COLORS[v.status] ?? 'bg-slate-100 text-slate-600'}`}>
                         {v.status}
