@@ -33,11 +33,12 @@ import type { MnSection, MnRow } from '@/lib/queries/mnSections'
 import { Button } from '@/components/ui/button'
 import { FieldSelect } from '@/components/ui/field-select'
 
-const CATEGORIES = ['취소료', '팁'] as const
+const CATEGORIES = ['취소료', '항공', '팁'] as const
 type Category = typeof CATEGORIES[number]
 
 const CATEGORY_LABELS: Record<Category, string> = {
   '취소료': '선사별 크루즈 취소료 규정',
+  '항공': '항공사별 취소료 규정',
   '팁': '선내 팁 규정 (1박당 / 인당)',
 }
 
