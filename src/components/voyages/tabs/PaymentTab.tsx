@@ -20,11 +20,11 @@ import { FieldSelect } from '@/components/ui/field-select'
 import { voyageTitle } from '@/types/database'
 import type { PaymentCategory, PaymentType, PaymentSchedule } from '@/types/database'
 
-const CATEGORIES: PaymentCategory[] = ['CRUISE', 'FLIGHT', 'HOTEL']
+const CATEGORIES: PaymentCategory[] = ['CRUISE', 'FLIGHT', 'HOTEL', 'LAND', 'INSURANCE']
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY'] as const
 
 const CATEGORY_LABEL: Record<PaymentCategory, string> = {
-  CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔',
+  CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔', LAND: '랜드', INSURANCE: '보험',
 }
 
 function paymentTypeLabel(pt: string): string {
@@ -47,6 +47,14 @@ const CATEGORY_STYLE: Record<PaymentCategory, { header: string; card: string }> 
   HOTEL: {
     header: 'text-emerald-700 bg-emerald-50 border-emerald-200',
     card:   'border-emerald-200 bg-emerald-50/60 text-emerald-900',
+  },
+  LAND: {
+    header: 'text-violet-700 bg-violet-50 border-violet-200',
+    card:   'border-violet-200 bg-violet-50/60 text-violet-900',
+  },
+  INSURANCE: {
+    header: 'text-rose-700 bg-rose-50 border-rose-200',
+    card:   'border-rose-200 bg-rose-50/60 text-rose-900',
   },
 }
 

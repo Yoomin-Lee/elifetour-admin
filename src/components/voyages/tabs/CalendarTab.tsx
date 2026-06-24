@@ -30,13 +30,15 @@ const STATUS_DOT: Record<VoyageStatus, string> = {
 }
 
 const PAYMENT_STYLE: Record<PaymentCategory, string> = {
-  CRUISE: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-  FLIGHT: 'bg-amber-50 text-amber-700 border-amber-200',
-  HOTEL:  'bg-emerald-50 text-emerald-700 border-emerald-200',
+  CRUISE:    'bg-cyan-50 text-cyan-700 border-cyan-200',
+  FLIGHT:    'bg-amber-50 text-amber-700 border-amber-200',
+  HOTEL:     'bg-emerald-50 text-emerald-700 border-emerald-200',
+  LAND:      'bg-violet-50 text-violet-700 border-violet-200',
+  INSURANCE: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
 const PAYMENT_CATEGORY_LABEL: Record<PaymentCategory, string> = {
-  CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔',
+  CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔', LAND: '랜드', INSURANCE: '보험',
 }
 
 const PAYMENT_TYPE_SHORT: Record<PaymentType, string> = {

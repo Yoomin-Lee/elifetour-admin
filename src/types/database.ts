@@ -117,7 +117,7 @@ export interface AuditLog {
   logged_at: string
 }
 
-export type PaymentCategory = 'CRUISE' | 'FLIGHT' | 'HOTEL'
+export type PaymentCategory = 'CRUISE' | 'FLIGHT' | 'HOTEL' | 'LAND' | 'INSURANCE'
 export type PaymentType = string  // 'DEPOSIT_1ST' | 'DEPOSIT_2ND' | 'BALANCE' | 'DEPOSIT_N'
 
 export interface PaymentSchedule {
