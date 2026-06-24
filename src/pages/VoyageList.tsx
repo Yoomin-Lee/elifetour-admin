@@ -113,6 +113,7 @@ function VoyageListInner() {
                 <th className="hidden px-4 py-3 text-left text-xs font-semibold text-slate-500 sm:table-cell">출발일</th>
                 <th className="hidden px-4 py-3 text-left text-xs font-semibold text-slate-500 md:table-cell">귀국일</th>
                 <th className="hidden px-4 py-3 text-left text-xs font-semibold text-slate-500 lg:table-cell">선사</th>
+                <th className="hidden px-4 py-3 text-left text-xs font-semibold text-slate-500 lg:table-cell">항공</th>
                 <th className="hidden px-4 py-3 text-right text-xs font-semibold text-slate-500 sm:table-cell">잔여 캐빈</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500">작업</th>
               </tr>
@@ -127,6 +128,11 @@ function VoyageListInner() {
                   <td className="hidden px-4 py-3 text-slate-600 sm:table-cell">{formatDate(v.departure_date)}</td>
                   <td className="hidden px-4 py-3 text-slate-600 md:table-cell">{formatDate(v.return_date)}</td>
                   <td className="hidden px-4 py-3 lg:table-cell"><CruiseLineBadge value={v.cruise_line} /></td>
+                  <td className="hidden px-4 py-3 text-slate-600 lg:table-cell">
+                    {v.airline && v.airline_return
+                      ? `${v.airline} / ${v.airline_return}`
+                      : (v.airline ?? v.airline_return ?? '-')}
+                  </td>
                   <td className="hidden px-4 py-3 text-right sm:table-cell">
                     <span className={v.cabin_remaining === 0 ? 'text-red-500 font-semibold' : 'text-slate-700'}>
                       {v.cabin_remaining}
