@@ -287,6 +287,7 @@ export default function ItineraryEditor() {
                             control={control}
                             render={({ field }) => (
                               <Input
+                                type="number" min={0} step="0.01"
                                 value={field.value ?? ''}
                                 onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
                                 placeholder="0"

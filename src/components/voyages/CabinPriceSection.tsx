@@ -96,7 +96,7 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
             <div className="w-16">
               <p className="text-[10px] text-slate-400 mb-0.5">{f.toUpperCase()}</p>
               <Input
-                type="number" min={0}
+                type="number" min={0} step="0.01"
                 {...register(`cabin_grades.${index}.${f}`)}
                 placeholder="—"
                 className="h-7 text-sm text-right"

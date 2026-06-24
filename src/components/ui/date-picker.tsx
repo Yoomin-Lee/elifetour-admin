@@ -26,7 +26,10 @@ export function DatePicker({ value, onChange, placeholder = '날짜 선택', dis
     const y = (value ? parseISO(value) : new Date()).getFullYear()
     return Math.floor(y / YEARS_PER_PAGE) * YEARS_PER_PAGE
   })
+  // null = 보기 모드, string = 숫자 빠른 입력 중 (YYMMDD)
+  const [quickEntry, setQuickEntry] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -41,10 +44,71 @@ export function DatePicker({ value, onChange, placeholder = '날짜 선택', dis
     if (!open) setYearMode(false)
   }, [open])
 
+  // 선택된 날짜가 외부에서 바뀌면 캘린더 뷰도 동기화
+  useEffect(() => {
+    if (value) setViewDate(parseISO(value))
+  }, [value])
+
   const sm = size === 'sm'
   const displayDate = value
     ? (sm ? format(parseISO(value), 'yy/MM/dd') : format(parseISO(value), 'yyyy년 M월 d일 (EEE)', { locale: ko }))
     : ''
+
+  // ─── 빠른 숫자 입력: YYMMDD → YYYY-MM-DD ──────────────────────────────────
+
+  function tryConvert(entry: string) {
+    const year  = 2000 + Number(entry.slice(0, 2))
+    const month = Number(entry.slice(2, 4))
+    const day   = Number(entry.slice(4, 6))
+    const date  = new Date(year, month - 1, day)
+    if (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    ) {
+      onChange(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
+      setViewDate(date)
+    }
+  }
+
+  function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Backspace') {
+      e.preventDefault()
+      setQuickEntry(prev => (prev !== null && prev.length > 0) ? prev.slice(0, -1) : prev)
+      return
+    }
+    if (e.key === 'Escape') {
+      setQuickEntry(null)
+      inputRef.current?.blur()
+      return
+    }
+    if (!/^[0-9]$/.test(e.key)) return
+    e.preventDefault()
+
+    const newEntry = (quickEntry ?? '') + e.key
+    setQuickEntry(newEntry)
+    if (newEntry.length === 6) {
+      tryConvert(newEntry)
+      setQuickEntry(null)
+      inputRef.current?.blur()
+    }
+  }
+
+  function handleInputFocus() {
+    setQuickEntry('')
+    setOpen(false)
+  }
+
+  function handleInputBlur() {
+    setQuickEntry(null)
+  }
+
+  function handleCalendarClick(e: React.MouseEvent) {
+    e.preventDefault()
+    if (!disabled) setOpen(v => !v)
+  }
+
+  // ─── 달력 ─────────────────────────────────────────────────────────────────
 
   const monthStart = startOfMonth(viewDate)
   const monthEnd   = endOfMonth(viewDate)
@@ -73,26 +137,48 @@ export function DatePicker({ value, onChange, placeholder = '날짜 선택', dis
   const todayYear = getYear(new Date())
   const years = Array.from({ length: YEARS_PER_PAGE }, (_, i) => yearPage + i)
 
+  const inputDisplayValue = quickEntry !== null ? quickEntry : displayDate
+
   return (
     <div ref={containerRef} className="relative">
-      {/* 트리거 버튼 */}
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setOpen(v => !v)}
-        className={[
-          'flex w-full items-center justify-between rounded-md border transition-all',
-          'border-slate-200 bg-white text-left',
-          sm ? 'gap-1 px-2 py-1 text-xs min-h-[28px]' : 'gap-2 px-3 py-2 text-sm',
-          disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-slate-300 hover:shadow-sm',
-          open ? 'border-brand ring-1 ring-brand shadow-sm' : '',
-        ].join(' ')}
-      >
-        <span className={`min-w-0 truncate ${value ? 'font-medium text-slate-800 tabular-nums' : 'text-slate-400'}`}>
-          {displayDate || placeholder}
-        </span>
-        <Calendar className={`shrink-0 transition-colors ${sm ? 'h-3 w-3' : 'h-4 w-4'} ${open ? 'text-brand' : 'text-slate-300'}`} />
-      </button>
+      {/* 트리거: 텍스트 입력 + 달력 아이콘 */}
+      <div className={[
+        'flex w-full items-center rounded-md border transition-all',
+        'border-slate-200 bg-white',
+        sm ? 'gap-1 px-2 py-1 min-h-[28px]' : 'gap-2 px-3 py-2',
+        disabled
+          ? 'cursor-not-allowed opacity-50'
+          : 'hover:border-slate-300 hover:shadow-sm focus-within:border-brand focus-within:ring-1 focus-within:ring-brand focus-within:shadow-sm',
+        (open && !disabled) ? 'border-brand ring-1 ring-brand shadow-sm' : '',
+      ].join(' ')}>
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          value={inputDisplayValue}
+          onChange={() => {}}
+          onKeyDown={!disabled ? handleInputKeyDown : undefined}
+          onFocus={!disabled ? handleInputFocus : undefined}
+          onBlur={handleInputBlur}
+          placeholder={quickEntry !== null ? 'YYMMDD' : placeholder}
+          disabled={disabled}
+          className={[
+            'min-w-0 flex-1 bg-transparent outline-none truncate',
+            'placeholder:text-slate-400',
+            inputDisplayValue ? 'font-medium text-slate-800 tabular-nums' : 'text-slate-400',
+            sm ? 'text-xs' : 'text-sm',
+          ].join(' ')}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          disabled={disabled}
+          onClick={handleCalendarClick}
+          className="shrink-0 flex items-center"
+        >
+          <Calendar className={`transition-colors ${sm ? 'h-3 w-3' : 'h-4 w-4'} ${open ? 'text-brand' : 'text-slate-300'}`} />
+        </button>
+      </div>
 
       {/* 달력 팝오버 */}
       {open && (

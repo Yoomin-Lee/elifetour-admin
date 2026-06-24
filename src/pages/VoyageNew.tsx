@@ -43,7 +43,7 @@ function VoyageNewInner() {
   const mutation = useMutation({
     mutationFn: createVoyageWithChildren,
     onSuccess: (voyage) => {
-      toast.success('새 행사가 등록됐습니다')
+      toast.success('저장되었습니다')
       navigate(`/voyages?tab=항차검색&voyage=${voyage.id}`)
     },
     onError: () => toast.error('저장에 실패했습니다'),
