@@ -605,7 +605,7 @@ export default function MNTab() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-lg font-bold text-slate-800">MN 참고 자료</h1>
+        <h1 className="text-lg font-bold text-slate-800">취소료 규정</h1>
         <p className="text-sm text-slate-400">불러오는 중…</p>
       </div>
     )
@@ -614,7 +614,7 @@ export default function MNTab() {
   return (
     <>
       <div className="space-y-8">
-        <h1 className="text-lg font-bold text-slate-800">MN 참고 자료</h1>
+        <h1 className="text-lg font-bold text-slate-800">취소료 규정</h1>
 
         {CATEGORIES.map(cat => {
           const catSections = sections.filter(s => s.category === cat)
