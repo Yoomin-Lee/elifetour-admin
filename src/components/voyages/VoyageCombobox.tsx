@@ -18,7 +18,7 @@ function airlineLabel(v: Voyage): string | null {
   const a = v.airline?.trim() || null
   const b = v.airline_return?.trim() || null
   if (!a && !b) return null
-  if (a && b && a !== b) return `${a} / ${b}`
+  if (a && b) return `${a} / ${b}`
   return a ?? b
 }
 
