@@ -75,3 +75,11 @@ export async function hardDeleteMnSection(id: string): Promise<void> {
   const { error } = await sb().from('mn_sections').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function updateMnSectionsOrder(updates: { id: string; sort_order: number }[]): Promise<void> {
+  await Promise.all(
+    updates.map(({ id, sort_order }) =>
+      sb().from('mn_sections').update({ sort_order }).eq('id', id)
+    )
+  )
+}

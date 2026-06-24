@@ -1,7 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, RotateCcw, AlertTriangle, ExternalLink } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, RotateCcw, AlertTriangle, ExternalLink, GripVertical } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  rectSortingStrategy,
+  useSortable,
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useAuth } from '@/context/AuthContext'
 import {
   fetchMnSections,
@@ -10,6 +27,7 @@ import {
   softDeleteMnSection,
   restoreMnSection,
   hardDeleteMnSection,
+  updateMnSectionsOrder,
 } from '@/lib/queries/mnSections'
 import type { MnSection, MnRow } from '@/lib/queries/mnSections'
 import { Button } from '@/components/ui/button'
@@ -72,20 +90,12 @@ function DeleteConfirmModal({
           </div>
         </div>
         <div className="px-6 pb-5 flex gap-2 justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isPending}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition disabled:opacity-40"
-          >
+          <button type="button" onClick={onCancel} disabled={isPending}
+            className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition disabled:opacity-40">
             취소
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isPending}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-40"
-          >
+          <button type="button" onClick={onConfirm} disabled={isPending}
+            className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-40">
             {isPending ? '삭제 중…' : '삭제'}
           </button>
         </div>
@@ -106,8 +116,7 @@ function RowEditor({
   onChange: (rows: MnRow[]) => void
 }) {
   function updateRow(i: number, field: keyof MnRow, val: string) {
-    const next = rows.map((r, idx) => idx === i ? { ...r, [field]: val } : r)
-    onChange(next)
+    onChange(rows.map((r, idx) => idx === i ? { ...r, [field]: val } : r))
   }
   function addRow() {
     onChange([...rows, rowType === 'tip' ? { ...EMPTY_TIP_ROW } : { ...EMPTY_RULE_ROW }])
@@ -122,23 +131,18 @@ function RowEditor({
         <div key={i} className="flex gap-1 items-center">
           {rowType === 'rule' ? (
             <>
-              <input
-                value={r.d ?? ''} onChange={e => updateRow(i, 'd', e.target.value)}
+              <input value={r.d ?? ''} onChange={e => updateRow(i, 'd', e.target.value)}
                 placeholder="D-day 기준" className="input h-7 text-xs flex-1 min-w-0" />
-              <input
-                value={r.fee ?? ''} onChange={e => updateRow(i, 'fee', e.target.value)}
+              <input value={r.fee ?? ''} onChange={e => updateRow(i, 'fee', e.target.value)}
                 placeholder="취소료" className="input h-7 text-xs flex-1 min-w-0" />
-              <input
-                value={r.note ?? ''} onChange={e => updateRow(i, 'note', e.target.value)}
+              <input value={r.note ?? ''} onChange={e => updateRow(i, 'note', e.target.value)}
                 placeholder="비고" className="input h-7 text-xs flex-[1.5] min-w-0" />
             </>
           ) : (
             <>
-              <input
-                value={r.room ?? ''} onChange={e => updateRow(i, 'room', e.target.value)}
+              <input value={r.room ?? ''} onChange={e => updateRow(i, 'room', e.target.value)}
                 placeholder="객실 유형" className="input h-7 text-xs flex-1 min-w-0" />
-              <input
-                value={r.amount ?? ''} onChange={e => updateRow(i, 'amount', e.target.value)}
+              <input value={r.amount ?? ''} onChange={e => updateRow(i, 'amount', e.target.value)}
                 placeholder="금액" className="input h-7 text-xs flex-1 min-w-0" />
             </>
           )}
@@ -163,16 +167,18 @@ function SectionForm({
   onSave,
   onCancel,
   isPending,
+  bare = false,
 }: {
   initial: Omit<MnSection, 'id'> & { id?: string }
   onSave: (s: Omit<MnSection, 'id'> & { id?: string }) => void
   onCancel: () => void
   isPending: boolean
+  bare?: boolean
 }) {
   const [form, setForm] = useState(initial)
 
   return (
-    <div className="space-y-3 rounded-lg border border-brand/30 bg-brand/5 p-4">
+    <div className={bare ? 'space-y-3' : 'space-y-3 rounded-lg border border-brand/30 bg-brand/5 p-4'}>
       <div className="grid grid-cols-2 gap-2">
         <div className="col-span-2">
           <label className="label">제목 *</label>
@@ -224,16 +230,65 @@ function SectionForm({
   )
 }
 
+// ── 섹션 추가 모달 ─────────────────────────────────────────────────────────
+
+function SectionFormModal({
+  category,
+  onSave,
+  onClose,
+  isPending,
+}: {
+  category: Category
+  onSave: (s: Omit<MnSection, 'id'>) => void
+  onClose: () => void
+  isPending: boolean
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={isPending ? undefined : onClose}
+      />
+      <div className="relative z-10 w-full max-w-2xl mx-4 rounded-2xl bg-white shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
+          <h2 className="text-sm font-semibold text-slate-800">
+            섹션 추가 — {CATEGORY_LABELS[category]}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPending}
+            className="rounded p-1 text-slate-400 hover:text-slate-600 transition disabled:opacity-40"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto">
+          <SectionForm
+            initial={emptySection(category)}
+            onSave={s => onSave(s)}
+            onCancel={onClose}
+            isPending={isPending}
+            bare
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── 섹션 카드 (보기) ────────────────────────────────────────────────────────
 
 function SectionCard({
   section,
   canWrite,
+  dragHandle,
   onEdit,
   onDelete,
 }: {
   section: MnSection
   canWrite: boolean
+  dragHandle?: React.HTMLAttributes<HTMLDivElement>
   onEdit: () => void
   onDelete: () => void
 }) {
@@ -241,10 +296,21 @@ function SectionCard({
 
   return (
     <div className="rounded-lg border border-slate-200 overflow-hidden">
-      <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-4 py-2 gap-2">
-        <h3 className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex-1 min-w-0 truncate">
-          {section.title}
-        </h3>
+      <div className="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-3 py-2 gap-2">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {canWrite && dragHandle && (
+            <div
+              {...dragHandle}
+              className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition shrink-0 touch-none"
+              title="드래그해서 순서 변경"
+            >
+              <GripVertical className="h-4 w-4" />
+            </div>
+          )}
+          <h3 className="text-xs font-semibold text-slate-600 uppercase tracking-wide truncate">
+            {section.title}
+          </h3>
+        </div>
         <div className="flex items-center gap-1 shrink-0">
           {section.reference_url && (
             <a
@@ -313,6 +379,64 @@ function SectionCard({
   )
 }
 
+// ── 드래그 가능한 섹션 카드 래퍼 ───────────────────────────────────────────
+
+function SortableSectionCard({
+  section,
+  canWrite,
+  editingId,
+  editForm,
+  savePending,
+  onEdit,
+  onDelete,
+  onSave,
+  onCancelEdit,
+}: {
+  section: MnSection
+  canWrite: boolean
+  editingId: string | null
+  editForm: (Omit<MnSection, 'id'> & { id?: string }) | null
+  savePending: boolean
+  onEdit: () => void
+  onDelete: () => void
+  onSave: (s: Omit<MnSection, 'id'> & { id?: string }) => void
+  onCancelEdit: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  }
+
+  if (editingId === section.id && editForm) {
+    return (
+      <div ref={setNodeRef} style={style} className="col-span-full">
+        <SectionForm
+          initial={editForm}
+          onSave={onSave}
+          onCancel={onCancelEdit}
+          isPending={savePending}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <SectionCard
+        section={section}
+        canWrite={canWrite}
+        dragHandle={{ ...attributes, ...listeners }}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    </div>
+  )
+}
+
 // ── 카테고리 그룹 ──────────────────────────────────────────────────────────
 
 function CategoryGroup({
@@ -329,6 +453,7 @@ function CategoryGroup({
   onNewOpen,
   onNewClose,
   onNewSave,
+  onReorder,
 }: {
   category: Category
   sections: MnSection[]
@@ -343,9 +468,30 @@ function CategoryGroup({
   onNewOpen: () => void
   onNewClose: () => void
   onNewSave: (s: Omit<MnSection, 'id'>) => void
+  onReorder: (updates: { id: string; sort_order: number }[]) => void
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [editForm, setEditForm] = useState<(Omit<MnSection, 'id'> & { id?: string }) | null>(null)
+  const [localSections, setLocalSections] = useState(sections)
+
+  useEffect(() => setLocalSections(sections), [sections])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setLocalSections(prev => {
+      const oldIdx = prev.findIndex(s => s.id === active.id)
+      const newIdx = prev.findIndex(s => s.id === over.id)
+      const reordered = arrayMove(prev, oldIdx, newIdx)
+      onReorder(reordered.map((s, i) => ({ id: s.id, sort_order: i })))
+      return reordered
+    })
+  }
 
   function handleEdit(s: MnSection) {
     setEditForm(s)
@@ -375,38 +521,35 @@ function CategoryGroup({
       </div>
 
       {!collapsed && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sections.map(s =>
-            editingId === s.id && editForm ? (
-              <div key={s.id} className="col-span-full">
-                <SectionForm
-                  initial={editForm}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={localSections.map(s => s.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {localSections.map(s => (
+                <SortableSectionCard
+                  key={s.id}
+                  section={s}
+                  canWrite={canWrite}
+                  editingId={editingId}
+                  editForm={editForm}
+                  savePending={savePending}
+                  onEdit={() => handleEdit(s)}
+                  onDelete={() => onDeleteRequest(s)}
                   onSave={next => { setEditForm(null); onSave(next) }}
-                  onCancel={() => { setEditForm(null); onCancelEdit() }}
-                  isPending={savePending}
+                  onCancelEdit={() => { setEditForm(null); onCancelEdit() }}
                 />
-              </div>
-            ) : (
-              <SectionCard
-                key={s.id}
-                section={s}
-                canWrite={canWrite}
-                onEdit={() => handleEdit(s)}
-                onDelete={() => onDeleteRequest(s)}
-              />
-            )
-          )}
-          {newOpen && (
-            <div className="col-span-full">
-              <SectionForm
-                initial={emptySection(category)}
-                onSave={s => onNewSave(s)}
-                onCancel={onNewClose}
-                isPending={savePending}
-              />
+              ))}
             </div>
-          )}
-        </div>
+          </SortableContext>
+        </DndContext>
+      )}
+
+      {newOpen && (
+        <SectionFormModal
+          category={category}
+          onSave={s => onNewSave(s)}
+          onClose={onNewClose}
+          isPending={savePending}
+        />
       )}
     </div>
   )
@@ -460,20 +603,12 @@ function DeletedPanel({
                   <span className="text-[10px] text-slate-400">{s.category}</span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => onRestore(s.id)}
-                    disabled={restorePending}
-                    className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium text-brand bg-brand/10 hover:bg-brand/20 transition disabled:opacity-40"
-                  >
+                  <button type="button" onClick={() => onRestore(s.id)} disabled={restorePending}
+                    className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium text-brand bg-brand/10 hover:bg-brand/20 transition disabled:opacity-40">
                     <RotateCcw className="h-3 w-3" /> 복원
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmHardDelete(s)}
-                    disabled={hardDeletePending}
-                    className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium text-red-500 bg-red-50 hover:bg-red-100 transition disabled:opacity-40"
-                  >
+                  <button type="button" onClick={() => setConfirmHardDelete(s)} disabled={hardDeletePending}
+                    className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium text-red-500 bg-red-50 hover:bg-red-100 transition disabled:opacity-40">
                     <Trash2 className="h-3 w-3" /> 영구 삭제
                   </button>
                 </div>
@@ -502,20 +637,14 @@ function DeletedPanel({
               </div>
             </div>
             <div className="px-6 pb-5 flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => setConfirmHardDelete(null)}
-                disabled={hardDeletePending}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition disabled:opacity-40"
-              >
+              <button type="button" onClick={() => setConfirmHardDelete(null)} disabled={hardDeletePending}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition disabled:opacity-40">
                 취소
               </button>
-              <button
-                type="button"
+              <button type="button"
                 onClick={() => { onHardDelete(confirmHardDelete.id); setConfirmHardDelete(null) }}
                 disabled={hardDeletePending}
-                className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-40"
-              >
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-40">
                 {hardDeletePending ? '삭제 중…' : '영구 삭제'}
               </button>
             </div>
@@ -586,6 +715,12 @@ export default function MNTab() {
     onError: () => toast.error('영구 삭제에 실패했습니다'),
   })
 
+  const reorderMut = useMutation({
+    mutationFn: updateMnSectionsOrder,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mn-sections'] }),
+    onError: () => toast.error('순서 변경에 실패했습니다'),
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -618,6 +753,7 @@ export default function MNTab() {
               onNewOpen={() => setNewCategory(cat)}
               onNewClose={() => setNewCategory(null)}
               onNewSave={s => saveMut.mutate(s)}
+              onReorder={updates => reorderMut.mutate(updates)}
             />
           )
         })}
