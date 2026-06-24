@@ -50,6 +50,7 @@ export function TimePicker({
   function handleHhFocus(e: React.FocusEvent<HTMLInputElement>) {
     e.target.select()
     hhCount.current = 0
+    hhFirst.current = ''
   }
 
   function handleHhKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -117,6 +118,7 @@ export function TimePicker({
   function handleMmFocus(e: React.FocusEvent<HTMLInputElement>) {
     e.target.select()
     mmCount.current = 0
+    mmFirst.current = ''
   }
 
   function handleMmKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
