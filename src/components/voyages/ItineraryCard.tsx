@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useRef } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Plus, Trash2, Check, X } from 'lucide-react'
+import { Pencil, Plus, Trash2, Check, X, MapPin, ChevronDown, Settings } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,9 @@ import { SelectOrInput } from '@/components/ui/select-or-input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { formatDate, formatTime } from '@/lib/utils'
 import { saveItineraryDay, deleteItineraryDay } from '@/lib/queries/voyages'
+import { fetchItineraryPresets } from '@/lib/queries/itineraryPresets'
+import type { ItineraryPreset } from '@/lib/queries/itineraryPresets'
+import ItineraryPresetManager from './ItineraryPresetManager'
 import type { ItineraryDay } from '@/types/database'
 
 const ITINERARY_CATEGORIES = ['랜드', '쇼렉스', '자유']
@@ -49,7 +52,7 @@ function toDraft(d: ItineraryDay): DraftDay {
     arrival_time: d.arrival_time ?? '', departure_time: d.departure_time ?? '',
     summary: d.summary ?? '', category: d.category ?? '',
     cost: d.cost != null ? String(d.cost) : '',
-    cost_currency: d.cost_currency ?? '',
+    cost_currency: d.cost_currency ?? 'USD',
     sort_order: d.sort_order,
   }
 }
@@ -57,7 +60,7 @@ function toDraft(d: ItineraryDay): DraftDay {
 const EMPTY: Omit<DraftDay, '_key'> = {
   _isNew: true, _deleted: false, id: '',
   date: '', port: '', arrival_time: '', departure_time: '',
-  summary: '', category: '', cost: '', cost_currency: '', sort_order: 0,
+  summary: '', category: '', cost: '', cost_currency: 'USD', sort_order: 0,
 }
 
 function toInput(r: DraftDay, idx: number) {
@@ -74,18 +77,40 @@ function toInput(r: DraftDay, idx: number) {
   }
 }
 
+function addDays(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d + days)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
+let _keySeq = 1
+function newKey() { return `new-${_keySeq++}` }
+
 export default function ItineraryCard({
   days,
   voyageId,
   canWrite = true,
+  departureDate,
 }: {
   days: ItineraryDay[]
   voyageId: string
   canWrite?: boolean
+  departureDate?: string
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DraftDay[]>([])
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [presetOpen, setPresetOpen] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
+  const [managerOpen, setManagerOpen] = useState(false)
+  const [pendingPreset, setPendingPreset] = useState<ItineraryPreset | null>(null)
+  const presetBtnRef = useRef<HTMLDivElement>(null)
   const qc = useQueryClient()
+
+  const { data: presets = [] } = useQuery({
+    queryKey: ['itinerary-presets'],
+    queryFn: fetchItineraryPresets,
+  })
 
   const saveMut = useMutation({
     mutationFn: async () => {
@@ -112,7 +137,7 @@ export default function ItineraryCard({
   }
 
   function addRow() {
-    setDraft(d => [...d, { ...EMPTY, _key: `new-${Date.now()}` }])
+    setDraft(d => [...d, { ...EMPTY, _key: newKey() }])
   }
 
   function removeRow(key: string) {
@@ -128,103 +153,253 @@ export default function ItineraryCard({
     setDraft(d => d.map(r => r._key === key ? { ...r, [field]: value } : r))
   }
 
+  function applyPreset(preset: ItineraryPreset, mode: 'replace' | 'append') {
+    setDraft(prev => {
+      const visibleCount = prev.filter(r => !r._deleted).length
+      const baseOffset = mode === 'append' ? visibleCount : 0
+      const newRows: DraftDay[] = preset.ports.map((p, i) => ({
+        _key: newKey(),
+        _isNew: true, _deleted: false, id: '',
+        date: departureDate ? addDays(departureDate, baseOffset + i) : '',
+        port: p.port,
+        arrival_time: p.arrival_time,
+        departure_time: p.departure_time,
+        summary: p.summary,
+        category: '',
+        cost: '',
+        cost_currency: 'USD',
+        sort_order: baseOffset + i + 1,
+      }))
+
+      if (mode === 'replace') {
+        const markedDeleted = prev
+          .map(r => r._isNew ? null : { ...r, _deleted: true })
+          .filter((r): r is DraftDay => r !== null)
+        return [...markedDeleted, ...newRows]
+      }
+      return [...prev, ...newRows]
+    })
+
+    setImportMsg(`${preset.label} — ${preset.ports.length}개 기항지 불러옴`)
+    setTimeout(() => setImportMsg(null), 4000)
+    setPendingPreset(null)
+    setPresetOpen(false)
+  }
+
+  function handlePresetSelect(preset: ItineraryPreset) {
+    const visibleCount = draft.filter(r => !r._deleted).length
+    if (visibleCount > 0) {
+      setPendingPreset(preset)
+    } else {
+      applyPreset(preset, 'replace')
+    }
+    setPresetOpen(false)
+  }
+
   const visible = draft.filter(r => !r._deleted)
+
+  // ── 편집 모드 ────────────────────────────────────────────────────────────
 
   if (editing) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>기항지 일정</CardTitle>
-          <div className="flex items-center gap-1">
-            <Button type="button" size="sm" variant="outline" onClick={addRow} disabled={saveMut.isPending}>
-              <Plus className="h-3.5 w-3.5" /> 행 추가
-            </Button>
-            <button
-              onClick={() => saveMut.mutate()}
-              disabled={saveMut.isPending}
-              className="flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-green-700 hover:bg-green-50 transition disabled:opacity-40"
-            >
-              <Check className="h-3.5 w-3.5" />{saveMut.isPending ? '저장 중…' : '저장'}
-            </button>
-            <button
-              onClick={() => { setEditing(false); setDraft([]) }}
-              disabled={saveMut.isPending}
-              className="flex h-7 items-center gap-1 rounded px-2 text-xs text-slate-400 hover:bg-slate-100 transition"
-            >
-              <X className="h-3.5 w-3.5" />취소
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {saveMut.isError && (
-            <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
-          )}
-          <div className="space-y-2">
-            {visible.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-400">행 추가를 눌러 기항지를 등록하세요</p>
-            ) : (
-              visible.map((r, i) => (
-                <div key={r._key} className="relative flex gap-2 items-start rounded-lg border border-slate-100 bg-slate-50/50 p-3">
-                  <span className="mt-2 w-5 shrink-0 text-center text-xs text-slate-400">{i + 1}</span>
-                  <div className="grid flex-1 grid-cols-4 gap-2 sm:grid-cols-5">
-                    <div className="col-span-1">
-                      <label className="label">날짜</label>
-                      <DatePicker size="sm" value={r.date} onChange={v => upd(r._key, 'date', v)} placeholder="날짜" />
+      <>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CardTitle>기항지 일정</CardTitle>
+              {importMsg && (
+                <span className="text-xs text-brand font-medium">{importMsg}</span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-1">
+              {/* 루트 불러오기 */}
+              <div className="relative" ref={presetBtnRef}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={saveMut.isPending}
+                  onClick={() => {
+                    if (!presetOpen && presetBtnRef.current) {
+                      const rect = presetBtnRef.current.getBoundingClientRect()
+                      setDropUp(window.innerHeight - rect.bottom < 280)
+                    }
+                    setPresetOpen(v => !v)
+                  }}
+                  className="gap-1"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  루트 불러오기
+                  <ChevronDown className={`h-3 w-3 transition-transform ${presetOpen ? 'rotate-180' : ''}`} />
+                </Button>
+                {presetOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
+                    <div className={`absolute right-0 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden flex flex-col ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+                      <div className="overflow-y-auto max-h-56">
+                        {presets.length === 0 && (
+                          <p className="px-3 py-2 text-xs text-slate-400">등록된 루트가 없습니다</p>
+                        )}
+                        {presets.map(p => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => handlePresetSelect(p)}
+                            className="w-full px-3 py-2 text-left text-xs hover:bg-slate-50 transition"
+                          >
+                            <span className="font-medium text-slate-700">{p.label}</span>
+                            {p.nights && (
+                              <span className="ml-1.5 text-slate-400">{p.nights}박</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="border-t border-slate-100 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => { setPresetOpen(false); setManagerOpen(true) }}
+                          className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 transition"
+                        >
+                          <Settings className="h-3 w-3" /> 루트 관리
+                        </button>
+                      </div>
                     </div>
-                    <div className="col-span-3 sm:col-span-2">
-                      <label className="label">기항지</label>
-                      <Input value={r.port} onChange={e => upd(r._key, 'port', e.target.value)} placeholder="바르셀로나 (스페인)" className="h-7 text-sm" />
-                    </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="label">도착</label>
-                      <TimePicker size="sm" value={r.arrival_time} onChange={v => upd(r._key, 'arrival_time', v)} />
-                    </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="label">출발</label>
-                      <TimePicker size="sm" value={r.departure_time} onChange={v => upd(r._key, 'departure_time', v)} />
-                    </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="label">구분</label>
-                      <SelectOrInput
-                        value={r.category}
-                        options={ITINERARY_CATEGORIES}
-                        onChange={v => upd(r._key, 'category', v)}
-                        placeholder="구분"
-                      />
-                    </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="label">통화</label>
-                      <FieldSelect
-                        value={r.cost_currency || 'USD'}
-                        options={CURRENCY_OPTIONS}
-                        onChange={v => upd(r._key, 'cost_currency', v)}
-                        className="h-7 text-sm"
-                      />
-                    </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="label">비용(인당)</label>
-                      <Input value={r.cost} onChange={e => upd(r._key, 'cost', e.target.value)} placeholder="0" className="h-7 text-sm" />
-                    </div>
-                    <div className="col-span-2 sm:col-span-2">
-                      <label className="label">비고</label>
-                      <Input value={r.summary} onChange={e => upd(r._key, 'summary', e.target.value)} placeholder="주요 관광지, 이동 정보 등" className="h-7 text-sm" />
-                    </div>
-                  </div>
+                  </>
+                )}
+              </div>
+
+              <Button type="button" size="sm" variant="outline" onClick={addRow} disabled={saveMut.isPending}>
+                <Plus className="h-3.5 w-3.5" /> 행 추가
+              </Button>
+              <button
+                onClick={() => saveMut.mutate()}
+                disabled={saveMut.isPending}
+                className="flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-green-700 hover:bg-green-50 transition disabled:opacity-40"
+              >
+                <Check className="h-3.5 w-3.5" />{saveMut.isPending ? '저장 중…' : '저장'}
+              </button>
+              <button
+                onClick={() => { setEditing(false); setDraft([]); setPendingPreset(null) }}
+                disabled={saveMut.isPending}
+                className="flex h-7 items-center gap-1 rounded px-2 text-xs text-slate-400 hover:bg-slate-100 transition"
+              >
+                <X className="h-3.5 w-3.5" />취소
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {saveMut.isError && (
+              <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
+            )}
+
+            {/* 루트 충돌 다이얼로그 */}
+            {pendingPreset && (
+              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm text-amber-800 font-medium mb-2">
+                  이미 입력된 기항지가 있습니다. 어떻게 처리할까요?
+                </p>
+                <p className="text-xs text-amber-600 mb-3">
+                  선택한 루트: <span className="font-semibold">{pendingPreset.label}</span>
+                </p>
+                <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => removeRow(r._key)}
-                    className="mt-2 shrink-0 rounded p-1 text-slate-400 hover:text-red-500 transition"
+                    onClick={() => applyPreset(pendingPreset, 'replace')}
+                    className="rounded px-3 py-1.5 text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 transition"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    기존 삭제 후 불러오기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPreset(pendingPreset, 'append')}
+                    className="rounded px-3 py-1.5 text-xs font-medium border border-amber-300 text-amber-700 hover:bg-amber-100 transition"
+                  >
+                    기존 유지하고 추가
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingPreset(null)}
+                    className="rounded px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-100 transition"
+                  >
+                    취소
                   </button>
                 </div>
-              ))
+              </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
+
+            <div className="space-y-2">
+              {visible.length === 0 ? (
+                <p className="py-4 text-center text-sm text-slate-400">루트를 불러오거나 행 추가를 눌러 기항지를 등록하세요</p>
+              ) : (
+                visible.map((r, i) => (
+                  <div key={r._key} className="relative flex gap-2 items-start rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+                    <span className="mt-2 w-5 shrink-0 text-center text-xs text-slate-400">{i + 1}</span>
+                    <div className="grid flex-1 grid-cols-4 gap-2 sm:grid-cols-5">
+                      <div className="col-span-1">
+                        <label className="label">날짜</label>
+                        <DatePicker size="sm" value={r.date} onChange={v => upd(r._key, 'date', v)} placeholder="날짜" />
+                      </div>
+                      <div className="col-span-3 sm:col-span-2">
+                        <label className="label">기항지</label>
+                        <Input value={r.port} onChange={e => upd(r._key, 'port', e.target.value)} placeholder="바르셀로나 (스페인)" className="h-7 text-sm" />
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="label">도착</label>
+                        <TimePicker size="sm" value={r.arrival_time} onChange={v => upd(r._key, 'arrival_time', v)} />
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="label">출발</label>
+                        <TimePicker size="sm" value={r.departure_time} onChange={v => upd(r._key, 'departure_time', v)} />
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="label">구분</label>
+                        <SelectOrInput
+                          value={r.category}
+                          options={ITINERARY_CATEGORIES}
+                          onChange={v => upd(r._key, 'category', v)}
+                          placeholder="구분"
+                        />
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="label">통화</label>
+                        <FieldSelect
+                          value={r.cost_currency || 'USD'}
+                          options={CURRENCY_OPTIONS}
+                          onChange={v => upd(r._key, 'cost_currency', v)}
+                          className="h-7 text-sm"
+                        />
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="label">비용 (인당)</label>
+                        <Input value={r.cost} onChange={e => upd(r._key, 'cost', e.target.value)} placeholder="0" className="h-7 text-sm" />
+                      </div>
+                      <div className="col-span-2 sm:col-span-2">
+                        <label className="label">비고</label>
+                        <Input value={r.summary} onChange={e => upd(r._key, 'summary', e.target.value)} placeholder="주요 관광지, 이동 정보 등" className="h-7 text-sm" />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeRow(r._key)}
+                      className="mt-2 shrink-0 rounded p-1 text-slate-400 hover:text-red-500 transition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {managerOpen && (
+          <ItineraryPresetManager onClose={() => setManagerOpen(false)} />
+        )}
+      </>
     )
   }
+
+  // ── 보기 모드 ────────────────────────────────────────────────────────────
 
   return (
     <Card>
@@ -264,10 +439,7 @@ export default function ItineraryCard({
                 {days.map((d, i) => {
                   const isSea = d.port.includes(SEA_DAY)
                   return (
-                    <TableRow
-                      key={d.id}
-                      className={isSea ? 'bg-slate-50/80 text-slate-400' : ''}
-                    >
+                    <TableRow key={d.id} className={isSea ? 'bg-slate-50/80 text-slate-400' : ''}>
                       <TableCell className="text-slate-400 text-xs">{i + 1}</TableCell>
                       <TableCell className="whitespace-nowrap font-medium">{formatDate(d.date)}</TableCell>
                       <TableCell className={isSea ? 'italic' : 'font-medium'}>{d.port}</TableCell>

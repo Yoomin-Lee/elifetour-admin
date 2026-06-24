@@ -205,7 +205,7 @@ function VoyageSearchInner() {
           {/* 왼쪽: 개요 + 기항지 + 히스토리 */}
           <div className="flex flex-col gap-4">
             <OverviewCard voyage={selectedVoyage} itinerary={itineraryQuery.data ?? []} canWrite={canWrite} />
-            <ItineraryCard days={itineraryQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
+            <ItineraryCard days={itineraryQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} departureDate={selectedVoyage.departure_date} />
             <HistoryCard
               logs={historyQuery.data ?? []}
               voyageId={voyageId}
