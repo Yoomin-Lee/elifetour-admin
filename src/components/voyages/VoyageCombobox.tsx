@@ -14,6 +14,14 @@ interface Props {
   loading?: boolean
 }
 
+function airlineLabel(v: Voyage): string | null {
+  const a = v.airline?.trim() || null
+  const b = v.airline_return?.trim() || null
+  if (!a && !b) return null
+  if (a && b && a !== b) return `${a} / ${b}`
+  return a ?? b
+}
+
 export default function VoyageCombobox({ voyages, selectedId, onSelect, loading }: Props) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -66,7 +74,12 @@ export default function VoyageCombobox({ voyages, selectedId, onSelect, loading 
                 )}
               >
                 <Check className={cn('h-4 w-4 shrink-0', v.id === selectedId ? 'opacity-100 text-brand' : 'opacity-0')} />
-                <span className="flex-1 truncate">{voyageTitle(v)}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block truncate">{voyageTitle(v)}</span>
+                  {airlineLabel(v) && (
+                    <span className="block text-xs text-slate-400 font-normal">{airlineLabel(v)}</span>
+                  )}
+                </span>
                 <CruiseLineBadge value={v.cruise_line} />
               </button>
             ))
