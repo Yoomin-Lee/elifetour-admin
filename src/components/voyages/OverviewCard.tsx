@@ -58,6 +58,7 @@ type Form = {
   departure_date: string
   return_date: string
   boarding_date: string
+  duration: string
   cabin_total: string
   cabin_remaining: string
   customer_count: string
@@ -76,6 +77,7 @@ function toForm(v: Voyage): Form {
     departure_date: v.departure_date,
     return_date: v.return_date ?? '',
     boarding_date: v.boarding_date ?? '',
+    duration: v.duration ?? '',
     cabin_total: String(v.cabin_total ?? ''),
     cabin_remaining: String(v.cabin_remaining ?? ''),
     customer_count: String(v.customer_count ?? ''),
@@ -125,6 +127,7 @@ export default function OverviewCard({
       departure_date: f.departure_date,
       return_date: f.return_date || null,
       boarding_date: f.boarding_date || null,
+      duration: f.duration || null,
       cabin_total: Number(f.cabin_total) || 0,
       cabin_remaining: Number(f.cabin_remaining) || 0,
       customer_count: Number(f.customer_count) || 0,
@@ -193,9 +196,6 @@ export default function OverviewCard({
             <ERow label="출발일">
               <DatePicker value={f.departure_date} onChange={v => setF(p => ({ ...p, departure_date: v }))} placeholder="출발일" />
             </ERow>
-            <ERow label="귀국일">
-              <DatePicker value={f.return_date} onChange={v => setF(p => ({ ...p, return_date: v }))} placeholder="귀국일" />
-            </ERow>
             <ERow label="승선일">
               <div className="flex items-center gap-1.5">
                 <DatePicker value={f.boarding_date} onChange={v => setF(p => ({ ...p, boarding_date: v }))} placeholder="크루즈 승선일" />
@@ -219,6 +219,12 @@ export default function OverviewCard({
                   )
                 })()}
               </div>
+            </ERow>
+            <ERow label="귀국일">
+              <DatePicker value={f.return_date} onChange={v => setF(p => ({ ...p, return_date: v }))} placeholder="귀국일" />
+            </ERow>
+            <ERow label="여행 기간">
+              <Input value={f.duration} onChange={set('duration')} placeholder={calcNights(f.departure_date, f.return_date)} className="h-7 text-sm" />
             </ERow>
             <ERow label="항공사">
               <SelectOrInput
@@ -284,9 +290,9 @@ export default function OverviewCard({
         <dl>
           <Row label="행사명"    value={voyageTitle(voyage)} />
           <Row label="출발일"    value={formatDate(voyage.departure_date)} />
-          <Row label="귀국일"    value={formatDate(voyage.return_date)} />
           <Row label="승선일"    value={voyage.boarding_date ? formatDate(voyage.boarding_date) : '-'} />
-          <Row label="여행 기간" value={calcNights(voyage.departure_date, voyage.return_date)} />
+          <Row label="귀국일"    value={formatDate(voyage.return_date)} />
+          <Row label="여행 기간" value={voyage.duration || calcNights(voyage.departure_date, voyage.return_date)} />
           <Row label="항공사" value={voyage.airline} />
           <Row label="항공사" value={voyage.airline_return} />
           <Row label="선사"      value={<CruiseLineBadge value={voyage.cruise_line} />} />
