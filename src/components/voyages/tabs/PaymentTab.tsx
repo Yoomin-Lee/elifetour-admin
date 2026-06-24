@@ -120,7 +120,8 @@ export default function PaymentTab() {
   const [editing, setEditing] = useState<DraftKey | null>(null)
   const [drafts, setDrafts] = useState<Record<DraftKey, DraftCell>>({})
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null)
-  const [extraCounts, setExtraCounts] = useState({ PAYMENT: 0, REFUND: 0 })
+  const [extraCounts, setExtraCounts] = useState({ PAYMENT: 0 })
+  const [refundCardCount, setRefundCardCount] = useState(0)
   const qc = useQueryClient()
 
   const { data: voyages = [] } = useQuery({
@@ -171,32 +172,46 @@ export default function PaymentTab() {
   useEffect(() => {
     if (!voyageId) return
 
-    const calcExtra = (sec: string) => {
-      const nums = schedules
-        .filter(s => (s.section ?? 'PAYMENT') === sec)
-        .map(s => s.payment_type)
-        .filter(pt => /^DEPOSIT_(\d+)$/.test(pt))
-        .map(pt => parseInt(pt.replace('DEPOSIT_', ''), 10))
-      return nums.length > 0 ? Math.max(0, Math.max(...nums) - 2) : 0
-    }
+    const depositNums = schedules
+      .filter(s => (s.section ?? 'PAYMENT') === 'PAYMENT')
+      .map(s => s.payment_type)
+      .filter(pt => /^DEPOSIT_(\d+)$/.test(pt))
+      .map(pt => parseInt(pt.replace('DEPOSIT_', ''), 10))
+    const paymentExtra = depositNums.length > 0 ? Math.max(0, Math.max(...depositNums) - 2) : 0
+    setExtraCounts({ PAYMENT: paymentExtra })
 
-    const paymentExtra = calcExtra('PAYMENT')
-    const refundExtra = calcExtra('REFUND')
-    setExtraCounts({ PAYMENT: paymentExtra, REFUND: refundExtra })
+    const refundNums = schedules
+      .filter(s => (s.section ?? 'PAYMENT') === 'REFUND')
+      .map(s => s.payment_type)
+      .filter(pt => /^REFUND_(\d+)$/.test(pt))
+      .map(pt => parseInt(pt.replace('REFUND_', ''), 10))
+    const rCount = refundNums.length > 0 ? Math.max(...refundNums) : 0
+    setRefundCardCount(rCount)
 
     const next: Record<DraftKey, DraftCell> = {}
-    for (const sec of ['PAYMENT', 'REFUND'] as const) {
-      const allTypes = getPaymentTypes(sec === 'PAYMENT' ? paymentExtra : refundExtra)
-      for (const c of CATEGORIES) {
-        for (const pt of allTypes) {
-          const key = makeDraftKey(sec, c, pt)
-          const existing = schedules.find(s =>
-            s.category === c && s.payment_type === pt && (s.section ?? 'PAYMENT') === sec
-          )
-          next[key] = existing ? fromSchedule(existing) : emptyCell()
-        }
+
+    // 결제 섹션: 카테고리 × 결제유형 그리드
+    const paymentTypes = getPaymentTypes(paymentExtra)
+    for (const c of CATEGORIES) {
+      for (const pt of paymentTypes) {
+        const key = makeDraftKey('PAYMENT', c, pt)
+        const existing = schedules.find(s =>
+          s.category === c && s.payment_type === pt && (s.section ?? 'PAYMENT') === 'PAYMENT'
+        )
+        next[key] = existing ? fromSchedule(existing) : emptyCell()
       }
     }
+
+    // 환불 섹션: REFUND_1, REFUND_2, ... 카드
+    for (let i = 1; i <= rCount; i++) {
+      const pt = `REFUND_${i}`
+      const key = makeDraftKey('REFUND', 'CRUISE', pt)
+      const existing = schedules.find(s =>
+        s.payment_type === pt && (s.section ?? 'PAYMENT') === 'REFUND'
+      )
+      next[key] = existing ? fromSchedule(existing) : emptyCell()
+    }
+
     setDrafts(next)
     setEditing(null)
   }, [schedules, voyageId])
@@ -258,17 +273,27 @@ export default function PaymentTab() {
     onError: () => toast.error('변경에 실패했습니다'),
   })
 
-  function addDepositRow(section: 'PAYMENT' | 'REFUND') {
-    const newCount = extraCounts[section] + 1
+  function addDepositRow() {
+    const newCount = extraCounts.PAYMENT + 1
     const newPt = `DEPOSIT_${2 + newCount}`
-    setExtraCounts(prev => ({ ...prev, [section]: newCount }))
+    setExtraCounts(prev => ({ ...prev, PAYMENT: newCount }))
     setDrafts(prev => {
       const next = { ...prev }
       for (const c of CATEGORIES) {
-        next[makeDraftKey(section, c, newPt)] = emptyCell()
+        next[makeDraftKey('PAYMENT', c, newPt)] = emptyCell()
       }
       return next
     })
+  }
+
+  function addRefundCard() {
+    const newCount = refundCardCount + 1
+    const pt = `REFUND_${newCount}`
+    setRefundCardCount(newCount)
+    setDrafts(prev => ({
+      ...prev,
+      [makeDraftKey('REFUND', 'CRUISE', pt)]: emptyCell(),
+    }))
   }
 
   function getCell(section: string, c: PaymentCategory, pt: string): DraftCell {
@@ -343,12 +368,9 @@ export default function PaymentTab() {
 
       {voyageId && !isLoading && (
         <div className="space-y-8">
-        {(['PAYMENT', 'REFUND'] as const).map(section => {
-          const pts = getPaymentTypes(extraCounts[section])
-          const sectionLabel = section === 'PAYMENT' ? '결제' : '환불'
-          return (
-          <div key={section} className="space-y-3">
-            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">{sectionLabel}</h3>
+          {/* 결제 섹션 */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">결제</h3>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px] border-collapse">
             <thead>
@@ -364,16 +386,16 @@ export default function PaymentTab() {
               </tr>
             </thead>
             <tbody>
-              {pts.map((pt, ptIdx) => (
-                <tr key={pt} className={ptIdx < pts.length - 1 ? 'border-b border-slate-100' : ''}>
+              {getPaymentTypes(extraCounts.PAYMENT).map((pt, ptIdx, allPts) => (
+                <tr key={pt} className={ptIdx < allPts.length - 1 ? 'border-b border-slate-100' : ''}>
                   <td className="pr-3 py-3 align-top">
                     <span className="text-xs font-semibold text-slate-500 leading-none">
                       {paymentTypeLabel(pt)}
                     </span>
                   </td>
                   {CATEGORIES.map(c => {
-                    const key = makeDraftKey(section, c, pt)
-                    const cell = getCell(section, c, pt)
+                    const key = makeDraftKey('PAYMENT', c, pt)
+                    const cell = getCell('PAYMENT', c, pt)
                     const isEdit = editing === key
 
                     return (
@@ -483,7 +505,7 @@ export default function PaymentTab() {
                                 {cell.id && (
                                   <button
                                     type="button"
-                                    onClick={() => cell.id && setDeleteTarget({ id: cell.id, label: `${sectionLabel} ${CATEGORY_LABEL[c]} ${paymentTypeLabel(pt)}` })}
+                                    onClick={() => cell.id && setDeleteTarget({ id: cell.id, label: `결제 ${CATEGORY_LABEL[c]} ${paymentTypeLabel(pt)}` })}
                                     className="px-1.5 text-[11px] opacity-40 hover:opacity-100 hover:text-red-500 rounded hover:bg-red-50 transition"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -512,7 +534,7 @@ export default function PaymentTab() {
         <div>
           <button
             type="button"
-            onClick={() => addDepositRow(section)}
+            onClick={addDepositRow}
             className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-200 px-3 py-1.5 text-xs text-slate-500 hover:border-brand hover:text-brand transition"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -520,8 +542,160 @@ export default function PaymentTab() {
           </button>
         </div>
           </div>
-          )
-        })}
+
+          {/* 환불 섹션 */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">환불</h3>
+            {refundCardCount === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-8 text-center text-xs text-slate-400">
+                환불 내역이 없습니다
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {Array.from({ length: refundCardCount }, (_, i) => {
+                  const pt = `REFUND_${i + 1}`
+                  const rKey = makeDraftKey('REFUND', 'CRUISE', pt)
+                  const rCell = getCell('REFUND', 'CRUISE', pt)
+                  const rIsEdit = editing === rKey
+                  return (
+                    <div key={rKey} className={`rounded-xl border p-3 w-[200px] min-h-[80px] transition-all ${
+                      rIsEdit
+                        ? 'border-brand/40 bg-brand/5 shadow-sm'
+                        : rCell.due_date
+                        ? 'border-slate-300 bg-slate-50'
+                        : 'border-dashed border-slate-200 bg-slate-50/50'
+                    }`}>
+                      {rIsEdit ? (
+                        <div className="space-y-2">
+                          <div>
+                            <label className="label">환불일 *</label>
+                            <DatePicker
+                              value={rCell.due_date}
+                              onChange={v => updateCell(rKey, { due_date: v })}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <div>
+                              <label className="label">금액</label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={rCell.amount}
+                                onChange={e => updateCell(rKey, { amount: e.target.value })}
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="label">통화</label>
+                              <FieldSelect
+                                value={rCell.currency}
+                                options={CURRENCIES.map(cur => ({ value: cur, label: cur }))}
+                                onChange={v => updateCell(rKey, { currency: v })}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="label">메모</label>
+                            <Input
+                              value={rCell.memo}
+                              onChange={e => updateCell(rKey, { memo: e.target.value })}
+                              placeholder="메모 (선택)"
+                            />
+                          </div>
+                          <div className="flex gap-1.5 pt-1">
+                            <button
+                              type="button"
+                              disabled={!rCell.due_date || upsertMut.isPending}
+                              onClick={() => upsertMut.mutate({ key: rKey, cell: rCell })}
+                              className="flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium bg-brand text-white hover:bg-brand-dark transition disabled:opacity-40"
+                            >
+                              <Save className="h-3 w-3" />
+                              {upsertMut.isPending ? '저장 중…' : '저장'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditing(null)}
+                              className="px-2 rounded-lg text-xs text-slate-400 hover:bg-slate-100 transition"
+                            >
+                              취소
+                            </button>
+                          </div>
+                        </div>
+                      ) : rCell.due_date ? (
+                        <div className="space-y-1.5">
+                          <div className="flex items-start justify-between gap-1">
+                            <span className="text-sm font-bold leading-tight">
+                              {formatAmount(rCell.amount, rCell.currency)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (rCell.id) {
+                                  const next = !rCell.is_completed
+                                  updateCell(rKey, { is_completed: next })
+                                  toggleMut.mutate({ id: rCell.id, is_completed: next })
+                                }
+                              }}
+                              className={`shrink-0 flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold border transition ${
+                                rCell.is_completed
+                                  ? 'bg-green-100 text-green-700 border-green-200'
+                                  : 'bg-white/70 text-inherit border-current opacity-50 hover:opacity-100'
+                              }`}
+                            >
+                              <Check className="h-2.5 w-2.5" />
+                              {rCell.is_completed ? '완료' : '미완료'}
+                            </button>
+                          </div>
+                          <p className={`text-[11px] ${rCell.is_completed ? 'line-through opacity-50' : 'opacity-75'}`}>
+                            환불 {rCell.due_date}
+                          </p>
+                          {rCell.memo && (
+                            <p className="text-[11px] opacity-60 truncate">{rCell.memo}</p>
+                          )}
+                          <div className="flex gap-1 pt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setEditing(rKey)}
+                              className="flex-1 text-center text-[11px] opacity-50 hover:opacity-100 py-0.5 rounded hover:bg-black/5 transition"
+                            >
+                              편집
+                            </button>
+                            {rCell.id && (
+                              <button
+                                type="button"
+                                onClick={() => rCell.id && setDeleteTarget({ id: rCell.id, label: `환불 ${i + 1}번` })}
+                                className="px-1.5 text-[11px] opacity-40 hover:opacity-100 hover:text-red-500 rounded hover:bg-red-50 transition"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setEditing(rKey)}
+                          className="w-full h-full flex items-center justify-center py-4 text-xs text-slate-400 hover:text-brand transition"
+                        >
+                          + 추가
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <div>
+              <button
+                type="button"
+                onClick={addRefundCard}
+                className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-200 px-3 py-1.5 text-xs text-slate-500 hover:border-brand hover:text-brand transition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                환불 추가
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
