@@ -77,7 +77,7 @@ function VoyageNewInner() {
 
         <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
           {/* 상단: 기본정보(좌) + 캐빈·항공(우) */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_3fr]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <BasicInfoSection />
             <div className="space-y-4">
               <CabinPriceSection />
@@ -85,7 +85,7 @@ function VoyageNewInner() {
             </div>
           </div>
           {/* 하단: 기항지(좌) + 취소료(우) */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_3fr] items-start">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 items-start">
             <ItineraryEditor />
             <CancellationEditor />
           </div>
