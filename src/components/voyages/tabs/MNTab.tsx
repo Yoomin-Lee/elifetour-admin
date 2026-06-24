@@ -205,22 +205,6 @@ function SectionForm({
             rows={2} placeholder="추가 설명 (줄바꿈 가능)"
             className="input text-sm resize-none" />
         </div>
-        <div className="col-span-2">
-          <label className="label">참조 링크 (URL)</label>
-          <input
-            type="url"
-            value={form.reference_url ?? ''}
-            onChange={e => setForm(s => ({ ...s, reference_url: e.target.value || null }))}
-            placeholder="https://..."
-            className="input text-sm"
-          />
-        </div>
-        <div>
-          <label className="label">순서</label>
-          <input type="number" value={form.sort_order}
-            onChange={e => setForm(s => ({ ...s, sort_order: Number(e.target.value) }))}
-            className="input h-8 text-sm" />
-        </div>
       </div>
 
       <div>
