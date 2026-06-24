@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, Save, Trash2, ExternalLink } from 'lucide-react'
+import { Check, Save, Trash2, ExternalLink, Plus } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { fetchVoyages } from '@/lib/queries/voyages'
 import {
@@ -21,14 +21,19 @@ import { voyageTitle } from '@/types/database'
 import type { PaymentCategory, PaymentType, PaymentSchedule } from '@/types/database'
 
 const CATEGORIES: PaymentCategory[] = ['CRUISE', 'FLIGHT', 'HOTEL']
-const PAYMENT_TYPES: PaymentType[] = ['DEPOSIT_1ST', 'DEPOSIT_2ND', 'BALANCE']
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY'] as const
 
 const CATEGORY_LABEL: Record<PaymentCategory, string> = {
   CRUISE: '크루즈', FLIGHT: '항공', HOTEL: '호텔',
 }
-const PAYMENT_TYPE_LABEL: Record<PaymentType, string> = {
-  DEPOSIT_1ST: '1차 데포짓', DEPOSIT_2ND: '2차 데포짓', BALANCE: '잔금',
+
+function paymentTypeLabel(pt: string): string {
+  if (pt === 'DEPOSIT_1ST') return '1차 데포짓'
+  if (pt === 'DEPOSIT_2ND') return '2차 데포짓'
+  if (pt === 'BALANCE') return '잔금'
+  const m = pt.match(/^DEPOSIT_(\d+)$/)
+  if (m) return `${m[1]}차 데포짓`
+  return pt
 }
 const CATEGORY_STYLE: Record<PaymentCategory, { header: string; card: string }> = {
   CRUISE: {
@@ -100,7 +105,15 @@ export default function PaymentTab() {
   const [editing, setEditing] = useState<DraftKey | null>(null)
   const [drafts, setDrafts] = useState<Record<DraftKey, DraftCell>>({})
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null)
+  const [extraDepositCount, setExtraDepositCount] = useState(0)
   const qc = useQueryClient()
+
+  const paymentTypes = useMemo((): string[] => {
+    const rows: string[] = ['DEPOSIT_1ST', 'DEPOSIT_2ND']
+    for (let i = 3; i <= 2 + extraDepositCount; i++) rows.push(`DEPOSIT_${i}`)
+    rows.push('BALANCE')
+    return rows
+  }, [extraDepositCount])
 
   const { data: voyages = [] } = useQuery({
     queryKey: ['voyages'],
@@ -149,9 +162,21 @@ export default function PaymentTab() {
 
   useEffect(() => {
     if (!voyageId) return
+    // DB에 저장된 추가 데포짓 번호(DEPOSIT_3, DEPOSIT_4 …) 추출
+    const extraNums = schedules
+      .map(s => s.payment_type)
+      .filter(pt => /^DEPOSIT_(\d+)$/.test(pt))
+      .map(pt => parseInt(pt.replace('DEPOSIT_', ''), 10))
+    const newExtraCount = extraNums.length > 0 ? Math.max(...extraNums) - 2 : 0
+    setExtraDepositCount(Math.max(0, newExtraCount))
+
+    const allTypes: string[] = ['DEPOSIT_1ST', 'DEPOSIT_2ND']
+    for (let i = 3; i <= 2 + Math.max(0, newExtraCount); i++) allTypes.push(`DEPOSIT_${i}`)
+    allTypes.push('BALANCE')
+
     const next: Record<DraftKey, DraftCell> = {}
     for (const c of CATEGORIES) {
-      for (const pt of PAYMENT_TYPES) {
+      for (const pt of allTypes) {
         const key = makeDraftKey(c, pt)
         const existing = schedules.find(s => s.category === c && s.payment_type === pt)
         next[key] = existing ? fromSchedule(existing) : emptyCell()
@@ -216,6 +241,19 @@ export default function PaymentTab() {
     },
     onError: () => toast.error('변경에 실패했습니다'),
   })
+
+  function addDepositRow() {
+    const newCount = extraDepositCount + 1
+    const newPt = `DEPOSIT_${2 + newCount}`
+    setExtraDepositCount(newCount)
+    setDrafts(prev => {
+      const next = { ...prev }
+      for (const c of CATEGORIES) {
+        next[makeDraftKey(c, newPt)] = emptyCell()
+      }
+      return next
+    })
+  }
 
   function getCell(c: PaymentCategory, pt: PaymentType): DraftCell {
     return drafts[makeDraftKey(c, pt)] ?? emptyCell()
@@ -288,6 +326,7 @@ export default function PaymentTab() {
       )}
 
       {voyageId && !isLoading && (
+        <div className="space-y-3">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px] border-collapse">
             <thead>
@@ -303,11 +342,11 @@ export default function PaymentTab() {
               </tr>
             </thead>
             <tbody>
-              {PAYMENT_TYPES.map((pt, ptIdx) => (
-                <tr key={pt} className={ptIdx < PAYMENT_TYPES.length - 1 ? 'border-b border-slate-100' : ''}>
+              {paymentTypes.map((pt, ptIdx) => (
+                <tr key={pt} className={ptIdx < paymentTypes.length - 1 ? 'border-b border-slate-100' : ''}>
                   <td className="pr-3 py-3 align-top">
                     <span className="text-xs font-semibold text-slate-500 leading-none">
-                      {PAYMENT_TYPE_LABEL[pt]}
+                      {paymentTypeLabel(pt)}
                     </span>
                   </td>
                   {CATEGORIES.map(c => {
@@ -422,7 +461,7 @@ export default function PaymentTab() {
                                 {cell.id && (
                                   <button
                                     type="button"
-                                    onClick={() => cell.id && setDeleteTarget({ id: cell.id, label: `${CATEGORY_LABEL[c]} ${PAYMENT_TYPE_LABEL[pt]}` })}
+                                    onClick={() => cell.id && setDeleteTarget({ id: cell.id, label: `${CATEGORY_LABEL[c]} ${paymentTypeLabel(pt)}` })}
                                     className="px-1.5 text-[11px] opacity-40 hover:opacity-100 hover:text-red-500 rounded hover:bg-red-50 transition"
                                   >
                                     <Trash2 className="h-3 w-3" />
@@ -447,6 +486,17 @@ export default function PaymentTab() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div>
+          <button
+            type="button"
+            onClick={addDepositRow}
+            className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-200 px-3 py-1.5 text-xs text-slate-500 hover:border-brand hover:text-brand transition"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            데포짓 추가
+          </button>
+        </div>
         </div>
       )}
 
