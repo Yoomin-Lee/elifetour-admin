@@ -31,6 +31,9 @@ export function TimePicker({
   // stores the first digit entered so we can combine without stale-closure issues
   const hhFirst = useRef('')
   const mmFirst = useRef('')
+  // skip blur normalization when focus moves programmatically (avoids stale-closure overwrite)
+  const skipHhBlur = useRef(false)
+  const skipMmBlur = useRef(false)
 
   useEffect(() => {
     const [h = '', m = ''] = (value ?? '').split(':')
@@ -76,6 +79,7 @@ export function TimePicker({
         hhCount.current = 0
         hhFirst.current = ''
         commit(val, mm)
+        skipHhBlur.current = true
         mmRef.current?.focus()
         mmRef.current?.select()
       } else {
@@ -91,12 +95,14 @@ export function TimePicker({
       hhCount.current = 0
       hhFirst.current = ''
       commit(val, mm)
+      skipHhBlur.current = true
       mmRef.current?.focus()
       mmRef.current?.select()
     }
   }
 
   function handleHhBlur() {
+    if (skipHhBlur.current) { skipHhBlur.current = false; return }
     hhCount.current = 0
     hhFirst.current = ''
     if (!hh && !mm) { onChange(''); return }
@@ -140,7 +146,7 @@ export function TimePicker({
         mmCount.current = 0
         mmFirst.current = ''
         commit(hh, val)
-        if (mmRef.current) focusNextInput(mmRef.current)
+        if (mmRef.current) { skipMmBlur.current = true; focusNextInput(mmRef.current) }
       } else {
         mmFirst.current = digit
         setMm(digit)
@@ -153,11 +159,12 @@ export function TimePicker({
       mmCount.current = 0
       mmFirst.current = ''
       commit(hh, val)
-      if (mmRef.current) focusNextInput(mmRef.current)
+      if (mmRef.current) { skipMmBlur.current = true; focusNextInput(mmRef.current) }
     }
   }
 
   function handleMmBlur() {
+    if (skipMmBlur.current) { skipMmBlur.current = false; return }
     mmCount.current = 0
     mmFirst.current = ''
     if (!hh && !mm) { onChange(''); return }
