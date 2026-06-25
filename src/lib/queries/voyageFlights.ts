@@ -96,9 +96,15 @@ export async function insertVoyageFlight(input: VoyageFlightInput): Promise<Voya
       dep_datetime: calc.depIso,
       arr_datetime: calc.arrIso,
       flight_duration: calc.durationText,
-      flight_fare: input.flight_fare ?? null,
-      currency_code: input.currency_code ?? 'KRW',
-      sort_order: input.sort_order ?? 0,
+      flight_fare:    input.flight_fare    ?? null,
+      currency_code:  input.currency_code  ?? 'KRW',
+      sort_order:     input.sort_order     ?? 0,
+      seats_group:    input.seats_group    ?? 0,
+      seats_indivi:   input.seats_indivi   ?? 0,
+      seats_business: input.seats_business ?? 0,
+      fare_base:      input.fare_base      ?? 0,
+      fare_fuel:      input.fare_fuel      ?? 0,
+      fare_tax:       input.fare_tax       ?? 0,
     })
     .select()
     .single()

@@ -1,6 +1,7 @@
 import { supabase } from '../supabase'
 import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, Hotel, CabinGrade, PaymentSchedule } from '../../types/database'
 import type { VoyageFormValues } from '../schemas/voyage'
+import { insertVoyageFlight } from './voyageFlights'
 
 type VoyageRef = Pick<Voyage, 'region' | 'departure_date' | 'boarding_date'>
 export type FlightRow = Flight & { voyages: VoyageRef }
@@ -109,6 +110,59 @@ export async function deleteHistoryLog(id: string): Promise<void> {
 
 // ── Create ────────────────────────────────────────────────────────────────
 
+/** "인천(ICN)" 또는 "ICN" → "ICN" */
+function extractIata(str: string | null | undefined): string {
+  if (!str) return ''
+  const m = str.match(/\(([A-Z]{3})\)/)
+  return m ? m[1] : str.trim().toUpperCase().slice(0, 3)
+}
+
+/**
+ * flights 테이블 데이터를 voyage_flights 테이블에 미러링.
+ * IATA 코드 추출 실패 or 날짜 누락 시 해당 구간만 스킵 (main save 영향 없음).
+ */
+async function mirrorFlightsToVoyageFlights(
+  voyageId: string,
+  flights: VoyageFormValues['flights'],
+) {
+  let order = 0
+  for (const f of flights) {
+    // segments 우선, 없으면 flat 필드를 단일 구간으로
+    const segs = (f.segments ?? []).length > 0
+      ? f.segments
+      : (f.flight_no || f.origin || f.destination || f.departure_date)
+        ? [{ flight_no: f.flight_no, origin: f.origin, destination: f.destination,
+             departure_date: f.departure_date, departure_time: f.departure_time,
+             arrival_date: f.arrival_date, arrival_time: f.arrival_time }]
+        : []
+
+    for (const seg of segs) {
+      const dep = extractIata(seg.origin)
+      const arr = extractIata(seg.destination)
+      if (!dep || !arr || !seg.departure_date || !seg.departure_time) continue
+      try {
+        await insertVoyageFlight({
+          voyage_id:      voyageId,
+          flight_num:     seg.flight_no     || '',
+          dep_airport:    dep,
+          arr_airport:    arr,
+          departureDate:  seg.departure_date,
+          departureTime:  seg.departure_time,
+          arrivalDate:    seg.arrival_date   || seg.departure_date,
+          arrivalTime:    seg.arrival_time   || '23:59',
+          sort_order:     order++,
+          seats_group:    f.seats_group    ?? 0,
+          seats_indivi:   f.seats_indivi   ?? 0,
+          seats_business: f.seats_business ?? 0,
+          fare_base:      f.fare_base      ?? 0,
+          fare_fuel:      f.fare_fuel      ?? 0,
+          fare_tax:       f.fare_tax       ?? 0,
+        })
+      } catch { /* 미러링 실패는 무시 */ }
+    }
+  }
+}
+
 export async function createVoyageWithChildren(values: VoyageFormValues): Promise<Voyage> {
   const { flights, itinerary, policies, cabin_grades, ...voyageData } = values
 
@@ -126,6 +180,8 @@ export async function createVoyageWithChildren(values: VoyageFormValues): Promis
       .from('flights')
       .insert(flights.map((f, i) => ({ ...f, voyage_id: id, sort_order: i + 1 })))
     if (error) throw error
+    // voyage_flights 테이블에도 미러링 (항공 탭 연동)
+    await mirrorFlightsToVoyageFlights(id, flights)
   }
 
   if (itinerary.length > 0) {
