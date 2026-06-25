@@ -87,11 +87,11 @@ function SegmentRow({
         </div>
         <div>
           <label className="label">출발지</label>
-          <Input {...register(`${base}.origin`)} placeholder="인천(ICN)" />
+          <Input {...register(`${base}.origin`)} placeholder="IATA CODE" />
         </div>
         <div>
           <label className="label">도착지</label>
-          <Input {...register(`${base}.destination`)} placeholder="바르셀로나(BCN)" />
+          <Input {...register(`${base}.destination`)} placeholder="IATA CODE" />
         </div>
         <div>
           <div className="flex items-center justify-between mb-0.5">
