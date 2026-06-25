@@ -238,7 +238,7 @@ function FlightRow({ index, onRemove }: { index: number; onRemove: () => void })
           편명 · 날짜 · 시각 상세
           {segments.length > 0 && (
             <span className="ml-1 rounded-full bg-brand/10 px-1.5 py-0.5 text-[10px] font-medium text-brand">
-              {segments.length}구간
+              총 {segments.length}구간
             </span>
           )}
         </button>
