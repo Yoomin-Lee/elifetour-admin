@@ -422,17 +422,17 @@ export default function ItineraryCard({
         {days.length === 0 ? (
           <p className="py-8 text-center text-sm text-slate-400">등록된 일정이 없습니다</p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table className="min-w-[680px]">
+          <div>
+            <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-8 shrink-0">#</TableHead>
-                  <TableHead className="w-[100px] whitespace-nowrap shrink-0">날짜</TableHead>
-                  <TableHead className="min-w-[128px] whitespace-nowrap">기항지</TableHead>
-                  <TableHead className="whitespace-nowrap hidden sm:table-cell shrink-0">구분</TableHead>
-                  <TableHead className="whitespace-nowrap hidden sm:table-cell shrink-0">요금</TableHead>
-                  <TableHead className="whitespace-nowrap hidden sm:table-cell shrink-0">도착</TableHead>
-                  <TableHead className="whitespace-nowrap hidden sm:table-cell shrink-0">출발</TableHead>
+                  <TableHead className="w-8">#</TableHead>
+                  <TableHead className="whitespace-nowrap">날짜</TableHead>
+                  <TableHead>기항지</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">구분</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">요금</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">도착</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">출발</TableHead>
                   <TableHead className="hidden sm:table-cell">비고</TableHead>
                 </TableRow>
               </TableHeader>
@@ -443,7 +443,7 @@ export default function ItineraryCard({
                     <TableRow key={d.id} className={isSea ? 'bg-slate-50/80 text-slate-400' : ''}>
                       <TableCell className="text-slate-400 text-xs">{i + 1}</TableCell>
                       <TableCell className="whitespace-nowrap font-medium text-sm">{formatDate(d.date)}</TableCell>
-                      <TableCell className={`whitespace-nowrap ${isSea ? 'italic' : 'font-medium'}`}>{d.port}</TableCell>
+                      <TableCell className={isSea ? 'italic' : 'font-medium'}>{d.port}</TableCell>
                       <TableCell className="hidden sm:table-cell whitespace-nowrap">
                         {d.category ? (
                           <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-600">
