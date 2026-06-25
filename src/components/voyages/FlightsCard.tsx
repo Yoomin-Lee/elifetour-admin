@@ -193,7 +193,7 @@ function SegmentDraftRow({
         </div>
         <div>
           <div className="flex items-center justify-between mb-0.5">
-            <label className="label mb-0">소요 시간</label>
+            <label className="label mb-0 whitespace-nowrap">소요 시간</label>
             {isValid && result && (
               isManual ? (
                 <button type="button" onClick={() => { setIsManual(false); lastAutoRef.current = null }}
@@ -349,7 +349,7 @@ function FlightDraftRow({
           편명 · 날짜 · 시각 상세
           {r.segments.length > 0 && (
             <span className="ml-1 rounded-full bg-brand/10 px-1.5 py-0.5 text-[10px] font-medium text-brand">
-              {r.segments.length}구간
+              총 {r.segments.length}구간
             </span>
           )}
         </button>

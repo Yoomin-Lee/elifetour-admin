@@ -48,7 +48,11 @@ function SegmentRow({
   const gridRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (autoFocus) gridRef.current?.querySelector<HTMLInputElement>('input')?.focus()
+    if (!autoFocus) return
+    const id = setTimeout(() => {
+      gridRef.current?.querySelector<HTMLInputElement>('input')?.focus()
+    }, 0)
+    return () => clearTimeout(id)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -266,7 +270,7 @@ function FlightRow({ index, onRemove }: { index: number; onRemove: () => void })
                 autoFocus={si === newSegIdx}
               />
             ))}
-            <button type="button" onClick={() => { setNewSegIdx(segments.length); appendSeg(EMPTY_SEGMENT) }}
+            <button type="button" onClick={() => { setNewSegIdx(segments.length); appendSeg(EMPTY_SEGMENT, { shouldFocus: false }) }}
               className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
               <Plus className="h-3 w-3" /> 구간 추가
             </button>

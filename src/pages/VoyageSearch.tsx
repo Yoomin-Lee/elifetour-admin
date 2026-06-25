@@ -172,7 +172,7 @@ function VoyageSearchInner() {
 
       {/* 로딩 스켈레톤 */}
       {voyageId && isLoading && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_3fr]">
           <div className="flex flex-col gap-4">
             <Skeleton className="h-80" />
             <Skeleton className="h-64" />
@@ -201,7 +201,7 @@ function VoyageSearchInner() {
 
       {/* 콘텐츠 */}
       {voyageId && !isLoading && selectedVoyage && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_3fr]">
           {/* 왼쪽: 개요 + 기항지 + 히스토리 */}
           <div className="flex flex-col gap-4">
             <OverviewCard voyage={selectedVoyage} itinerary={itineraryQuery.data ?? []} canWrite={canWrite} />
