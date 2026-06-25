@@ -2,6 +2,18 @@ import { z } from 'zod'
 
 const emptyToUndef = z.string().optional().transform(v => v === '' ? undefined : v)
 
+export const segmentSchema = z.object({
+  flight_no:      z.string().optional(),
+  origin:         z.string().optional(),
+  destination:    z.string().optional(),
+  departure_date: z.string().optional(),
+  departure_time: z.string().optional(),
+  arrival_date:   z.string().optional(),
+  arrival_time:   z.string().optional(),
+  duration:       z.string().optional(),
+})
+export type FlightSegment = z.infer<typeof segmentSchema>
+
 export const flightSchema = z.object({
   flight_no:      z.string().optional(),
   origin:         z.string().optional(),
@@ -19,6 +31,7 @@ export const flightSchema = z.object({
   fare_base:      z.coerce.number().min(0).default(0),
   fare_fuel:      z.coerce.number().min(0).default(0),
   fare_tax:       z.coerce.number().min(0).default(0),
+  segments:       z.array(segmentSchema).default([]),
 })
 
 export const itinerarySchema = z.object({
