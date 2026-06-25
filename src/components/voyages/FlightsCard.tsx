@@ -602,20 +602,26 @@ export default function FlightsCard({
                             const hasInfo = s.flight_no || s.origin || s.destination || s.departure_date
                             if (!hasInfo) return null
                             return (
-                              <div key={si} className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-400">
-                                {segs.length > 1 && <span className="text-slate-300">{si + 1}구간</span>}
-                                {s.flight_no && <span className="font-mono font-medium text-slate-600">{s.flight_no}</span>}
+                              <div key={si} className="flex items-center gap-x-1.5 text-sm text-slate-400 whitespace-nowrap overflow-hidden">
+                                {segs.length > 1 && <span className="shrink-0 text-slate-300">{si + 1}구간</span>}
+                                {s.flight_no && <span className="shrink-0 font-mono font-medium text-slate-600">{s.flight_no}</span>}
                                 {(s.origin || s.destination) && (
-                                  <span>{s.origin ?? '—'} → {s.destination ?? '—'}</span>
+                                  <span className="shrink-0">{s.origin ?? '—'} → {s.destination ?? '—'}</span>
                                 )}
-                                {s.departure_date && <span className="text-slate-600">{formatDate(s.departure_date)}</span>}
-                                {s.departure_time && <span className="text-slate-600">{formatTime(s.departure_time)}</span>}
+                                {(s.departure_date || s.departure_time) && (
+                                  <span className="shrink-0 text-slate-600">
+                                    {s.departure_date && formatDate(s.departure_date)}{s.departure_date && s.departure_time && ' '}{s.departure_time && formatTime(s.departure_time)}
+                                  </span>
+                                )}
                                 {(s.arrival_date || s.arrival_time) && (
-                                  <span className="text-slate-300">→</span>
+                                  <span className="shrink-0 text-slate-300">→</span>
                                 )}
-                                {s.arrival_date && <span className="text-slate-600">{formatDate(s.arrival_date)}</span>}
-                                {s.arrival_time && <span className="text-slate-600">{formatTime(s.arrival_time)}</span>}
-                                {s.duration && <span className="text-slate-400">{s.duration}</span>}
+                                {(s.arrival_date || s.arrival_time) && (
+                                  <span className="shrink-0 text-slate-600">
+                                    {s.arrival_date && formatDate(s.arrival_date)}{s.arrival_date && s.arrival_time && ' '}{s.arrival_time && formatTime(s.arrival_time)}
+                                  </span>
+                                )}
+                                {s.duration && <span className="shrink-0 text-slate-400">{s.duration}</span>}
                               </div>
                             )
                           })}
