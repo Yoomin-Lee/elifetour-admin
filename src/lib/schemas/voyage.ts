@@ -13,6 +13,12 @@ export const flightSchema = z.object({
   duration:       z.string().optional(),
   fare:           z.coerce.number().nullable().optional(),
   sort_order:     z.coerce.number().default(0),
+  seats_group:    z.coerce.number().min(0).default(0),
+  seats_indivi:   z.coerce.number().min(0).default(0),
+  seats_business: z.coerce.number().min(0).default(0),
+  fare_base:      z.coerce.number().min(0).default(0),
+  fare_fuel:      z.coerce.number().min(0).default(0),
+  fare_tax:       z.coerce.number().min(0).default(0),
 })
 
 export const itinerarySchema = z.object({
