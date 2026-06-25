@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 
 import SearchTab      from '@/components/voyages/tabs/SearchTab'
 import ProductTab     from '@/components/voyages/tabs/ProductTab'
+import InventoryTab   from '@/components/voyages/tabs/InventoryTab'
 import CruiseTab      from '@/components/voyages/tabs/CruiseTab'
 import FlightsTab     from '@/components/voyages/tabs/FlightsTab'
 import HotelTab       from '@/components/voyages/tabs/HotelTab'
@@ -23,6 +24,7 @@ const qc = new QueryClient({
 const TABS = [
   { key: '상품등록', label: '항차 검색' },
   { key: '항차검색', label: '항차 상세' },
+  { key: '보유현황', label: '보유 현황' },
   { key: '크루즈',   label: '크루즈'   },
   { key: '항공',     label: '항공'     },
   { key: '호텔',     label: '호텔'     },
@@ -40,6 +42,7 @@ function tabContent(tab: TabKey) {
   switch (tab) {
     case '항차검색': return <SearchTab />
     case '상품등록': return <ProductTab />
+    case '보유현황': return <InventoryTab />
     case '크루즈':   return <CruiseTab />
     case '항공':     return <FlightsTab />
     case '호텔':     return <HotelTab />
