@@ -573,7 +573,7 @@ export default function FlightsCard({
                           : <ChevronRight className="h-3.5 w-3.5" />}
                         편명 · 날짜 · 시각
                         <span className="ml-1 rounded-full bg-brand/10 px-1.5 py-0.5 text-[10px] font-medium text-brand">
-                          {segs.length}구간
+                          총 {segs.length}구간
                         </span>
                       </button>
 
