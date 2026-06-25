@@ -60,12 +60,20 @@ type FlightForm = {
   flight_fare: string
   currency_code: string
   pnr: string
+  seats_group: string
+  seats_indivi: string
+  seats_business: string
+  fare_base: string
+  fare_fuel: string
+  fare_tax: string
 }
 
 const EMPTY_FORM: FlightForm = {
   voyage_id: '', flight_num: '', dep_airport: '', arr_airport: '',
   departureDate: '', departureTime: '', arrivalDate: '', arrivalTime: '',
   flight_fare: '', currency_code: 'KRW', pnr: '',
+  seats_group: '0', seats_indivi: '0', seats_business: '0',
+  fare_base: '0', fare_fuel: '0', fare_tax: '0',
 }
 
 function initEditForm(r: VoyageFlight): FlightForm {
@@ -83,6 +91,12 @@ function initEditForm(r: VoyageFlight): FlightForm {
     flight_fare: r.flight_fare != null ? String(r.flight_fare) : '',
     currency_code: r.currency_code ?? 'KRW',
     pnr: r.pnr ?? '',
+    seats_group:    String(r.seats_group    ?? 0),
+    seats_indivi:   String(r.seats_indivi   ?? 0),
+    seats_business: String(r.seats_business ?? 0),
+    fare_base:      String(r.fare_base      ?? 0),
+    fare_fuel:      String(r.fare_fuel      ?? 0),
+    fare_tax:       String(r.fare_tax       ?? 0),
   }
 }
 
@@ -102,63 +116,121 @@ function FlightFormFields({
       setForm(prev => ({ ...prev, [field]: e.target.value }))
   }
 
+  const totalSeats = (Number(form.seats_group) || 0) + (Number(form.seats_indivi) || 0) + (Number(form.seats_business) || 0)
+  const totalFare  = (Number(form.fare_base) || 0) + (Number(form.fare_fuel) || 0) + (Number(form.fare_tax) || 0)
+
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {showVoyageSelect && (
-        <div className="col-span-2 sm:col-span-4">
-          <label className="label">행사</label>
+    <div className="space-y-3">
+      {/* ── 편명·날짜·시각 ── */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {showVoyageSelect && (
+          <div className="col-span-2 sm:col-span-4">
+            <label className="label">행사</label>
+            <FieldSelect
+              value={form.voyage_id}
+              options={voyages.map(v => ({ value: v.id, label: voyageTitle(v) }))}
+              onChange={val => setForm(prev => ({ ...prev, voyage_id: val }))}
+              placeholder="행사를 선택하세요"
+            />
+          </div>
+        )}
+        <div>
+          <label className="label">편명</label>
+          <Input value={form.flight_num} onChange={set('flight_num')} placeholder="KE907" className="h-7 text-sm" />
+        </div>
+        <div>
+          <label className="label">출발지 (IATA)</label>
+          <Input value={form.dep_airport} onChange={set('dep_airport')} placeholder="ICN" className="h-7 text-sm" />
+        </div>
+        <div>
+          <label className="label">도착지 (IATA)</label>
+          <Input value={form.arr_airport} onChange={set('arr_airport')} placeholder="BCN" className="h-7 text-sm" />
+        </div>
+        <div>
+          <label className="label">PNR</label>
+          <Input value={form.pnr} onChange={set('pnr')} placeholder="XYZABC" className="h-7 text-sm" />
+        </div>
+        <div>
+          <label className="label">출발일 (현지)</label>
+          <DatePicker value={form.departureDate} onChange={v => setForm(prev => ({ ...prev, departureDate: v }))} placeholder="출발일" />
+        </div>
+        <div>
+          <label className="label">출발시간 (현지)</label>
+          <TimePicker size="sm" value={form.departureTime} onChange={v => setForm(prev => ({ ...prev, departureTime: v }))} />
+        </div>
+        <div>
+          <label className="label">도착일 (현지)</label>
+          <DatePicker value={form.arrivalDate} onChange={v => setForm(prev => ({ ...prev, arrivalDate: v }))} placeholder="도착일" />
+        </div>
+        <div>
+          <label className="label">도착시간 (현지)</label>
+          <TimePicker size="sm" value={form.arrivalTime} onChange={v => setForm(prev => ({ ...prev, arrivalTime: v }))} />
+        </div>
+        <div>
+          <label className="label">항공요금 (기타 통화)</label>
+          <Input type="number" value={form.flight_fare} onChange={set('flight_fare')} placeholder="0" className="h-7 text-sm" />
+        </div>
+        <div>
+          <label className="label">통화</label>
           <FieldSelect
-            value={form.voyage_id}
-            options={voyages.map(v => ({ value: v.id, label: voyageTitle(v) }))}
-            onChange={val => setForm(prev => ({ ...prev, voyage_id: val }))}
-            placeholder="행사를 선택하세요"
+            value={form.currency_code}
+            options={[...CURRENCIES]}
+            onChange={v => setForm(prev => ({ ...prev, currency_code: v }))}
+            className="h-7 text-sm px-2"
           />
         </div>
-      )}
-      <div>
-        <label className="label">편명</label>
-        <Input value={form.flight_num} onChange={set('flight_num')} placeholder="KE907" className="h-7 text-sm" />
       </div>
-      <div>
-        <label className="label">출발지 (IATA)</label>
-        <Input value={form.dep_airport} onChange={set('dep_airport')} placeholder="ICN" className="h-7 text-sm" />
+
+      {/* ── 좌석 수식 ── */}
+      <div className="flex flex-wrap gap-2 items-end border-t border-slate-100 pt-3">
+        {([
+          ['seats_group',    '그룹'],
+          ['seats_indivi',   '인디비'],
+          ['seats_business', '비즈니스'],
+        ] as [keyof FlightForm, string][]).map(([field, label], idx) => (
+          <Fragment key={field}>
+            <div>
+              <label className="label">{label} (석)</label>
+              <Input value={form[field]} onChange={set(field)}
+                type="number" min={0} placeholder="좌석 수"
+                className="h-7 text-sm w-20 text-right" />
+            </div>
+            {idx < 2 && <span className="text-slate-400 text-sm pb-1.5">+</span>}
+          </Fragment>
+        ))}
+        <span className="text-slate-400 text-sm pb-1.5">=</span>
+        <div>
+          <label className="label text-brand">총 좌석</label>
+          <div className="h-7 flex items-center rounded-md border border-brand/20 bg-brand/5 px-2 text-sm font-semibold text-brand min-w-[64px]">
+            {totalSeats.toLocaleString('ko-KR')}석
+          </div>
+        </div>
       </div>
-      <div>
-        <label className="label">도착지 (IATA)</label>
-        <Input value={form.arr_airport} onChange={set('arr_airport')} placeholder="BCN" className="h-7 text-sm" />
-      </div>
-      <div>
-        <label className="label">PNR</label>
-        <Input value={form.pnr} onChange={set('pnr')} placeholder="XYZABC" className="h-7 text-sm" />
-      </div>
-      <div>
-        <label className="label">출발일 (현지)</label>
-        <DatePicker value={form.departureDate} onChange={v => setForm(prev => ({ ...prev, departureDate: v }))} placeholder="출발일" />
-      </div>
-      <div>
-        <label className="label">출발시간 (현지)</label>
-        <TimePicker size="sm" value={form.departureTime} onChange={v => setForm(prev => ({ ...prev, departureTime: v }))} />
-      </div>
-      <div>
-        <label className="label">도착일 (현지)</label>
-        <DatePicker value={form.arrivalDate} onChange={v => setForm(prev => ({ ...prev, arrivalDate: v }))} placeholder="도착일" />
-      </div>
-      <div>
-        <label className="label">도착시간 (현지)</label>
-        <TimePicker size="sm" value={form.arrivalTime} onChange={v => setForm(prev => ({ ...prev, arrivalTime: v }))} />
-      </div>
-      <div>
-        <label className="label">항공요금</label>
-        <Input type="number" value={form.flight_fare} onChange={set('flight_fare')} placeholder="0" className="h-7 text-sm" />
-      </div>
-      <div>
-        <label className="label">통화</label>
-        <FieldSelect
-          value={form.currency_code}
-          options={[...CURRENCIES]}
-          onChange={v => setForm(prev => ({ ...prev, currency_code: v }))}
-          className="h-7 text-sm px-2"
-        />
+
+      {/* ── 항공료 수식 ── */}
+      <div className="flex flex-wrap gap-2 items-end border-t border-slate-100 pt-3">
+        {([
+          ['fare_base', '운임'],
+          ['fare_fuel', '유류할증료'],
+          ['fare_tax',  '발권피'],
+        ] as [keyof FlightForm, string][]).map(([field, label], idx) => (
+          <Fragment key={field}>
+            <div>
+              <label className="label">{label} (원)</label>
+              <Input value={form[field]} onChange={set(field)}
+                type="number" min={0} placeholder="0"
+                className="h-7 text-sm w-28 text-right" />
+            </div>
+            {idx < 2 && <span className="text-slate-400 text-sm pb-1.5">+</span>}
+          </Fragment>
+        ))}
+        <span className="text-slate-400 text-sm pb-1.5">=</span>
+        <div>
+          <label className="label text-brand">항공료</label>
+          <div className="h-7 flex items-center rounded-md border border-brand/20 bg-brand/5 px-2 text-sm font-semibold text-brand min-w-[96px]">
+            {totalFare.toLocaleString('ko-KR')}원
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -334,17 +406,23 @@ export default function FlightsTab() {
 
   const editMut = useMutation({
     mutationFn: (id: string) => updateVoyageFlight(id, {
-      voyage_id: editForm.voyage_id,
-      flight_num: editForm.flight_num,
-      dep_airport: editForm.dep_airport,
-      arr_airport: editForm.arr_airport,
-      departureDate: editForm.departureDate,
-      departureTime: editForm.departureTime,
-      arrivalDate: editForm.arrivalDate,
-      arrivalTime: editForm.arrivalTime,
-      flight_fare: editForm.flight_fare ? Number(editForm.flight_fare) : undefined,
-      currency_code: editForm.currency_code,
-      pnr: editForm.pnr || undefined,
+      voyage_id:      editForm.voyage_id,
+      flight_num:     editForm.flight_num,
+      dep_airport:    editForm.dep_airport,
+      arr_airport:    editForm.arr_airport,
+      departureDate:  editForm.departureDate,
+      departureTime:  editForm.departureTime,
+      arrivalDate:    editForm.arrivalDate,
+      arrivalTime:    editForm.arrivalTime,
+      flight_fare:    editForm.flight_fare ? Number(editForm.flight_fare) : undefined,
+      currency_code:  editForm.currency_code,
+      pnr:            editForm.pnr || undefined,
+      seats_group:    Number(editForm.seats_group)    || 0,
+      seats_indivi:   Number(editForm.seats_indivi)   || 0,
+      seats_business: Number(editForm.seats_business) || 0,
+      fare_base:      Number(editForm.fare_base)      || 0,
+      fare_fuel:      Number(editForm.fare_fuel)      || 0,
+      fare_tax:       Number(editForm.fare_tax)       || 0,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
@@ -375,17 +453,23 @@ export default function FlightsTab() {
 
   const addMut = useMutation({
     mutationFn: () => insertVoyageFlight({
-      voyage_id: addForm.voyage_id,
-      flight_num: addForm.flight_num,
-      dep_airport: addForm.dep_airport,
-      arr_airport: addForm.arr_airport,
-      departureDate: addForm.departureDate,
-      departureTime: addForm.departureTime,
-      arrivalDate: addForm.arrivalDate,
-      arrivalTime: addForm.arrivalTime,
-      flight_fare: addForm.flight_fare ? Number(addForm.flight_fare) : undefined,
-      currency_code: addForm.currency_code,
-      pnr: addForm.pnr || undefined,
+      voyage_id:      addForm.voyage_id,
+      flight_num:     addForm.flight_num,
+      dep_airport:    addForm.dep_airport,
+      arr_airport:    addForm.arr_airport,
+      departureDate:  addForm.departureDate,
+      departureTime:  addForm.departureTime,
+      arrivalDate:    addForm.arrivalDate,
+      arrivalTime:    addForm.arrivalTime,
+      flight_fare:    addForm.flight_fare ? Number(addForm.flight_fare) : undefined,
+      currency_code:  addForm.currency_code,
+      pnr:            addForm.pnr || undefined,
+      seats_group:    Number(addForm.seats_group)    || 0,
+      seats_indivi:   Number(addForm.seats_indivi)   || 0,
+      seats_business: Number(addForm.seats_business) || 0,
+      fare_base:      Number(addForm.fare_base)      || 0,
+      fare_fuel:      Number(addForm.fare_fuel)      || 0,
+      fare_tax:       Number(addForm.fare_tax)       || 0,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
