@@ -14,7 +14,7 @@ const EMPTY_FLIGHT = {
   departure_date: '', arrival_date: '',
   departure_time: '', arrival_time: '',
   duration: '', fare: undefined, sort_order: 0,
-  seats_group: 0, seats_indivi: 0, seats_business: 0,
+  seats_group: undefined, seats_indivi: undefined, seats_business: undefined,
   fare_base: 0, fare_fuel: 0, fare_tax: 0,
   segments: [],
 }
