@@ -195,7 +195,7 @@ export default function BasicInfoSection() {
                         value={field.value ?? ''}
                         options={airlineOptions}
                         onChange={v => { field.onChange(stripParens(v)); trackAirline(v) }}
-                        placeholder="항공사 선택 또는 직접 입력"
+                        placeholder="경유 시 입력"
                       />
                     )}
                   />
