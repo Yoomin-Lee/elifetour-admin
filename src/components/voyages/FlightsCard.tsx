@@ -594,14 +594,14 @@ export default function FlightsCard({
                                 {(s.origin || s.destination) && (
                                   <span>{s.origin ?? '—'} → {s.destination ?? '—'}</span>
                                 )}
-                                {s.departure_date && <span>{formatDate(s.departure_date)}</span>}
-                                {s.departure_time && <span>{formatTime(s.departure_time)}</span>}
+                                {s.departure_date && <span className="text-slate-600">{formatDate(s.departure_date)}</span>}
+                                {s.departure_time && <span className="text-slate-600">{formatTime(s.departure_time)}</span>}
                                 {(s.arrival_date || s.arrival_time) && (
                                   <span className="text-slate-300">→</span>
                                 )}
-                                {s.arrival_date && <span>{formatDate(s.arrival_date)}</span>}
-                                {s.arrival_time && <span>{formatTime(s.arrival_time)}</span>}
-                                {s.duration && <span className="text-slate-300">{s.duration}</span>}
+                                {s.arrival_date && <span className="text-slate-600">{formatDate(s.arrival_date)}</span>}
+                                {s.arrival_time && <span className="text-slate-600">{formatTime(s.arrival_time)}</span>}
+                                {s.duration && <span className="text-slate-400">{s.duration}</span>}
                               </div>
                             )
                           })}
