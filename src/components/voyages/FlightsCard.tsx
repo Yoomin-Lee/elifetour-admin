@@ -379,7 +379,17 @@ export default function FlightsCard({
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DraftFlight[]>([])
+  const [expandedSet, setExpandedSet] = useState<Set<string>>(new Set())
   const qc = useQueryClient()
+
+  function toggleExpanded(id: string) {
+    setExpandedSet(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const saveMut = useMutation({
     mutationFn: async () => {
@@ -550,25 +560,43 @@ export default function FlightsCard({
                     <span className="font-semibold text-brand">{formatKrw(totalFare)}</span>
                   </div>
 
-                  {/* 구간 목록 */}
+                  {/* 구간 목록 — 꺽새 토글 */}
                   {segs.length > 0 && (
-                    <div className="border-t border-slate-100 pt-2 space-y-1">
-                      {segs.map((s, si) => {
-                        const hasInfo = s.flight_no || s.origin || s.destination || s.departure_date
-                        if (!hasInfo) return null
-                        return (
-                          <div key={si} className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
-                            {segs.length > 1 && <span className="text-slate-300">{si + 1}구간</span>}
-                            {s.flight_no && <span className="font-mono font-medium text-slate-600">{s.flight_no}</span>}
-                            {(s.origin || s.destination) && (
-                              <span>{s.origin ?? '—'} → {s.destination ?? '—'}</span>
-                            )}
-                            {s.departure_date && <span>{formatDate(s.departure_date)}</span>}
-                            {s.departure_time && <span>{formatTime(s.departure_time)}</span>}
-                            {s.duration && <span className="text-slate-300">{s.duration}</span>}
-                          </div>
-                        )
-                      })}
+                    <div className="border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(f.id)}
+                        className="flex items-center gap-1 mt-2 text-xs text-slate-400 hover:text-brand transition"
+                      >
+                        {expandedSet.has(f.id)
+                          ? <ChevronDown className="h-3.5 w-3.5" />
+                          : <ChevronRight className="h-3.5 w-3.5" />}
+                        편명 · 날짜 · 시각
+                        <span className="ml-1 rounded-full bg-brand/10 px-1.5 py-0.5 text-[10px] font-medium text-brand">
+                          {segs.length}구간
+                        </span>
+                      </button>
+
+                      {expandedSet.has(f.id) && (
+                        <div className="mt-2 space-y-1">
+                          {segs.map((s, si) => {
+                            const hasInfo = s.flight_no || s.origin || s.destination || s.departure_date
+                            if (!hasInfo) return null
+                            return (
+                              <div key={si} className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
+                                {segs.length > 1 && <span className="text-slate-300">{si + 1}구간</span>}
+                                {s.flight_no && <span className="font-mono font-medium text-slate-600">{s.flight_no}</span>}
+                                {(s.origin || s.destination) && (
+                                  <span>{s.origin ?? '—'} → {s.destination ?? '—'}</span>
+                                )}
+                                {s.departure_date && <span>{formatDate(s.departure_date)}</span>}
+                                {s.departure_time && <span>{formatTime(s.departure_time)}</span>}
+                                {s.duration && <span className="text-slate-300">{s.duration}</span>}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
