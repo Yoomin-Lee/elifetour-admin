@@ -549,7 +549,14 @@ export default function FlightsTab() {
                         </button>
                       ) : '—'}
                     </td>
-                    <td className="px-3 py-2 font-mono text-slate-700">{r.flight_num}</td>
+                    <td className="px-3 py-2">
+                      <button
+                        onClick={() => setExpandedId(prev => prev === r.id ? null : r.id)}
+                        className="font-mono text-slate-700 hover:text-brand transition"
+                      >
+                        {r.flight_num}
+                      </button>
+                    </td>
                     <td className="px-3 py-2 font-mono text-slate-600">{r.dep_airport}</td>
                     <td className="px-3 py-2 font-mono text-slate-600">{r.arr_airport}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{dep.display.date}</td>
