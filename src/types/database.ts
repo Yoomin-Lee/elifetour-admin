@@ -36,6 +36,12 @@ export interface Flight {
   duration: string | null
   fare: number | null
   sort_order: number
+  seats_group: number
+  seats_indivi: number
+  seats_business: number
+  fare_base: number
+  fare_fuel: number
+  fare_tax: number
   created_at: string
 }
 
