@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const status = profile?.status ?? 'pending'
   const isAdmin = role === 'admin'
   const isEscort = role === 'escort'
-  const canWrite = !isEscort
+  const canWrite = isAdmin
   const isPending = profile !== null && status !== 'approved'
 
   return (
