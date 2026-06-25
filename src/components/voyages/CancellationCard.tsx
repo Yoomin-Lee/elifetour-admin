@@ -1,17 +1,22 @@
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useRef } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Plus, Trash2, Check, X } from 'lucide-react'
+import { Pencil, Plus, Trash2, Check, X, FileText, ChevronDown, Settings } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { Button } from '@/components/ui/button'
-
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 import { cn } from '@/lib/utils'
 import { saveCancellationPolicy, deleteCancellationPolicy } from '@/lib/queries/voyages'
+import { fetchCancellationPresets } from '@/lib/queries/cancellationPresets'
+import type { CancellationPresetDB } from '@/lib/queries/cancellationPresets'
+import { fetchMnSections } from '@/lib/queries/mnSections'
+import type { MnSection } from '@/lib/queries/mnSections'
+import CancellationPresetManager from './CancellationPresetManager'
 import type { CancellationPolicy } from '@/types/database'
+
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 
 function dMinus(date: string): number {
   const dep = new Date(date + 'T00:00:00')
@@ -111,7 +116,25 @@ export default function CancellationCard({
   void flightDDay  // 기존 호환성 유지용 (편집 모드)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DraftPolicy[]>([])
+  const [presetOpen, setPresetOpen] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
+  const [managerOpen, setManagerOpen] = useState(false)
+  const [pendingPreset, setPendingPreset] = useState<CancellationPresetDB | null>(null)
+  const [pendingMn, setPendingMn] = useState<MnSection | null>(null)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const presetBtnRef = useRef<HTMLDivElement>(null)
   const qc = useQueryClient()
+
+  const { data: presets = [] } = useQuery({
+    queryKey: ['cancellation-presets'],
+    queryFn: fetchCancellationPresets,
+  })
+
+  const { data: mnSections = [] } = useQuery({
+    queryKey: ['mn-sections'],
+    queryFn: fetchMnSections,
+    select: (data) => data.filter(s => s.category === '취소료'),
+  })
 
   const saveMut = useMutation({
     mutationFn: async () => {
@@ -166,14 +189,138 @@ export default function CancellationCard({
     }))
   }
 
+  function presetPolicyToDraft(p: CancellationPolicy, i: number): DraftPolicy {
+    return {
+      _key: `preset-${i}-${Date.now()}`,
+      _isNew: true, _deleted: false, id: '',
+      category: p.category ?? '',
+      start_d_minus: p.start_d_minus != null ? String(p.start_d_minus) : '',
+      end_d_minus: p.end_d_minus != null ? String(p.end_d_minus) : '',
+      reference_date: p.reference_date ?? '',
+      fee_description: p.fee_description ?? '',
+      fee_unit: p.fee_unit ?? '',
+      note: p.note ?? '',
+      sort_order: i,
+    }
+  }
+
+  function mnSectionToDrafts(section: MnSection): DraftPolicy[] {
+    return section.rows
+      .filter(r => r.d || r.fee)
+      .map((r, i) => ({
+        _key: `mn-${i}-${Date.now()}`,
+        _isNew: true, _deleted: false, id: '',
+        category: '크루즈',
+        fee_description: r.d ?? '',
+        note: [r.fee, r.note].filter(Boolean).join(' | '),
+        start_d_minus: '', end_d_minus: '',
+        reference_date: '', fee_unit: '',
+        sort_order: i,
+      }))
+  }
+
+  function applyPreset(preset: CancellationPresetDB, mode: 'replace' | 'append') {
+    const rows = preset.policies.map(presetPolicyToDraft)
+    setDraft(d => mode === 'replace' ? rows : [...d, ...rows])
+    setImportMsg(`${preset.label} — ${preset.policies.length}개 구간 불러옴`)
+    setTimeout(() => setImportMsg(null), 4000)
+    setPendingPreset(null)
+    setPresetOpen(false)
+  }
+
+  function applyMnSection(section: MnSection, mode: 'replace' | 'append') {
+    const rows = mnSectionToDrafts(section)
+    setDraft(d => mode === 'replace' ? rows : [...d, ...rows])
+    setImportMsg(`${section.title} — ${rows.length}개 구간 불러옴`)
+    setTimeout(() => setImportMsg(null), 4000)
+    setPendingMn(null)
+    setPresetOpen(false)
+  }
+
+  function handlePresetSelect(preset: CancellationPresetDB) {
+    if (visible.length > 0) { setPendingPreset(preset); setPresetOpen(false) }
+    else applyPreset(preset, 'replace')
+  }
+
+  function handleMnSelect(section: MnSection) {
+    if (visible.length > 0) { setPendingMn(section); setPresetOpen(false) }
+    else applyMnSection(section, 'replace')
+  }
+
   const visible = draft.filter(r => !r._deleted)
 
   if (editing) {
     return (
+      <>
       <Card>
         <CardHeader>
           <CardTitle>취소료</CardTitle>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
+            {importMsg && <span className="text-xs text-brand font-medium">{importMsg}</span>}
+
+            {/* 불러오기 드롭다운 */}
+            <div className="relative" ref={presetBtnRef}>
+              <Button
+                type="button" variant="outline" size="sm"
+                onClick={() => {
+                  if (!presetOpen && presetBtnRef.current) {
+                    const rect = presetBtnRef.current.getBoundingClientRect()
+                    setDropUp(window.innerHeight - rect.bottom < 280)
+                  }
+                  setPresetOpen(v => !v)
+                }}
+                disabled={saveMut.isPending}
+                className="gap-1"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                불러오기
+                <ChevronDown className={`h-3 w-3 transition-transform ${presetOpen ? 'rotate-180' : ''}`} />
+              </Button>
+              {presetOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
+                  <div className={`absolute right-0 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden flex flex-col ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+                    <div className="overflow-y-auto max-h-64">
+                      {mnSections.length > 0 && (
+                        <>
+                          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">취소료 규정</p>
+                          {mnSections.map(s => (
+                            <button key={s.id} type="button" onClick={() => handleMnSelect(s)}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-brand/5 transition">
+                              <span className="font-medium text-slate-700">{s.title}</span>
+                              <span className="ml-1.5 text-slate-400">{s.rows.length}구간</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {presets.length > 0 && (
+                        <>
+                          {mnSections.length > 0 && <div className="my-1 border-t border-slate-100" />}
+                          <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">저장된 프리셋</p>
+                          {presets.map(p => (
+                            <button key={p.id} type="button" onClick={() => handlePresetSelect(p)}
+                              className="w-full px-3 py-2 text-left text-xs hover:bg-slate-50 transition">
+                              <span className="font-medium text-slate-700">{p.label}</span>
+                              <span className="ml-1.5 text-slate-400">{p.policies.length}구간</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {mnSections.length === 0 && presets.length === 0 && (
+                        <p className="px-3 py-2 text-xs text-slate-400">등록된 취소료가 없습니다</p>
+                      )}
+                    </div>
+                    <div className="border-t border-slate-100 shrink-0">
+                      <button type="button" onClick={() => { setPresetOpen(false); setManagerOpen(true) }}
+                        className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 transition">
+                        <Settings className="h-3 w-3" /> 취소료 관리
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             <Button type="button" size="sm" variant="outline" onClick={addRow} disabled={saveMut.isPending}>
               <Plus className="h-3.5 w-3.5" /> 행 추가
             </Button>
@@ -197,6 +344,33 @@ export default function CancellationCard({
           {saveMut.isError && (
             <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
           )}
+
+          {/* 프리셋 교체 확인 */}
+          {(pendingPreset || pendingMn) && (
+            <div className="mb-3 rounded-lg border border-brand/20 bg-brand/5 p-3 text-xs">
+              <p className="font-medium text-slate-700 mb-2">
+                「{pendingPreset?.label ?? pendingMn?.title}」을 불러올까요?
+              </p>
+              <div className="flex gap-2">
+                <button type="button"
+                  onClick={() => pendingPreset ? applyPreset(pendingPreset, 'replace') : applyMnSection(pendingMn!, 'replace')}
+                  className="rounded px-2 py-1 bg-brand text-white hover:bg-brand/90 transition">
+                  기존 내용 교체
+                </button>
+                <button type="button"
+                  onClick={() => pendingPreset ? applyPreset(pendingPreset, 'append') : applyMnSection(pendingMn!, 'append')}
+                  className="rounded px-2 py-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition">
+                  아래에 추가
+                </button>
+                <button type="button"
+                  onClick={() => { setPendingPreset(null); setPendingMn(null) }}
+                  className="rounded px-2 py-1 text-slate-400 hover:bg-slate-100 transition">
+                  취소
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             {visible.length === 0 ? (
               <p className="py-4 text-center text-sm text-slate-400">행 추가를 눌러 취소료를 등록하세요</p>
@@ -263,6 +437,9 @@ export default function CancellationCard({
           </div>
         </CardContent>
       </Card>
+
+      {managerOpen && <CancellationPresetManager onClose={() => setManagerOpen(false)} />}
+    </>
     )
   }
 
@@ -299,15 +476,20 @@ export default function CancellationCard({
             <TableHeader>
               <TableRow>
                 <TableHead>구분</TableHead>
-                <TableHead>기간</TableHead>
+                <TableHead className="whitespace-nowrap">기간</TableHead>
+                <TableHead className="whitespace-nowrap">날짜</TableHead>
                 <TableHead>취소료</TableHead>
-                <TableHead>통화</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {policies.map(p => {
                 const d = dMinusForPolicy(p, departureDate, boardingDate ?? null)
                 const current = isCurrent(p, d)
+                const refDate = p.reference_date
+                  ? p.reference_date
+                  : isCruiseCat(p.category) && boardingDate
+                    ? boardingDate
+                    : departureDate
                 return (
                   <TableRow
                     key={p.id}
@@ -324,10 +506,13 @@ export default function CancellationCard({
                     <TableCell className="whitespace-nowrap text-slate-500">
                       {dLabel(p.start_d_minus)} ~ {dLabel(p.end_d_minus)}
                     </TableCell>
+                    <TableCell className="whitespace-nowrap text-slate-500 text-xs">
+                      {refDate}
+                      {p.reference_date && <span className="ml-1 text-brand text-[10px]">지정</span>}
+                    </TableCell>
                     <TableCell className={cn(current && 'text-amber-700')}>
                       {p.fee_description ?? '-'}
                     </TableCell>
-                    <TableCell className="text-slate-500">{p.fee_unit ?? '-'}</TableCell>
                   </TableRow>
                 )
               })}
