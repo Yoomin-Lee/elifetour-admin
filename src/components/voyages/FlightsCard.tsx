@@ -518,8 +518,13 @@ export default function FlightsCard({
               const totalFare  = (f.fare_base ?? 0) + (f.fare_fuel ?? 0) + (f.fare_tax ?? 0)
 
               // 구간 목록 (없으면 flat 필드로 레거시 표시)
+              // 기존 segments JSONB에 arrival_date/time 없으면 flat 컬럼 폴백 (첫 구간만)
               const segs = (f.segments ?? []).length > 0
-                ? (f.segments ?? [])
+                ? (f.segments ?? []).map((s, idx) => ({
+                    ...s,
+                    arrival_date: s.arrival_date || (idx === 0 ? f.arrival_date : null),
+                    arrival_time: s.arrival_time || (idx === 0 ? f.arrival_time : null),
+                  }))
                 : (f.flight_no || f.origin || f.destination || f.departure_date)
                   ? [{ flight_no: f.flight_no, origin: f.origin, destination: f.destination,
                         departure_date: f.departure_date, departure_time: f.departure_time,
@@ -528,10 +533,10 @@ export default function FlightsCard({
 
               return (
                 <div key={f.id} className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
-                  <span className="block text-xs font-medium text-slate-400">{i + 1}편</span>
+                  <span className="block text-sm font-medium text-slate-400">{i + 1}편</span>
 
                   {/* 좌석 수식 */}
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
                     {(['seats_group', 'seats_indivi', 'seats_business'] as const).map((field, idx) => (
                       <Fragment key={field}>
                         <span className="text-slate-400">
@@ -546,7 +551,7 @@ export default function FlightsCard({
                   </div>
 
                   {/* 항공료 수식 */}
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
                     {(['fare_base', 'fare_fuel', 'fare_tax'] as const).map((field, idx) => (
                       <Fragment key={field}>
                         <span className="text-slate-400">
@@ -583,7 +588,7 @@ export default function FlightsCard({
                             const hasInfo = s.flight_no || s.origin || s.destination || s.departure_date
                             if (!hasInfo) return null
                             return (
-                              <div key={si} className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
+                              <div key={si} className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-400">
                                 {segs.length > 1 && <span className="text-slate-300">{si + 1}구간</span>}
                                 {s.flight_no && <span className="font-mono font-medium text-slate-600">{s.flight_no}</span>}
                                 {(s.origin || s.destination) && (

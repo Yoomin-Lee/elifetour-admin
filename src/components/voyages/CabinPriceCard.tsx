@@ -261,14 +261,14 @@ export default function CabinPriceCard({
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="text-sm font-semibold text-slate-800">{g.grade || '—'}</span>
                     {g.agent && <span className="text-xs text-slate-400">{g.agent}</span>}
-                    <div className="flex items-center gap-3 ml-auto text-xs">
+                    <div className="flex items-center gap-3 ml-auto text-sm">
                       <span className="text-slate-400">보유 <span className="font-medium text-slate-700">{g.total ?? 0}</span></span>
                       <span className="text-slate-400">예약 <span className="font-medium text-slate-700">{g.reserved ?? 0}</span></span>
                       <span className="text-slate-400">잔여 <span className={`font-medium ${remaining < 0 ? 'text-red-500' : 'text-slate-700'}`}>{remaining}</span></span>
                     </div>
                   </div>
                   {/* 가격 계산식 */}
-                  <div className="flex flex-wrap items-center gap-1 text-xs">
+                  <div className="flex flex-wrap items-center gap-1 text-sm">
                     {PRICE_FIELDS.map((f, i) => (
                       <Fragment key={f}>
                         <span className="text-slate-400">{f.toUpperCase()}</span>
