@@ -35,10 +35,12 @@ function SegmentRow({
   flightIndex,
   segIndex,
   onRemove,
+  autoFocus = false,
 }: {
   flightIndex: number
   segIndex: number
   onRemove: () => void
+  autoFocus?: boolean
 }) {
   const { register, control, setValue } = useFormContext<VoyageFormValues>()
   const [isManual, setIsManual] = useState(false)
@@ -83,7 +85,7 @@ function SegmentRow({
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div>
           <label className="label">편명</label>
-          <Input {...register(`${base}.flight_no`)} placeholder="KE907" />
+          <Input {...register(`${base}.flight_no`)} placeholder="KE907" autoFocus={autoFocus} />
         </div>
         <div>
           <label className="label">출발지</label>
@@ -146,6 +148,7 @@ function SegmentRow({
 function FlightRow({ index, onRemove }: { index: number; onRemove: () => void }) {
   const { register, control } = useFormContext<VoyageFormValues>()
   const [detailOpen, setDetailOpen] = useState(false)
+  const [newSegIdx, setNewSegIdx] = useState<number | null>(null)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { fields: segments, append: appendSeg, remove: removeSeg } = useFieldArray({
@@ -251,9 +254,10 @@ function FlightRow({ index, onRemove }: { index: number; onRemove: () => void })
                 flightIndex={index}
                 segIndex={si}
                 onRemove={() => removeSeg(si)}
+                autoFocus={si === newSegIdx}
               />
             ))}
-            <button type="button" onClick={() => appendSeg(EMPTY_SEGMENT)}
+            <button type="button" onClick={() => { setNewSegIdx(segments.length); appendSeg(EMPTY_SEGMENT) }}
               className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
               <Plus className="h-3 w-3" /> 구간 추가
             </button>
