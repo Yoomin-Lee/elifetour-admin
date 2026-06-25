@@ -423,11 +423,11 @@ export default function ItineraryCard({
           <p className="py-8 text-center text-sm text-slate-400">등록된 일정이 없습니다</p>
         ) : (
           <div className="overflow-x-auto">
-            <Table className="min-w-[480px]">
+            <Table className="min-w-[560px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8">#</TableHead>
-                  <TableHead className="whitespace-nowrap">날짜</TableHead>
+                  <TableHead className="w-[108px] whitespace-nowrap">날짜</TableHead>
                   <TableHead>기항지</TableHead>
                   <TableHead className="whitespace-nowrap hidden sm:table-cell">구분</TableHead>
                   <TableHead className="whitespace-nowrap hidden sm:table-cell">도착</TableHead>
@@ -441,7 +441,7 @@ export default function ItineraryCard({
                   return (
                     <TableRow key={d.id} className={isSea ? 'bg-slate-50/80 text-slate-400' : ''}>
                       <TableCell className="text-slate-400 text-xs">{i + 1}</TableCell>
-                      <TableCell className="whitespace-nowrap font-medium">{formatDate(d.date)}</TableCell>
+                      <TableCell className="whitespace-nowrap font-medium text-sm">{formatDate(d.date)}</TableCell>
                       <TableCell className={isSea ? 'italic' : 'font-medium'}>{d.port}</TableCell>
                       <TableCell className="hidden sm:table-cell">
                         {d.category ? (
