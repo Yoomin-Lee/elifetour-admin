@@ -19,6 +19,13 @@ import type { ItineraryDay } from '@/types/database'
 
 const ITINERARY_CATEGORIES = ['랜드', '쇼렉스', '자유']
 
+const CURRENCY_SYMBOL: Record<string, string> = {
+  KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥',
+}
+function currencySymbol(code: string): string {
+  return CURRENCY_SYMBOL[code] ?? code
+}
+
 const CURRENCY_OPTIONS = [
   { value: 'KRW', label: 'KRW' },
   { value: 'USD', label: 'USD' },
@@ -454,7 +461,7 @@ export default function ItineraryCard({
                       <TableCell className="hidden sm:table-cell whitespace-nowrap text-sm">
                         {d.cost != null ? (
                           <span className="text-slate-700">
-                            {d.cost_currency && <span className="text-slate-400 text-xs mr-0.5">{d.cost_currency}</span>}
+                            {d.cost_currency && <span className="text-slate-400 text-xs mr-0.5">{currencySymbol(d.cost_currency)}</span>}
                             {Number(d.cost).toLocaleString()}
                           </span>
                         ) : null}

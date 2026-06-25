@@ -125,9 +125,11 @@ export default function CancellationCard({
   voyageId: string
   canWrite?: boolean
 }) {
-  const flightDDay  = dMinus(departureDate)
-  const cruiseDDay  = boardingDate ? dMinus(boardingDate) : flightDDay
-  void flightDDay  // 기존 호환성 유지용 (편집 모드)
+  // 정책 중 category별 reference_date가 있으면 그걸 우선 사용
+  const flightRef = policies.find(p => !isCruiseCat(p.category) && p.reference_date)?.reference_date ?? departureDate
+  const cruiseRef = policies.find(p => isCruiseCat(p.category) && p.reference_date)?.reference_date ?? (boardingDate ?? departureDate)
+  const flightDDay = dMinus(flightRef)
+  const cruiseDDay = dMinus(cruiseRef)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DraftPolicy[]>([])
   const [presetOpen, setPresetOpen] = useState(false)

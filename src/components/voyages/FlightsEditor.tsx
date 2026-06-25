@@ -45,6 +45,11 @@ function SegmentRow({
   const { register, control, setValue } = useFormContext<VoyageFormValues>()
   const [isManual, setIsManual] = useState(false)
   const lastAutoRef = useRef<string | null>(null)
+  const flightNoRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    if (autoFocus) flightNoRef.current?.focus()
+  }, [])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const base = `flights.${flightIndex}.segments.${segIndex}` as any
@@ -85,7 +90,14 @@ function SegmentRow({
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div>
           <label className="label">편명</label>
-          <Input {...register(`${base}.flight_no`)} placeholder="KE907" autoFocus={autoFocus} />
+          <Input
+            {...register(`${base}.flight_no`)}
+            ref={(el: HTMLInputElement | null) => {
+              register(`${base}.flight_no`).ref(el)
+              flightNoRef.current = el
+            }}
+            placeholder="KE907"
+          />
         </div>
         <div>
           <label className="label">출발지</label>
