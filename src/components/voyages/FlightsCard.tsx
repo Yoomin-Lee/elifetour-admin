@@ -138,12 +138,13 @@ function toInput(r: DraftFlight, _voyageId: string, idx: number) {
 
 // ── 구간 편집 행 ──────────────────────────────────────────────────────────────
 function SegmentDraftRow({
-  seg, segIndex, onUpdate, onRemove,
+  seg, segIndex, onUpdate, onRemove, autoFocus = false,
 }: {
   seg: SegmentDraft
   segIndex: number
   onUpdate: (field: keyof SegmentDraft, value: string) => void
   onRemove: () => void
+  autoFocus?: boolean
 }) {
   const { result, isValid } = useFlightCalc({
     departureAirport: extractIata(seg.origin),
@@ -155,6 +156,12 @@ function SegmentDraftRow({
   })
   const [isManual, setIsManual] = useState(false)
   const lastAutoRef = useRef<string | null>(null)
+  const flightNoRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    if (autoFocus) flightNoRef.current?.focus()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!isValid || !result || isManual) return
@@ -174,7 +181,7 @@ function SegmentDraftRow({
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div>
           <label className="label">편명</label>
-          <Input value={seg.flight_no} onChange={e => onUpdate('flight_no', e.target.value)} placeholder="KE907" className="h-7 text-sm" />
+          <Input ref={flightNoRef} value={seg.flight_no} onChange={e => onUpdate('flight_no', e.target.value)} placeholder="KE907" className="h-7 text-sm" />
         </div>
         <div>
           <label className="label">출발지</label>
@@ -238,6 +245,7 @@ function FlightDraftRow({
   onUpdate: (updater: (prev: DraftFlight) => DraftFlight) => void
 }) {
   const [detailOpen, setDetailOpen] = useState(false)
+  const [focusTarget, setFocusTarget] = useState<number | null>(null)
 
   const totalSeats = (Number(r.seats_group) || 0) + (Number(r.seats_indivi) || 0) + (Number(r.seats_business) || 0)
   const totalFare  = (Number(r.fare_base) || 0) + (Number(r.fare_fuel) || 0) + (Number(r.fare_tax) || 0)
@@ -250,6 +258,7 @@ function FlightDraftRow({
   }
 
   function addSeg() {
+    setFocusTarget(r.segments.length)
     onUpdate(prev => ({ ...prev, segments: [...prev.segments, { ...EMPTY_SEGMENT }] }))
     setDetailOpen(true)
   }
@@ -330,7 +339,11 @@ function FlightDraftRow({
 
       {/* ── 편명·날짜·시각 구간 (하위, 접이식 + 복수 추가) ── */}
       <div className="border-t border-slate-100">
-        <button type="button" onClick={() => setDetailOpen(o => !o)}
+        <button type="button" onClick={() => {
+          const opening = !detailOpen
+          setDetailOpen(o => !o)
+          setFocusTarget(opening ? 0 : null)
+        }}
           className="flex items-center gap-1 mt-2 text-xs text-slate-400 hover:text-brand transition">
           {detailOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           편명 · 날짜 · 시각 상세
@@ -350,6 +363,7 @@ function FlightDraftRow({
                 segIndex={si}
                 onUpdate={(field, value) => updSeg(si, field, value)}
                 onRemove={() => removeSeg(si)}
+                autoFocus={si === focusTarget}
               />
             ))}
             <button type="button" onClick={addSeg}
