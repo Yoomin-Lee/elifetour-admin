@@ -45,10 +45,11 @@ function SegmentRow({
   const { register, control, setValue } = useFormContext<VoyageFormValues>()
   const [isManual, setIsManual] = useState(false)
   const lastAutoRef = useRef<string | null>(null)
-  const flightNoRef = useRef<HTMLInputElement | null>(null)
+  const gridRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (autoFocus) flightNoRef.current?.focus()
+    if (autoFocus) gridRef.current?.querySelector<HTMLInputElement>('input')?.focus()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -87,15 +88,11 @@ function SegmentRow({
         <Trash2 className="h-3.5 w-3.5" />
       </button>
       <p className="text-[10px] font-medium text-slate-400 mb-2">{segIndex + 1}구간</p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div ref={gridRef} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div>
           <label className="label">편명</label>
           <Input
             {...register(`${base}.flight_no`)}
-            ref={(el: HTMLInputElement | null) => {
-              register(`${base}.flight_no`).ref(el)
-              flightNoRef.current = el
-            }}
             placeholder="KE907"
           />
         </div>
