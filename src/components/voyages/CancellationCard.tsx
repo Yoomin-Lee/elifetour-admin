@@ -8,6 +8,20 @@ import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+
+function fmtShort(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${mm}.${dd}`
+}
+
+function dMinusToDate(refDate: string, dMinus: number | null): string | null {
+  if (dMinus == null) return null
+  const d = new Date(refDate + 'T00:00:00')
+  d.setDate(d.getDate() - dMinus)
+  return fmtShort(d.toISOString().slice(0, 10))
+}
 import { saveCancellationPolicy, deleteCancellationPolicy } from '@/lib/queries/voyages'
 import { fetchCancellationPresets } from '@/lib/queries/cancellationPresets'
 import type { CancellationPresetDB } from '@/lib/queries/cancellationPresets'
@@ -490,6 +504,8 @@ export default function CancellationCard({
                   : isCruiseCat(p.category) && boardingDate
                     ? boardingDate
                     : departureDate
+                const startDate = dMinusToDate(refDate, p.start_d_minus)
+                const endDate   = dMinusToDate(refDate, p.end_d_minus)
                 return (
                   <TableRow
                     key={p.id}
@@ -507,7 +523,7 @@ export default function CancellationCard({
                       {dLabel(p.start_d_minus)} ~ {dLabel(p.end_d_minus)}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-slate-500 text-xs">
-                      {refDate}
+                      {startDate ?? '~'} ~ {endDate ?? '~'}
                       {p.reference_date && <span className="ml-1 text-brand text-[10px]">지정</span>}
                     </TableCell>
                     <TableCell className={cn(current && 'text-amber-700')}>
