@@ -19,6 +19,12 @@ export interface VoyageFlight {
   flight_fare: number | null
   currency_code: string
   sort_order: number
+  seats_group: number
+  seats_indivi: number
+  seats_business: number
+  fare_base: number
+  fare_fuel: number
+  fare_tax: number
   created_at: string
   updated_at: string
 }
@@ -36,6 +42,12 @@ export interface VoyageFlightInput {
   flight_fare?: number
   currency_code?: string
   sort_order?: number
+  seats_group?: number
+  seats_indivi?: number
+  seats_business?: number
+  fare_base?: number
+  fare_fuel?: number
+  fare_tax?: number
 }
 
 export async function fetchVoyageFlights(voyageId: string): Promise<VoyageFlight[]> {
@@ -127,6 +139,12 @@ export async function updateVoyageFlight(
   if (input.flight_fare !== undefined) patch.flight_fare = input.flight_fare
   if (input.currency_code) patch.currency_code = input.currency_code
   if (input.sort_order !== undefined) patch.sort_order = input.sort_order
+  if (input.seats_group !== undefined) patch.seats_group = input.seats_group
+  if (input.seats_indivi !== undefined) patch.seats_indivi = input.seats_indivi
+  if (input.seats_business !== undefined) patch.seats_business = input.seats_business
+  if (input.fare_base !== undefined) patch.fare_base = input.fare_base
+  if (input.fare_fuel !== undefined) patch.fare_fuel = input.fare_fuel
+  if (input.fare_tax !== undefined) patch.fare_tax = input.fare_tax
 
   const { data, error } = await sb()
     .from('voyage_flights')

@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Check, X, ExternalLink } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Check, X, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 import { useAuth } from '@/context/AuthContext'
 import { format } from 'date-fns'
@@ -164,6 +164,151 @@ function FlightFormFields({
   )
 }
 
+// ── 좌석 · 항공료 서브 패널 ─────────────────────────────────────────────
+function SeatsPanel({ flight, canWrite }: { flight: VoyageFlight; canWrite: boolean }) {
+  const qc = useQueryClient()
+  const [isEditing, setIsEditing] = useState(false)
+  const [form, setForm] = useState({
+    seats_group: 0, seats_indivi: 0, seats_business: 0,
+    fare_base: 0, fare_fuel: 0, fare_tax: 0,
+  })
+
+  const saveMut = useMutation({
+    mutationFn: () => updateVoyageFlight(flight.id, {
+      seats_group: form.seats_group, seats_indivi: form.seats_indivi, seats_business: form.seats_business,
+      fare_base: form.fare_base, fare_fuel: form.fare_fuel, fare_tax: form.fare_tax,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
+      setIsEditing(false)
+      toast.success('저장됐습니다')
+    },
+    onError: () => toast.error('저장에 실패했습니다'),
+  })
+
+  function startEdit() {
+    setForm({
+      seats_group: flight.seats_group ?? 0, seats_indivi: flight.seats_indivi ?? 0, seats_business: flight.seats_business ?? 0,
+      fare_base: flight.fare_base ?? 0, fare_fuel: flight.fare_fuel ?? 0, fare_tax: flight.fare_tax ?? 0,
+    })
+    setIsEditing(true)
+    saveMut.reset()
+  }
+
+  function setNum(field: keyof typeof form) {
+    return (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm(prev => ({ ...prev, [field]: Number(e.target.value) || 0 }))
+  }
+
+  const viewTotalSeats = (flight.seats_group ?? 0) + (flight.seats_indivi ?? 0) + (flight.seats_business ?? 0)
+  const viewTotalFare  = (flight.fare_base ?? 0) + (flight.fare_fuel ?? 0) + (flight.fare_tax ?? 0)
+  const editTotalSeats = form.seats_group + form.seats_indivi + form.seats_business
+  const editTotalFare  = form.fare_base + form.fare_fuel + form.fare_tax
+
+  return (
+    <div className="bg-slate-50/70 border-t border-slate-200 px-4 py-3">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">좌석 · 항공료</span>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <>
+              <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}
+                className="flex items-center gap-1 text-xs text-green-700 hover:bg-green-100 rounded px-2 py-1 transition disabled:opacity-40">
+                <Check className="h-3 w-3" />{saveMut.isPending ? '저장 중…' : '저장'}
+              </button>
+              <button onClick={() => setIsEditing(false)} disabled={saveMut.isPending}
+                className="flex items-center gap-1 text-xs text-slate-400 hover:bg-slate-200 rounded px-2 py-1 transition">
+                <X className="h-3 w-3" />취소
+              </button>
+            </>
+          ) : canWrite && (
+            <button onClick={startEdit}
+              className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition">
+              <Pencil className="h-3 w-3" />편집
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!isEditing ? (
+        <div className="space-y-2">
+          {/* 좌석 수식 */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {(['seats_group', 'seats_indivi', 'seats_business'] as const).map((f, idx) => (
+              <Fragment key={f}>
+                <span className="text-slate-400">
+                  {f === 'seats_group' ? '그룹' : f === 'seats_indivi' ? '인디비' : '비즈니스'}
+                  {' '}<span className="font-semibold text-slate-700">{(flight[f] ?? 0).toLocaleString('ko-KR')}</span>석
+                </span>
+                {idx < 2 && <span className="text-slate-300">+</span>}
+              </Fragment>
+            ))}
+            <span className="text-slate-300">=</span>
+            <span className="text-slate-400">총 <span className="font-semibold text-brand">{viewTotalSeats.toLocaleString('ko-KR')}</span>석</span>
+          </div>
+          {/* 항공료 수식 */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {(['fare_base', 'fare_fuel', 'fare_tax'] as const).map((f, idx) => (
+              <Fragment key={f}>
+                <span className="text-slate-400">
+                  {f === 'fare_base' ? '운임' : f === 'fare_fuel' ? '유류할증료' : '발권피'}
+                  {' '}<span className="font-semibold text-slate-700">{(flight[f] ?? 0).toLocaleString('ko-KR')}원</span>
+                </span>
+                {idx < 2 && <span className="text-slate-300">+</span>}
+              </Fragment>
+            ))}
+            <span className="text-slate-300">=</span>
+            <span className="font-semibold text-brand">{viewTotalFare.toLocaleString('ko-KR')}원</span>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {/* 좌석 편집 */}
+          <div className="flex flex-wrap gap-2 items-end">
+            {([['seats_group', '그룹'], ['seats_indivi', '인디비'], ['seats_business', '비즈니스']] as [keyof typeof form, string][]).map(([field, label], idx) => (
+              <Fragment key={field}>
+                <div>
+                  <p className="text-[10px] text-slate-400 mb-0.5">{label} (석)</p>
+                  <input type="number" min={0} value={form[field]} onChange={setNum(field)}
+                    className="input h-7 text-xs text-right w-20" />
+                </div>
+                {idx < 2 && <span className="text-slate-400 text-sm pb-1">+</span>}
+              </Fragment>
+            ))}
+            <span className="text-slate-400 text-sm pb-1">=</span>
+            <div>
+              <p className="text-[10px] text-brand mb-0.5">총 좌석</p>
+              <div className="h-7 flex items-center pr-2 text-xs font-semibold text-brand w-20">
+                {editTotalSeats.toLocaleString('ko-KR')}석
+              </div>
+            </div>
+          </div>
+          {/* 항공료 편집 */}
+          <div className="flex flex-wrap gap-2 items-end border-t border-slate-100 pt-2">
+            {([['fare_base', '운임'], ['fare_fuel', '유류할증료'], ['fare_tax', '발권피']] as [keyof typeof form, string][]).map(([field, label], idx) => (
+              <Fragment key={field}>
+                <div>
+                  <p className="text-[10px] text-slate-400 mb-0.5">{label} (원)</p>
+                  <input type="number" min={0} value={form[field]} onChange={setNum(field)}
+                    className="input h-7 text-xs text-right w-28" />
+                </div>
+                {idx < 2 && <span className="text-slate-400 text-sm pb-1">+</span>}
+              </Fragment>
+            ))}
+            <span className="text-slate-400 text-sm pb-1">=</span>
+            <div>
+              <p className="text-[10px] text-brand mb-0.5">항공료</p>
+              <div className="h-7 flex items-center pr-2 text-xs font-semibold text-brand w-32">
+                {editTotalFare.toLocaleString('ko-KR')}원
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function FlightsTab() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('')
@@ -173,6 +318,7 @@ export default function FlightsTab() {
   const [addOpen, setAddOpen] = useState(false)
   const [addForm, setAddForm] = useState<FlightForm>(EMPTY_FORM)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const qc = useQueryClient()
   const { canWrite } = useAuth() as { canWrite: boolean }
 
@@ -340,9 +486,10 @@ export default function FlightsTab() {
 
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[1000px] w-full text-xs">
+        <table className="min-w-[1060px] w-full text-xs">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
+              <th className="px-2 py-2.5 w-8" />
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">편명</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-14">출발지</th>
@@ -358,18 +505,31 @@ export default function FlightsTab() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading && (
-              <tr><td colSpan={11} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
+              <tr><td colSpan={12} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
             )}
             {!isLoading && filtered.length === 0 && (
-              <tr><td colSpan={11} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
+              <tr><td colSpan={12} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
             {sortedFiltered.map(r => {
               const dep = localDt(r.dep_datetime, r.dep_airport)
               const arr = localDt(r.arr_datetime, r.arr_airport)
               const isEdit = editingId === r.id
+              const isExpanded = expandedId === r.id
               return (
                 <Fragment key={r.id}>
-                  <tr className="hover:bg-slate-50">
+                  <tr className={['hover:bg-slate-50', isExpanded ? 'bg-slate-50' : ''].join(' ')}>
+                    {/* 꺽새 */}
+                    <td className="px-2 py-2 text-center">
+                      <button
+                        onClick={() => setExpandedId(prev => prev === r.id ? null : r.id)}
+                        className="p-1 rounded text-slate-400 hover:text-brand hover:bg-slate-100 transition"
+                        title="좌석·항공료 현황"
+                      >
+                        {isExpanded
+                          ? <ChevronDown className="h-3.5 w-3.5" />
+                          : <ChevronRight className="h-3.5 w-3.5" />}
+                      </button>
+                    </td>
                     <td className="px-3 py-2 whitespace-nowrap">
                       {r.voyages ? (
                         <button
@@ -398,7 +558,10 @@ export default function FlightsTab() {
                     <td className="px-3 py-2 font-mono text-slate-700">{arr.display.time}</td>
                     <td className="px-3 py-2 text-slate-600">{r.flight_duration ?? '—'}</td>
                     <td className="px-3 py-2 text-right text-slate-700">
-                      {formatFare(r.flight_fare, r.currency_code)}
+                      {(r.fare_base || r.fare_fuel || r.fare_tax)
+                        ? ((r.fare_base ?? 0) + (r.fare_fuel ?? 0) + (r.fare_tax ?? 0)).toLocaleString('ko-KR') + '원'
+                        : formatFare(r.flight_fare, r.currency_code)
+                      }
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1 justify-end">
@@ -423,9 +586,16 @@ export default function FlightsTab() {
                       </div>
                     </td>
                   </tr>
+                  {isExpanded && (
+                    <tr className="border-b border-slate-200">
+                      <td colSpan={12} className="p-0">
+                        <SeatsPanel flight={r} canWrite={canWrite} />
+                      </td>
+                    </tr>
+                  )}
                   {isEdit && (
                     <tr>
-                      <td colSpan={11} className="px-4 py-3 bg-brand/5 border-t border-brand/10">
+                      <td colSpan={12} className="px-4 py-3 bg-brand/5 border-t border-brand/10">
                         {editMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 공항 코드와 날짜를 확인해주세요.</p>
                         )}
