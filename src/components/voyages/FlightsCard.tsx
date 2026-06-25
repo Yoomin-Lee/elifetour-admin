@@ -566,7 +566,7 @@ export default function FlightsCard({
                       <button
                         type="button"
                         onClick={() => toggleExpanded(f.id)}
-                        className="flex items-center gap-1 mt-2 text-xs text-slate-400 hover:text-brand transition"
+                        className="flex items-center gap-1 mt-2 text-sm font-semibold text-slate-600 hover:text-brand transition"
                       >
                         {expandedSet.has(f.id)
                           ? <ChevronDown className="h-3.5 w-3.5" />
