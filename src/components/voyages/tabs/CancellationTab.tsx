@@ -14,11 +14,8 @@ import {
 import { voyageTitle } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
-import { FieldSelect } from '@/components/ui/field-select'
 import { YearSelect } from '@/components/ui/year-select'
 import type { CancellationPolicy } from '@/types/database'
-
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 
 function calcDMinus(date?: string | null): number | null {
   if (!date) return null
@@ -147,17 +144,6 @@ export default function CancellationTab() {
     setEditForm(prev => ({ ...prev, [field]: value }))
   }
 
-  function setCurrency(currency: string) {
-    setEditForm(prev => {
-      const desc = prev.fee_description
-      const prefix = CURRENCIES.find(c => desc === c || desc.startsWith(c + ' '))
-      const newDesc = !desc
-        ? currency + ' '
-        : prefix ? currency + desc.slice(prefix.length) : desc
-      return { ...prev, fee_unit: currency, fee_description: newDesc }
-    })
-  }
-
   const years = useMemo(() => {
     const ys = new Set<string>()
     data.forEach(r => {
@@ -220,17 +206,16 @@ export default function CancellationTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">D-day 범위</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-14">현재</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">취소료(인당)</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-16">통화</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500">비고</th>
               <th className="px-3 py-2.5 w-14" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading && (
-              <tr><td colSpan={9} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
+              <tr><td colSpan={8} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td></tr>
             )}
             {!isLoading && filtered.length === 0 && (
-              <tr><td colSpan={9} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
+              <tr><td colSpan={8} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
             {filtered.map(r => {
               const isEdit = editingId === r.id
@@ -275,7 +260,6 @@ export default function CancellationTab() {
                       )}
                     </td>
                     <td className="px-3 py-2 font-medium text-slate-800">{feeText(r)}</td>
-                    <td className="px-3 py-2 text-slate-500">{r.fee_unit ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-500">{r.note ?? ''}</td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1 justify-end">
@@ -303,7 +287,7 @@ export default function CancellationTab() {
 
                   {isEdit && (
                     <tr key={`${r.id}-edit`}>
-                      <td colSpan={9} className="px-4 py-3 bg-brand/5 border-t border-brand/10">
+                      <td colSpan={8} className="px-4 py-3 bg-brand/5 border-t border-brand/10">
                         {editMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
@@ -319,15 +303,6 @@ export default function CancellationTab() {
                           <div>
                             <label className="label">종료 D-</label>
                             <Input type="number" value={editForm.end_d_minus} onChange={e => setField('end_d_minus', e.target.value)} placeholder="45" className="h-7 text-sm" />
-                          </div>
-                          <div>
-                            <label className="label">통화</label>
-                            <FieldSelect
-                              value={editForm.fee_unit}
-                              options={CURRENCIES}
-                              onChange={setCurrency}
-                              className="h-7 text-sm"
-                            />
                           </div>
                           <div className="col-span-2">
                             <label className="label">취소료 설명</label>
