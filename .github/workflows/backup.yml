@@ -14,6 +14,9 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y postgresql-client
 
+      - name: Prefer IPv4
+        run: echo "precedence ::ffff:0:0/96 100" | sudo tee -a /etc/gai.conf
+
       - name: Export database
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -21,9 +24,9 @@ jobs:
         run: |
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
           pg_dump \
-            --host=aws-0-ap-northeast-2.pooler.supabase.com \
+            --host=db.fnrghzzqwergwcssybro.supabase.co \
             --port=5432 \
-            --username=postgres.fnrghzzqwergwcssybro \
+            --username=postgres \
             --dbname=postgres \
             --schema=public \
             --no-owner \
