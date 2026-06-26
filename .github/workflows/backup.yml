@@ -9,16 +9,26 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y postgresql-client
 
       - name: Export database
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGSSLMODE: require
         run: |
           TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-          supabase db dump -p fnrghzzqwergwcssybro > backup_${TIMESTAMP}.sql
+          pg_dump \
+            --host=aws-0-ap-northeast-2.pooler.supabase.com \
+            --port=5432 \
+            --username=postgres.fnrghzzqwergwcssybro \
+            --dbname=postgres \
+            --schema=public \
+            --no-owner \
+            --no-acl \
+            --file=backup_${TIMESTAMP}.sql
           gzip backup_${TIMESTAMP}.sql
           echo "BACKUP_FILE=backup_${TIMESTAMP}.sql.gz" >> $GITHUB_ENV
 
