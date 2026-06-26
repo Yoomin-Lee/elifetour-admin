@@ -8,7 +8,6 @@ import {
 } from '@/lib/queries/cancellationPresets'
 import type { CancellationPresetDB, CancellationPolicy } from '@/lib/queries/cancellationPresets'
 
-const CURRENCIES = ['', 'KRW', 'USD', 'EUR', 'SGD', 'JPY']
 
 const EMPTY_POLICY: CancellationPolicy = {
   category: '', start_d_minus: null, end_d_minus: null,
@@ -80,13 +79,7 @@ function PolicyRow({
           placeholder="값"
           className={inp + ' w-16 shrink-0'}
         />
-        <select
-          value={policy.fee_unit}
-          onChange={e => onChange({ ...policy, fee_unit: e.target.value })}
-          className={sel + ' w-20 shrink-0'}
-        >
-          {CURRENCIES.map(c => <option key={c} value={c}>{c || '통화'}</option>)}
-        </select>
+
       </div>
     </div>
   )
