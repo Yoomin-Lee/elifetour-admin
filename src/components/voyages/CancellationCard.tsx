@@ -5,7 +5,6 @@ import { Pencil, Plus, Trash2, Check, X, FileText, ChevronDown, Settings } from 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { FieldSelect } from '@/components/ui/field-select'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -31,8 +30,6 @@ import { fetchMnSections } from '@/lib/queries/mnSections'
 import type { MnSection } from '@/lib/queries/mnSections'
 import CancellationPresetManager from './CancellationPresetManager'
 import type { CancellationPolicy } from '@/types/database'
-
-const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 
 function dMinus(date: string): number {
   const dep = new Date(date + 'T00:00:00')
@@ -193,18 +190,6 @@ export default function CancellationCard({
 
   function upd(key: string, field: keyof DraftPolicy, value: string) {
     setDraft(d => d.map(r => r._key === key ? { ...r, [field]: value } : r))
-  }
-
-  function updCurrency(key: string, currency: string) {
-    setDraft(d => d.map(r => {
-      if (r._key !== key) return r
-      const desc = r.fee_description
-      const prefix = CURRENCIES.find(c => desc === c || desc.startsWith(c + ' '))
-      const newDesc = !desc
-        ? currency + ' '
-        : prefix ? currency + desc.slice(prefix.length) : desc
-      return { ...r, fee_unit: currency, fee_description: newDesc }
-    }))
   }
 
   function presetPolicyToDraft(p: CancellationPolicy, i: number): DraftPolicy {
@@ -415,15 +400,6 @@ export default function CancellationCard({
                     <div>
                       <label className="label">종료 D-</label>
                       <Input type="number" value={r.end_d_minus} onChange={e => upd(r._key, 'end_d_minus', e.target.value)} placeholder="45" className="h-7 text-sm" />
-                    </div>
-                    <div>
-                      <label className="label">통화</label>
-                      <FieldSelect
-                        value={r.fee_unit}
-                        options={CURRENCIES}
-                        onChange={v => updCurrency(r._key, v)}
-                        className="h-7 text-sm"
-                      />
                     </div>
                     <div className="col-span-2">
                       <label className="label">기준일 직접 지정 <span className="text-slate-400 font-normal">(항공·크루즈 각각 다를 때)</span></label>
