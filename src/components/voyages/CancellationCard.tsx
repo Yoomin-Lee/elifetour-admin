@@ -20,7 +20,9 @@ function dMinusToDate(refDate: string, dMinus: number | null): string | null {
   if (dMinus == null) return null
   const d = new Date(refDate + 'T00:00:00')
   d.setDate(d.getDate() - dMinus)
-  return fmtShort(d.toISOString().slice(0, 10))
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${mm}.${dd}`
 }
 import { saveCancellationPolicy, deleteCancellationPolicy } from '@/lib/queries/voyages'
 import { fetchCancellationPresets } from '@/lib/queries/cancellationPresets'
