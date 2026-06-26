@@ -59,7 +59,7 @@ export function DatePicker({ value, onChange, placeholder = '날짜 선택', dis
 
   const sm = size === 'sm'
   const displayDate = value
-    ? (sm ? format(parseISO(value), 'yy/MM/dd') : format(parseISO(value), 'yyyy년 M월 d일 (EEE)', { locale: ko }))
+    ? (sm ? format(parseISO(value), 'MM.dd') : format(parseISO(value), 'yyyy년 M월 d일 (EEE)', { locale: ko }))
     : ''
 
   // ─── 빠른 숫자 입력: YYMMDD → YYYY-MM-DD ──────────────────────────────────
