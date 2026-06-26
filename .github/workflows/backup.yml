@@ -3,37 +3,87 @@ name: Daily Database Backup
 on:
   schedule:
     - cron: '0 15 * * *'  # 매일 00:00 KST (15:00 UTC)
-  workflow_dispatch:       # 수동 실행 가능
+  workflow_dispatch:
 
 jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y postgresql-client
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-      - name: Prefer IPv4
-        run: echo "precedence ::ffff:0:0/96 100" | sudo tee -a /etc/gai.conf
+      - name: Install Supabase JS client
+        run: npm install @supabase/supabase-js
 
-      - name: Export database
+      - name: Export all tables as JSON
         env:
-          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          PGSSLMODE: require
+          SUPABASE_URL: https://fnrghzzqwergwcssybro.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-          pg_dump \
-            --host=db.fnrghzzqwergwcssybro.supabase.co \
-            --port=5432 \
-            --username=postgres \
-            --dbname=postgres \
-            --schema=public \
-            --no-owner \
-            --no-acl \
-            --file=backup_${TIMESTAMP}.sql
-          gzip backup_${TIMESTAMP}.sql
-          echo "BACKUP_FILE=backup_${TIMESTAMP}.sql.gz" >> $GITHUB_ENV
+          node << 'SCRIPT'
+          const { createClient } = require('@supabase/supabase-js')
+          const fs = require('fs')
+
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY,
+            { auth: { persistSession: false } }
+          )
+
+          const TABLES = [
+            'eli_profiles',
+            'voyages',
+            'itinerary_days',
+            'voyage_flights',
+            'flights',
+            'cabin_grades',
+            'cancellation_policies',
+            'eli_cancellation_presets',
+            'eli_itinerary_presets',
+            'airline_options',
+            'region_options',
+            'partners',
+            'hotels',
+            'payment_schedules',
+            'history_logs',
+            'mn_sections',
+          ]
+
+          async function main() {
+            const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')
+            const dir = `backup_${ts}`
+            fs.mkdirSync(dir)
+
+            let totalRows = 0
+            for (const table of TABLES) {
+              const { data, error } = await supabase.from(table).select('*')
+              if (error) {
+                console.warn(`SKIP ${table}: ${error.message}`)
+                continue
+              }
+              fs.writeFileSync(`${dir}/${table}.json`, JSON.stringify(data, null, 2))
+              console.log(`OK   ${table}: ${data.length} rows`)
+              totalRows += data.length
+            }
+
+            fs.writeFileSync(`${dir}/_manifest.json`, JSON.stringify({
+              created_at: new Date().toISOString(),
+              tables: TABLES,
+              total_rows: totalRows,
+            }, null, 2))
+
+            console.log(`\nTotal: ${totalRows} rows`)
+            fs.appendFileSync(process.env.GITHUB_ENV, `BACKUP_DIR=${dir}\n`)
+          }
+
+          main().catch(err => { console.error(err); process.exit(1) })
+          SCRIPT
+
+      - name: Compress backup
+        run: |
+          tar -czf "${BACKUP_DIR}.tar.gz" "$BACKUP_DIR"
+          echo "BACKUP_FILE=${BACKUP_DIR}.tar.gz" >> $GITHUB_ENV
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
