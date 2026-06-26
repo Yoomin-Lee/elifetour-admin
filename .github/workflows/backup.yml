@@ -43,7 +43,6 @@ jobs:
             'eli_itinerary_presets',
             'airline_options',
             'region_options',
-            'partners',
             'hotels',
             'payment_schedules',
             'history_logs',
