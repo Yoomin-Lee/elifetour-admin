@@ -40,6 +40,11 @@ function ptLabel(pt: string): string {
   return pt
 }
 
+function fmtDep(d: string): string {
+  // "2027-10-16" → "27/10/16"
+  return d.slice(2, 4) + '/' + d.slice(5, 7) + '/' + d.slice(8, 10)
+}
+
 const WEEK_DAYS = ['일', '월', '화', '수', '목', '금', '토']
 const MAX_PAYMENT_SHOW = 4
 
@@ -195,7 +200,7 @@ export default function CalendarTab() {
                       <button
                         key={p.id}
                         onClick={() => goToPayment(p.voyage_id)}
-                        title={`${PAYMENT_CATEGORY_LABEL[p.category]} ${ptLabel(p.payment_type)}${p.voyages ? ` · ${p.voyages.region}` : ''}`}
+                        title={`${PAYMENT_CATEGORY_LABEL[p.category]} ${ptLabel(p.payment_type)}${p.voyages ? ` · ${fmtDep(p.voyages.departure_date)} ${p.voyages.region}` : ''}`}
                         className={`w-full flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border truncate transition hover:opacity-80 ${
                           p.is_completed
                             ? 'opacity-35 line-through bg-slate-50 border-slate-200 text-slate-400'
@@ -207,7 +212,7 @@ export default function CalendarTab() {
                         </span>
                         <span className="truncate flex-1">
                           {ptLabel(p.payment_type)}
-                          {p.voyages && ` ${p.voyages.region}`}
+                          {p.voyages && ` ${fmtDep(p.voyages.departure_date)} ${p.voyages.region}`}
                         </span>
                         {p.is_completed && <Check className="h-2.5 w-2.5 shrink-0" />}
                       </button>
@@ -276,7 +281,7 @@ export default function CalendarTab() {
                       {ptLabel(p.payment_type)}
                       {p.voyages && (
                         <span className="ml-1.5 text-slate-400 font-normal text-xs">
-                          {p.voyages.region}
+                          {fmtDep(p.voyages.departure_date)} {p.voyages.region}
                         </span>
                       )}
                     </p>
