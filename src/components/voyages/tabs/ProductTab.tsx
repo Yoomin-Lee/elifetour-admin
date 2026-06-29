@@ -233,6 +233,7 @@ export default function ProductTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">크루즈</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24 whitespace-nowrap">항공</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-18">상태</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-24">상품가</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">고객</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">인솔자</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-16">D-DAY</th>
@@ -242,12 +243,12 @@ export default function ProductTab() {
           <tbody className="divide-y divide-slate-100">
             {isLoading && (
               <tr>
-                <td colSpan={11} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td>
+                <td colSpan={12} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td>
               </tr>
             )}
             {!isLoading && ordered.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-3 py-8 text-center text-slate-400">등록된 행사가 없습니다</td>
+                <td colSpan={12} className="px-3 py-8 text-center text-slate-400">등록된 행사가 없습니다</td>
               </tr>
             )}
             {ordered.map(v => {
@@ -285,6 +286,9 @@ export default function ProductTab() {
                       <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_COLORS[v.status] ?? 'bg-slate-100 text-slate-600'}`}>
                         {v.status}
                       </span>
+                    </td>
+                    <td className="px-3 py-2 text-right text-slate-700">
+                      {v.product_price ? `${v.product_price.toLocaleString()}원` : '—'}
                     </td>
                     <td className="px-3 py-2 text-right text-slate-700 font-medium">{v.customer_count}</td>
                     <td className="px-3 py-2 text-slate-600">{v.tour_leader ?? '—'}</td>
@@ -337,7 +341,7 @@ export default function ProductTab() {
 
                   {isEdit && (
                     <tr key={`${v.id}-edit`}>
-                      <td colSpan={11} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
+                      <td colSpan={12} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
                         {saveMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
