@@ -497,7 +497,7 @@ export default function PaymentTab() {
                                 마감 {cell.due_date}
                               </p>
                               {cell.memo && (
-                                <p className="text-[11px] opacity-60 truncate">{cell.memo}</p>
+                                <p className="text-xs font-medium text-red-600 truncate">{cell.memo}</p>
                               )}
                               <div className="flex gap-1 pt-0.5">
                                 <button
@@ -667,7 +667,7 @@ export default function PaymentTab() {
                             환불 {rCell.due_date}
                           </p>
                           {rCell.memo && (
-                            <p className="text-[11px] opacity-60 truncate">{rCell.memo}</p>
+                            <p className="text-xs font-medium text-red-600 truncate">{rCell.memo}</p>
                           )}
                           <div className="flex gap-1 pt-0.5">
                             <button
