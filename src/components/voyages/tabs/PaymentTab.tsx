@@ -594,6 +594,7 @@ export default function PaymentTab() {
               <table className="w-full min-w-[600px] border-collapse">
                 <thead>
                   <tr>
+                    <th className="w-28 pb-3" />
                     {CATEGORIES.map(c => (
                       <th key={c} className="pb-3 px-2 text-center">
                         <span className={`inline-block text-xs font-bold rounded-full px-3 py-1 border ${CATEGORY_STYLE[c].header}`}>
@@ -604,7 +605,44 @@ export default function PaymentTab() {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* 총 환불 금액 행 — 자동 계산 */}
+                  <tr className="border-b-2 border-slate-300">
+                    <td className="pr-3 py-3 align-middle">
+                      <span className="text-xs font-bold text-slate-700 leading-none">총 환불</span>
+                    </td>
+                    {CATEGORIES.map(c => {
+                      const byCurrency: Record<string, number> = {}
+                      for (let i = 1; i <= refundCardCounts[c]; i++) {
+                        const rCell = getCell('REFUND', c, `REFUND_${i}`)
+                        const n = Number(rCell.amount)
+                        if (n > 0) byCurrency[rCell.currency] = (byCurrency[rCell.currency] || 0) + n
+                      }
+                      const totals = Object.entries(byCurrency)
+                      return (
+                        <td key={c} className="px-2 py-3 align-middle w-[200px]">
+                          <div className={`rounded-xl border p-3 min-h-[60px] flex flex-col justify-center ${
+                            totals.length > 0
+                              ? `${CATEGORY_STYLE[c].card} border-2`
+                              : 'border-dashed border-slate-200 bg-slate-50/50'
+                          }`}>
+                            {totals.length > 0 ? (
+                              <div className="space-y-0.5">
+                                {totals.map(([currency, amount]) => (
+                                  <span key={currency} className="text-base font-bold leading-tight block">
+                                    {formatAmount(String(amount), currency)}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400 text-center block">—</span>
+                            )}
+                          </div>
+                        </td>
+                      )
+                    })}
+                  </tr>
                   <tr>
+                    <td className="w-28" />
                     {CATEGORIES.map(c => (
                       <td key={c} className="px-2 py-3 align-top w-[200px]">
                         <div className="space-y-2">
