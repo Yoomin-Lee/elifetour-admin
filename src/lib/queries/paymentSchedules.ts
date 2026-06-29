@@ -57,7 +57,7 @@ export interface UpsertPaymentSchedulePayload {
   section: string
   amount: number
   currency: string
-  due_date: string
+  due_date: string | null
   is_completed: boolean
   memo: string | null
 }

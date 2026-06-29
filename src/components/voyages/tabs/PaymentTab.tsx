@@ -28,6 +28,7 @@ const CATEGORY_LABEL: Record<PaymentCategory, string> = {
 }
 
 function paymentTypeLabel(pt: string): string {
+  if (pt === 'TOTAL') return '총 금액'
   if (pt === 'DEPOSIT_1ST') return '1차 데포짓'
   if (pt === 'DEPOSIT_2ND') return '2차 데포짓'
   if (pt === 'BALANCE') return '잔금'
@@ -88,7 +89,7 @@ function fromSchedule(s: PaymentSchedule): DraftCell {
     id: s.id,
     amount: s.amount > 0 ? String(s.amount) : '',
     currency: s.currency,
-    due_date: s.due_date,
+    due_date: s.due_date ?? '',
     is_completed: s.is_completed,
     memo: s.memo ?? '',
   }
@@ -193,6 +194,15 @@ export default function PaymentTab() {
 
     const next: Record<DraftKey, DraftCell> = {}
 
+    // 총 금액 행
+    for (const c of CATEGORIES) {
+      const key = makeDraftKey('PAYMENT', c, 'TOTAL')
+      const existing = schedules.find(s =>
+        s.category === c && s.payment_type === 'TOTAL' && (s.section ?? 'PAYMENT') === 'PAYMENT'
+      )
+      next[key] = existing ? fromSchedule(existing) : emptyCell()
+    }
+
     // 결제 섹션: 카테고리 × 결제유형 그리드
     const paymentTypes = getPaymentTypes(paymentExtra)
     for (const c of CATEGORIES) {
@@ -224,14 +234,15 @@ export default function PaymentTab() {
   const upsertMut = useMutation({
     mutationFn: ({ key, cell }: { key: DraftKey; cell: DraftCell }) => {
       const [secPart, catPart, ...rest] = key.split('_')
+      const pt = rest.join('_')
       return upsertPaymentSchedule({
         voyage_id: voyageId,
         category: catPart as PaymentCategory,
-        payment_type: rest.join('_'),
+        payment_type: pt,
         section: secPart,
         amount: Number(cell.amount) || 0,
         currency: cell.currency,
-        due_date: cell.due_date,
+        due_date: pt === 'TOTAL' ? null : (cell.due_date || null),
         is_completed: cell.is_completed,
         memo: cell.memo || null,
       })
@@ -391,6 +402,114 @@ export default function PaymentTab() {
               </tr>
             </thead>
             <tbody>
+              {/* 총 금액 행 */}
+              <tr className="border-b-2 border-slate-300">
+                <td className="pr-3 py-3 align-top">
+                  <span className="text-xs font-bold text-slate-700 leading-none">총 금액</span>
+                </td>
+                {CATEGORIES.map(c => {
+                  const key = makeDraftKey('PAYMENT', c, 'TOTAL')
+                  const cell = getCell('PAYMENT', c, 'TOTAL')
+                  const isEdit = editing === key
+                  return (
+                    <td key={c} className="px-2 py-3 align-top w-[200px]">
+                      <div className={`rounded-xl border p-3 min-h-[60px] transition-all ${
+                        isEdit
+                          ? 'border-brand/40 bg-brand/5 shadow-sm'
+                          : cell.amount
+                          ? `${CATEGORY_STYLE[c].card} border-2`
+                          : 'border-dashed border-slate-200 bg-slate-50/50'
+                      }`}>
+                        {isEdit ? (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <div>
+                                <label className="label">금액</label>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={cell.amount}
+                                  onChange={e => updateCell(key, { amount: e.target.value })}
+                                  placeholder="0"
+                                />
+                              </div>
+                              <div>
+                                <label className="label">통화</label>
+                                <FieldSelect
+                                  value={cell.currency}
+                                  options={CURRENCIES.map(cur => ({ value: cur, label: cur }))}
+                                  onChange={v => updateCell(key, { currency: v })}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="label">메모</label>
+                              <Input
+                                value={cell.memo}
+                                onChange={e => updateCell(key, { memo: e.target.value })}
+                                placeholder="메모 (선택)"
+                              />
+                            </div>
+                            <div className="flex gap-1.5 pt-1">
+                              <button
+                                type="button"
+                                disabled={!cell.amount || upsertMut.isPending}
+                                onClick={() => upsertMut.mutate({ key, cell })}
+                                className="flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium bg-brand text-white hover:bg-brand-dark transition disabled:opacity-40"
+                              >
+                                <Save className="h-3 w-3" />
+                                {upsertMut.isPending ? '저장 중…' : '저장'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditing(null)}
+                                className="px-2 rounded-lg text-xs text-slate-400 hover:bg-slate-100 transition"
+                              >
+                                취소
+                              </button>
+                            </div>
+                          </div>
+                        ) : cell.amount ? (
+                          <div className="space-y-1.5">
+                            <span className="text-base font-bold leading-tight block">
+                              {formatAmount(cell.amount, cell.currency)}
+                            </span>
+                            {cell.memo && (
+                              <p className="text-xs font-medium text-red-600 truncate">{cell.memo}</p>
+                            )}
+                            <div className="flex gap-1 pt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditing(key)}
+                                className="flex-1 text-center text-[11px] opacity-50 hover:opacity-100 py-0.5 rounded hover:bg-black/5 transition"
+                              >
+                                편집
+                              </button>
+                              {cell.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => cell.id && setDeleteTarget({ id: cell.id, label: `총 금액 ${CATEGORY_LABEL[c]}` })}
+                                  className="px-1.5 text-[11px] opacity-40 hover:opacity-100 hover:text-red-500 rounded hover:bg-red-50 transition"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setEditing(key)}
+                            className="w-full h-full flex items-center justify-center py-3 text-xs text-slate-400 hover:text-brand transition"
+                          >
+                            + 추가
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )
+                })}
+              </tr>
               {getPaymentTypes(extraCounts.PAYMENT).map((pt, ptIdx, allPts) => (
                 <tr key={pt} className={ptIdx < allPts.length - 1 ? 'border-b border-slate-100' : ''}>
                   <td className="pr-3 py-3 align-top">

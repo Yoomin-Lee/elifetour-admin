@@ -146,7 +146,7 @@ export interface PaymentSchedule {
   section: string        // 'PAYMENT' | 'REFUND'
   amount: number
   currency: string
-  due_date: string       // YYYY-MM-DD
+  due_date: string | null  // YYYY-MM-DD, null for TOTAL type
   is_completed: boolean
   memo: string | null
   created_at: string
