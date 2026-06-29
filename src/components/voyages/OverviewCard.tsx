@@ -84,7 +84,7 @@ function toForm(v: Voyage): Form {
     customer_count: String(v.customer_count ?? ''),
     tour_leader: v.tour_leader ?? '',
     hotel: v.hotel ?? '',
-    product_price: v.product_price != null ? String(v.product_price) : '',
+    product_price: v.product_price != null ? v.product_price.toLocaleString() : '',
   }
 }
 
