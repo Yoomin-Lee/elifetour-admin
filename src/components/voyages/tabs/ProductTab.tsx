@@ -233,7 +233,7 @@ export default function ProductTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">크루즈</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24 whitespace-nowrap">항공</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-18">상태</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-24">상품가</th>
+              <th className="px-3 py-2.5 text-center font-semibold text-slate-500 w-24">상품가</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">고객</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">인솔자</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-16">D-DAY</th>
@@ -287,7 +287,7 @@ export default function ProductTab() {
                         {v.status}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-700">
+                    <td className="px-3 py-2 text-center text-slate-700">
                       {v.product_price ? `${v.product_price.toLocaleString()}원` : '—'}
                     </td>
                     <td className="px-3 py-2 text-right text-slate-700 font-medium">{v.customer_count}</td>
