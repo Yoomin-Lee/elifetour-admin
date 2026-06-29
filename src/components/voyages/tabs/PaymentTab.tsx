@@ -531,12 +531,27 @@ export default function PaymentTab() {
                     const cell = getCell('PAYMENT', c, pt)
                     const isEdit = editing === key
 
+                    // 잔금: 총 금액 - 데포짓 합계 자동 계산
+                    const calcBalance = pt === 'BALANCE' ? (() => {
+                      const totalCell = getCell('PAYMENT', c, 'TOTAL')
+                      if (!totalCell.amount) return null
+                      const totalAmt = Number(totalCell.amount)
+                      const totalCur = totalCell.currency
+                      const depositSum = allPts
+                        .filter(p => p !== 'BALANCE')
+                        .reduce((s, dt) => {
+                          const dc = getCell('PAYMENT', c, dt)
+                          return s + (dc.currency === totalCur ? Number(dc.amount) || 0 : 0)
+                        }, 0)
+                      return { amount: totalAmt - depositSum, currency: totalCur }
+                    })() : null
+
                     return (
                       <td key={c} className="px-2 py-3 align-top w-[200px]">
                         <div className={`rounded-xl border p-3 min-h-[80px] transition-all ${
                           isEdit
                             ? 'border-brand/40 bg-brand/5 shadow-sm'
-                            : cell.due_date
+                            : (cell.due_date || calcBalance)
                             ? CATEGORY_STYLE[c].card
                             : 'border-dashed border-slate-200 bg-slate-50/50'
                         }`}>
@@ -596,34 +611,47 @@ export default function PaymentTab() {
                                 </button>
                               </div>
                             </div>
-                          ) : cell.due_date ? (
+                          ) : (cell.due_date || calcBalance) ? (
                             <div className="space-y-1.5">
                               <div className="flex items-start justify-between gap-1">
-                                <span className="text-sm font-bold leading-tight">
-                                  {formatAmount(cell.amount, cell.currency)}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (cell.id) {
-                                      const next = !cell.is_completed
-                                      updateCell(key, { is_completed: next })
-                                      toggleMut.mutate({ id: cell.id, is_completed: next })
-                                    }
-                                  }}
-                                  className={`shrink-0 flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold border transition ${
-                                    cell.is_completed
-                                      ? 'bg-green-100 text-green-700 border-green-200'
-                                      : 'bg-white/70 text-inherit border-current opacity-50 hover:opacity-100'
-                                  }`}
-                                >
-                                  <Check className="h-2.5 w-2.5" />
-                                  {cell.is_completed ? '완료' : '미완료'}
-                                </button>
+                                <div>
+                                  <span className="text-sm font-bold leading-tight block">
+                                    {calcBalance && !cell.amount
+                                      ? formatAmount(String(calcBalance.amount), calcBalance.currency)
+                                      : formatAmount(cell.amount, cell.currency)}
+                                  </span>
+                                  {calcBalance && cell.amount && (
+                                    <span className="text-[11px] opacity-55 block">
+                                      Σ {formatAmount(String(calcBalance.amount), calcBalance.currency)}
+                                    </span>
+                                  )}
+                                </div>
+                                {cell.id && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (cell.id) {
+                                        const next = !cell.is_completed
+                                        updateCell(key, { is_completed: next })
+                                        toggleMut.mutate({ id: cell.id, is_completed: next })
+                                      }
+                                    }}
+                                    className={`shrink-0 flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold border transition ${
+                                      cell.is_completed
+                                        ? 'bg-green-100 text-green-700 border-green-200'
+                                        : 'bg-white/70 text-inherit border-current opacity-50 hover:opacity-100'
+                                    }`}
+                                  >
+                                    <Check className="h-2.5 w-2.5" />
+                                    {cell.is_completed ? '완료' : '미완료'}
+                                  </button>
+                                )}
                               </div>
-                              <p className={`text-[11px] ${cell.is_completed ? 'line-through opacity-50' : 'opacity-75'}`}>
-                                마감 {cell.due_date}
-                              </p>
+                              {cell.due_date && (
+                                <p className={`text-[11px] ${cell.is_completed ? 'line-through opacity-50' : 'opacity-75'}`}>
+                                  마감 {cell.due_date}
+                                </p>
+                              )}
                               {cell.memo && (
                                 <p className="text-xs font-medium text-red-600 truncate">{cell.memo}</p>
                               )}
