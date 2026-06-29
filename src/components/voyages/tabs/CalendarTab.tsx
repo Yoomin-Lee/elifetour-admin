@@ -37,6 +37,8 @@ function ptLabel(pt: string): string {
   if (pt === 'BALANCE') return '잔금'
   const m = pt.match(/^DEPOSIT_(\d+)$/)
   if (m) return `${m[1]}차`
+  const r = pt.match(/^REFUND_(\d+)$/)
+  if (r) return `환불${r[1]}`
   return pt
 }
 
