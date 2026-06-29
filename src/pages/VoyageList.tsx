@@ -110,6 +110,7 @@ function VoyageListInner() {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">행사명</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">상태</th>
+                <th className="hidden px-4 py-3 text-right text-xs font-semibold text-slate-500 sm:table-cell">상품가</th>
                 <th className="hidden px-4 py-3 text-left text-xs font-semibold text-slate-500 sm:table-cell">출발일</th>
                 <th className="hidden px-4 py-3 text-left text-xs font-semibold text-slate-500 md:table-cell">귀국일</th>
                 <th className="hidden px-4 py-3 text-left text-xs font-semibold text-slate-500 lg:table-cell">선사</th>
@@ -124,6 +125,13 @@ function VoyageListInner() {
                   <td className="px-4 py-3 font-medium text-slate-800">{voyageTitle(v)}</td>
                   <td className="px-4 py-3">
                     <Badge variant={STATUS_VARIANT[v.status]}>{v.status}</Badge>
+                  </td>
+                  <td className="hidden px-4 py-3 text-right sm:table-cell">
+                    {v.product_price ? (
+                      <span className="text-slate-700 font-medium">{v.product_price.toLocaleString()}원</span>
+                    ) : (
+                      <span className="text-slate-300">-</span>
+                    )}
                   </td>
                   <td className="hidden px-4 py-3 text-slate-600 sm:table-cell">{formatDate(v.departure_date)}</td>
                   <td className="hidden px-4 py-3 text-slate-600 md:table-cell">{formatDate(v.return_date)}</td>
