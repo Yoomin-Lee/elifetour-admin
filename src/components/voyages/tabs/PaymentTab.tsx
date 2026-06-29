@@ -252,6 +252,7 @@ export default function PaymentTab() {
       qc.invalidateQueries({ queryKey: ['all-payment-schedules'] })
       setEditing(null)
     },
+    onError: () => toast.error('저장에 실패했습니다'),
   })
 
   const deleteMut = useMutation({
