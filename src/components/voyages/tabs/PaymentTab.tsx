@@ -194,15 +194,6 @@ export default function PaymentTab() {
 
     const next: Record<DraftKey, DraftCell> = {}
 
-    // 총 금액 행
-    for (const c of CATEGORIES) {
-      const key = makeDraftKey('PAYMENT', c, 'TOTAL')
-      const existing = schedules.find(s =>
-        s.category === c && s.payment_type === 'TOTAL' && (s.section ?? 'PAYMENT') === 'PAYMENT'
-      )
-      next[key] = existing ? fromSchedule(existing) : emptyCell()
-    }
-
     // 결제 섹션: 카테고리 × 결제유형 그리드
     const paymentTypes = getPaymentTypes(paymentExtra)
     for (const c of CATEGORIES) {
@@ -403,97 +394,36 @@ export default function PaymentTab() {
               </tr>
             </thead>
             <tbody>
-              {/* 총 금액 행 */}
+              {/* 총 금액 행 — 자동 계산 (데포짓 + 잔금 SUM) */}
               <tr className="border-b-2 border-slate-300">
-                <td className="pr-3 py-3 align-top">
+                <td className="pr-3 py-3 align-middle">
                   <span className="text-xs font-bold text-slate-700 leading-none">총 금액</span>
                 </td>
                 {CATEGORIES.map(c => {
-                  const key = makeDraftKey('PAYMENT', c, 'TOTAL')
-                  const cell = getCell('PAYMENT', c, 'TOTAL')
-                  const isEdit = editing === key
+                  const byCurrency: Record<string, number> = {}
+                  for (const pt of getPaymentTypes(extraCounts.PAYMENT)) {
+                    const cell = getCell('PAYMENT', c, pt)
+                    const n = Number(cell.amount)
+                    if (n > 0) byCurrency[cell.currency] = (byCurrency[cell.currency] || 0) + n
+                  }
+                  const totals = Object.entries(byCurrency)
                   return (
-                    <td key={c} className="px-2 py-3 align-top w-[200px]">
-                      <div className={`rounded-xl border p-3 min-h-[60px] transition-all ${
-                        isEdit
-                          ? 'border-brand/40 bg-brand/5 shadow-sm'
-                          : cell.amount
+                    <td key={c} className="px-2 py-3 align-middle w-[200px]">
+                      <div className={`rounded-xl border p-3 min-h-[60px] flex flex-col justify-center ${
+                        totals.length > 0
                           ? `${CATEGORY_STYLE[c].card} border-2`
                           : 'border-dashed border-slate-200 bg-slate-50/50'
                       }`}>
-                        {isEdit ? (
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <div>
-                                <label className="label">금액</label>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  value={cell.amount}
-                                  onChange={e => updateCell(key, { amount: e.target.value })}
-                                  placeholder="0"
-                                />
-                              </div>
-                              <div>
-                                <label className="label">통화</label>
-                                <FieldSelect
-                                  value={cell.currency}
-                                  options={CURRENCIES.map(cur => ({ value: cur, label: cur }))}
-                                  onChange={v => updateCell(key, { currency: v })}
-                                />
-                              </div>
-                            </div>
-                            <div className="flex gap-1.5 pt-1">
-                              <button
-                                type="button"
-                                disabled={!cell.amount || upsertMut.isPending}
-                                onClick={() => upsertMut.mutate({ key, cell })}
-                                className="flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-medium bg-brand text-white hover:bg-brand-dark transition disabled:opacity-40"
-                              >
-                                <Save className="h-3 w-3" />
-                                {upsertMut.isPending ? '저장 중…' : '저장'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditing(null)}
-                                className="px-2 rounded-lg text-xs text-slate-400 hover:bg-slate-100 transition"
-                              >
-                                취소
-                              </button>
-                            </div>
-                          </div>
-                        ) : cell.amount ? (
-                          <div className="space-y-1.5">
-                            <span className="text-base font-bold leading-tight block">
-                              {formatAmount(cell.amount, cell.currency)}
-                            </span>
-                            <div className="flex gap-1 pt-0.5">
-                              <button
-                                type="button"
-                                onClick={() => setEditing(key)}
-                                className="flex-1 text-center text-[11px] opacity-50 hover:opacity-100 py-0.5 rounded hover:bg-black/5 transition"
-                              >
-                                편집
-                              </button>
-                              {cell.id && (
-                                <button
-                                  type="button"
-                                  onClick={() => cell.id && setDeleteTarget({ id: cell.id, label: `총 금액 ${CATEGORY_LABEL[c]}` })}
-                                  className="px-1.5 text-[11px] opacity-40 hover:opacity-100 hover:text-red-500 rounded hover:bg-red-50 transition"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
-                              )}
-                            </div>
+                        {totals.length > 0 ? (
+                          <div className="space-y-0.5">
+                            {totals.map(([currency, amount]) => (
+                              <span key={currency} className="text-base font-bold leading-tight block">
+                                {formatAmount(String(amount), currency)}
+                              </span>
+                            ))}
                           </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => setEditing(key)}
-                            className="w-full h-full flex items-center justify-center py-3 text-xs text-slate-400 hover:text-brand transition"
-                          >
-                            + 추가
-                          </button>
+                          <span className="text-xs text-slate-400 text-center block">—</span>
                         )}
                       </div>
                     </td>
