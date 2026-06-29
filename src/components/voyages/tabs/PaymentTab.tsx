@@ -442,14 +442,6 @@ export default function PaymentTab() {
                                 />
                               </div>
                             </div>
-                            <div>
-                              <label className="label">메모</label>
-                              <Input
-                                value={cell.memo}
-                                onChange={e => updateCell(key, { memo: e.target.value })}
-                                placeholder="메모 (선택)"
-                              />
-                            </div>
                             <div className="flex gap-1.5 pt-1">
                               <button
                                 type="button"
@@ -474,9 +466,6 @@ export default function PaymentTab() {
                             <span className="text-base font-bold leading-tight block">
                               {formatAmount(cell.amount, cell.currency)}
                             </span>
-                            {cell.memo && (
-                              <p className="text-xs font-medium text-red-600 truncate">{cell.memo}</p>
-                            )}
                             <div className="flex gap-1 pt-0.5">
                               <button
                                 type="button"
