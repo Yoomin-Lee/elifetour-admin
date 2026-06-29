@@ -223,7 +223,7 @@ export default function ProductTab() {
 
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[1100px] w-full text-xs">
+        <table className="min-w-[1120px] w-full text-xs">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
@@ -234,7 +234,7 @@ export default function ProductTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24 whitespace-nowrap">항공</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-18">상태</th>
               <th className="px-3 py-2.5 text-center font-semibold text-slate-500 w-24">상품가</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-14">고객</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-18">고객</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">인솔자</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-16">D-DAY</th>
               <th className="px-3 py-2.5 w-20" />
