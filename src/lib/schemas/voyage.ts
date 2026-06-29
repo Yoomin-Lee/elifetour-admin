@@ -88,6 +88,7 @@ export const voyageFormSchema = z.object({
   customer_count:  z.coerce.number().min(0).default(0),
   tour_leader:     z.string().optional(),
   hotel:           z.string().optional(),
+  product_price:   z.coerce.number().nullable().optional(),
   cabin_grades:    z.array(cabinGradeItemSchema).default([]),
   flights:         z.array(flightSchema).default([]),
   itinerary:       z.array(itinerarySchema).default([]),

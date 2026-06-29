@@ -18,6 +18,7 @@ export interface Voyage {
   customer_count: number
   tour_leader: string | null
   hotel: string | null
+  product_price: number | null
   agent: string | null
   created_at: string
   updated_at: string

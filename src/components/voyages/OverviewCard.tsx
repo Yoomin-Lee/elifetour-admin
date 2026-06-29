@@ -64,6 +64,7 @@ type Form = {
   customer_count: string
   tour_leader: string
   hotel: string
+  product_price: string
 }
 
 function toForm(v: Voyage): Form {
@@ -83,6 +84,7 @@ function toForm(v: Voyage): Form {
     customer_count: String(v.customer_count ?? ''),
     tour_leader: v.tour_leader ?? '',
     hotel: v.hotel ?? '',
+    product_price: v.product_price != null ? String(v.product_price) : '',
   }
 }
 
@@ -133,6 +135,7 @@ export default function OverviewCard({
       customer_count: Number(f.customer_count) || 0,
       tour_leader: f.tour_leader || null,
       hotel: f.hotel || null,
+      product_price: f.product_price !== '' ? Number(f.product_price) : null,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['voyages'] })
@@ -263,6 +266,12 @@ export default function OverviewCard({
             <ERow label="호텔">
               <Input value={f.hotel} onChange={set('hotel')} placeholder="미정" className="h-7 text-sm" />
             </ERow>
+            <ERow label="상품가">
+              <div className="flex items-center gap-1.5">
+                <Input type="number" min={0} value={f.product_price} onChange={set('product_price')} placeholder="0" className="h-7 text-sm" />
+                <span className="text-xs text-slate-400 shrink-0">원 (KRW)</span>
+              </div>
+            </ERow>
           </dl>
         </CardContent>
       </Card>
@@ -306,6 +315,7 @@ export default function OverviewCard({
           <Row label="고객 수"   value={voyage.customer_count ? `${voyage.customer_count}명` : '-'} />
           <Row label="인솔자"    value={voyage.tour_leader} />
           <Row label="호텔"      value={voyage.hotel} />
+          <Row label="상품가"    value={voyage.product_price != null ? `${voyage.product_price.toLocaleString()}원` : '-'} />
         </dl>
       </CardContent>
     </Card>

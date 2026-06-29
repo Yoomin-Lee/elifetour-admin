@@ -20,7 +20,7 @@ function sb() {
 export async function fetchVoyages(): Promise<Voyage[]> {
   const { data, error } = await sb()
     .from('voyages')
-    .select('id, region, status, airline, airline_return, cruise_line, ship_name, departure_date, return_date, boarding_date, duration, cabin_total, cabin_remaining, customer_count, tour_leader, hotel, created_at, updated_at')
+    .select('id, region, status, airline, airline_return, cruise_line, ship_name, departure_date, return_date, boarding_date, duration, cabin_total, cabin_remaining, customer_count, tour_leader, hotel, product_price, created_at, updated_at')
     .order('departure_date', { ascending: false })
   if (error) throw error
   return data as Voyage[]

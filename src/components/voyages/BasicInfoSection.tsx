@@ -226,6 +226,13 @@ export default function BasicInfoSection() {
             <Field label="호텔" error={errors.hotel?.message}>
               <Input {...register('hotel')} placeholder="미정" />
             </Field>
+
+            <Field label="상품가 (원)" error={errors.product_price?.message}>
+              <div className="flex items-center gap-1.5">
+                <Input type="number" min={0} {...register('product_price')} placeholder="0" />
+                <span className="text-sm text-slate-400 shrink-0">원</span>
+              </div>
+            </Field>
           </div>
         </CardContent>
       </Card>
