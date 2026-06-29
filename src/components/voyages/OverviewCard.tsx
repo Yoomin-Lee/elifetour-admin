@@ -279,7 +279,7 @@ export default function OverviewCard({
                   placeholder="0"
                   className="h-7 text-sm"
                 />
-                <span className="text-xs text-slate-400 shrink-0">원 (KRW)</span>
+                <span className="text-xs text-slate-400 shrink-0">원</span>
               </div>
             </ERow>
           </dl>
