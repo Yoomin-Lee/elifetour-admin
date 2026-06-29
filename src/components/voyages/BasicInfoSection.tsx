@@ -229,7 +229,22 @@ export default function BasicInfoSection() {
 
             <Field label="상품가 (원)" error={errors.product_price?.message}>
               <div className="flex items-center gap-1.5">
-                <Input type="number" min={0} {...register('product_price')} placeholder="0" />
+                <Controller
+                  name="product_price"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      value={field.value != null && field.value !== 0 ? Number(field.value).toLocaleString() : ''}
+                      onChange={e => {
+                        const raw = e.target.value.replace(/[^0-9]/g, '')
+                        field.onChange(raw ? Number(raw) : null)
+                      }}
+                      placeholder="0"
+                    />
+                  )}
+                />
                 <span className="text-sm text-slate-400 shrink-0">원</span>
               </div>
             </Field>

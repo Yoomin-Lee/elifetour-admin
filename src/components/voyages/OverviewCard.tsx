@@ -135,7 +135,7 @@ export default function OverviewCard({
       customer_count: Number(f.customer_count) || 0,
       tour_leader: f.tour_leader || null,
       hotel: f.hotel || null,
-      product_price: f.product_price !== '' ? Number(f.product_price) : null,
+      product_price: f.product_price !== '' ? Number(f.product_price.replace(/,/g, '')) : null,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['voyages'] })
@@ -268,7 +268,17 @@ export default function OverviewCard({
             </ERow>
             <ERow label="상품가">
               <div className="flex items-center gap-1.5">
-                <Input type="number" min={0} value={f.product_price} onChange={set('product_price')} placeholder="0" className="h-7 text-sm" />
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={f.product_price}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '')
+                    setF(p => ({ ...p, product_price: raw ? Number(raw).toLocaleString() : '' }))
+                  }}
+                  placeholder="0"
+                  className="h-7 text-sm"
+                />
                 <span className="text-xs text-slate-400 shrink-0">원 (KRW)</span>
               </div>
             </ERow>
