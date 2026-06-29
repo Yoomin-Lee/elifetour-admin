@@ -409,28 +409,16 @@ export default function PaymentTab() {
                   <span className="text-xs font-bold text-slate-700 leading-none">총 금액</span>
                 </td>
                 {CATEGORIES.map(c => {
-                  // 자동 합계 계산
-                  const byCurrency: Record<string, number> = {}
-                  for (const pt of getPaymentTypes(extraCounts.PAYMENT)) {
-                    const dc = getCell('PAYMENT', c, pt)
-                    const n = Number(dc.amount)
-                    if (n > 0) byCurrency[dc.currency] = (byCurrency[dc.currency] || 0) + n
-                  }
-                  const autoTotals = Object.entries(byCurrency)
-                  const hasAuto = autoTotals.length > 0
-
-                  // 수동 입력값
                   const key = makeDraftKey('PAYMENT', c, 'TOTAL')
                   const cell = getCell('PAYMENT', c, 'TOTAL')
                   const isEdit = editing === key
-                  const hasManual = !!cell.amount
 
                   return (
                     <td key={c} className="px-2 py-3 align-top w-[200px]">
                       <div className={`rounded-xl border p-3 min-h-[60px] transition-all ${
                         isEdit
                           ? 'border-brand/40 bg-brand/5 shadow-sm'
-                          : (hasManual || hasAuto)
+                          : cell.amount
                           ? `${CATEGORY_STYLE[c].card} border-2`
                           : 'border-dashed border-slate-200 bg-slate-50/50'
                       }`}>
@@ -477,22 +465,13 @@ export default function PaymentTab() {
                           </div>
                         ) : (
                           <div className="space-y-1.5">
-                            {/* 수동 입력값 */}
-                            {hasManual && (
+                            {cell.amount ? (
                               <span className="text-base font-bold leading-tight block">
                                 {formatAmount(cell.amount, cell.currency)}
                               </span>
-                            )}
-                            {/* 자동 합계 */}
-                            {hasAuto ? (
-                              autoTotals.map(([cur, amt]) => (
-                                <span key={cur} className={`leading-tight block ${hasManual ? 'text-[11px] opacity-55' : 'text-base font-bold'}`}>
-                                  {hasManual ? `Σ ${formatAmount(String(amt), cur)}` : formatAmount(String(amt), cur)}
-                                </span>
-                              ))
-                            ) : !hasManual ? (
+                            ) : (
                               <span className="text-xs text-slate-400 block text-center py-1">—</span>
-                            ) : null}
+                            )}
                             {/* 편집/삭제 */}
                             <div className="flex gap-1 pt-0.5">
                               <button
