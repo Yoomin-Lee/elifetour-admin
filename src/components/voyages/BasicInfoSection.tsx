@@ -224,7 +224,12 @@ export default function BasicInfoSection() {
             </Field>
 
             <Field label="호텔" error={errors.hotel?.message}>
-              <Input {...register('hotel')} placeholder="미정" />
+              <textarea
+                {...register('hotel')}
+                placeholder="미정"
+                rows={2}
+                className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 resize-y focus:outline-none focus:ring-1 focus:ring-brand min-h-[52px]"
+              />
             </Field>
 
             <Field label="상품가 (원)" error={errors.product_price?.message}>
