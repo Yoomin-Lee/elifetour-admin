@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Pencil, Check, X } from 'lucide-react'
@@ -101,7 +101,28 @@ export default function OverviewCard({
 }) {
   const [editing, setEditing] = useState(false)
   const [f, setF] = useState<Form>(toForm(voyage))
+  const [nights, setNights] = useState('')
+  const [days, setDays]     = useState('')
+  const daysRef = useRef<HTMLInputElement>(null)
   const qc = useQueryClient()
+
+  function parseDuration(dur: string) {
+    const m = dur.match(/^(\d+)박\s*(\d+)일$/)
+    return m ? { nights: m[1], days: m[2] } : { nights: '', days: '' }
+  }
+
+  function handleNightsChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 2)
+    setNights(val)
+    setF(p => ({ ...p, duration: val || days ? `${val || 0}박 ${days || 0}일` : '' }))
+    if (val.length >= 2) daysRef.current?.focus()
+  }
+
+  function handleDaysChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 2)
+    setDays(val)
+    setF(p => ({ ...p, duration: nights || val ? `${nights || 0}박 ${val || 0}일` : '' }))
+  }
 
   const { data: regionOptions = [] } = useQuery({
     queryKey: ['region-options'],
@@ -221,7 +242,30 @@ export default function OverviewCard({
               <DatePicker value={f.return_date} onChange={v => setF(p => ({ ...p, return_date: v }))} placeholder="귀국일" />
             </ERow>
             <ERow label="여행 기간">
-              <Input value={f.duration} onChange={set('duration')} placeholder={calcNights(f.departure_date, f.return_date)} className="h-7 text-sm" />
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={nights}
+                  onChange={handleNightsChange}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); daysRef.current?.focus() } }}
+                  maxLength={2}
+                  placeholder="0"
+                  className="w-10 h-7 rounded border border-slate-200 px-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-brand"
+                />
+                <span className="text-xs text-slate-500 shrink-0">박</span>
+                <input
+                  ref={daysRef}
+                  type="text"
+                  inputMode="numeric"
+                  value={days}
+                  onChange={handleDaysChange}
+                  maxLength={2}
+                  placeholder="0"
+                  className="w-10 h-7 rounded border border-slate-200 px-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-brand"
+                />
+                <span className="text-xs text-slate-500 shrink-0">일</span>
+              </div>
             </ERow>
             <ERow label="항공사">
               <SelectOrInput
@@ -294,7 +338,13 @@ export default function OverviewCard({
           <Badge variant={STATUS_VARIANT[voyage.status]}>{voyage.status}</Badge>
           {canWrite && (
             <button
-              onClick={() => { setF(toForm(voyage)); setEditing(true) }}
+              onClick={() => {
+                const form = toForm(voyage)
+                setF(form)
+                const { nights: n, days: d } = parseDuration(form.duration)
+                setNights(n); setDays(d)
+                setEditing(true)
+              }}
               className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
               title="편집"
             >
