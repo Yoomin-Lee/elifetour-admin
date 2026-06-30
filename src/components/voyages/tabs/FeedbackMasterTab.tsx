@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ExternalLink, Search, Pencil, Trash2, Check, X, Settings2, Plus } from 'lucide-react'
+import { FieldSelect } from '@/components/ui/field-select'
 import {
   fetchAllFeedbackLogs,
   updateFeedbackLog,
@@ -148,16 +149,15 @@ export default function FeedbackMasterTab() {
 
         <div className="flex items-center gap-2">
           {/* 지역별 드롭다운 */}
-          <select
+          <FieldSelect
             value={regionFilter}
-            onChange={e => setRegionFilter(e.target.value)}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:border-brand/50 focus:outline-none focus:ring-1 focus:ring-brand"
-          >
-            <option value="ALL">전체 지역</option>
-            {regions.map(r => (
-              <option key={r.id} value={r.label}>{r.label}</option>
-            ))}
-          </select>
+            options={[
+              { value: 'ALL', label: '전체 지역' },
+              ...regions.map(r => ({ value: r.label, label: r.label })),
+            ]}
+            onChange={setRegionFilter}
+            className="w-36"
+          />
 
           {/* 지역 관리 토글 버튼 */}
           <button
