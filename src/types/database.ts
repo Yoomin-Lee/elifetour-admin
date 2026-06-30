@@ -97,12 +97,15 @@ export interface HistoryLog {
   content: string
 }
 
+export type FeedbackTag = '지역' | '크루즈' | '기타'
+
 export interface FeedbackLog {
   id: string
   voyage_id: string
   logged_at: string
   author: string | null
   content: string
+  tag: FeedbackTag | null
 }
 
 export interface Hotel {

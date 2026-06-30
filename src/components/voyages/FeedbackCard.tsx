@@ -5,7 +5,29 @@ import { toast } from 'sonner'
 import { Send, Pencil, Trash2, Check, X } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { addFeedbackLog, updateFeedbackLog, deleteFeedbackLog } from '@/lib/queries/voyages'
-import type { FeedbackLog } from '@/types/database'
+import type { FeedbackLog, FeedbackTag } from '@/types/database'
+
+const TAGS: FeedbackTag[] = ['지역', '크루즈', '기타']
+
+const TAG_STYLE: Record<FeedbackTag, string> = {
+  '지역':   'bg-blue-50 text-blue-600 border-blue-200',
+  '크루즈': 'bg-violet-50 text-violet-600 border-violet-200',
+  '기타':   'bg-slate-100 text-slate-500 border-slate-200',
+}
+
+const TAG_ACTIVE: Record<FeedbackTag, string> = {
+  '지역':   'bg-blue-500 text-white border-blue-500',
+  '크루즈': 'bg-violet-500 text-white border-violet-500',
+  '기타':   'bg-slate-500 text-white border-slate-500',
+}
+
+function TagBadge({ tag }: { tag: FeedbackTag }) {
+  return (
+    <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded border ${TAG_STYLE[tag]}`}>
+      {tag}
+    </span>
+  )
+}
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -31,9 +53,10 @@ export default function FeedbackCard({
   canWrite?: boolean
 }) {
   const [text, setText] = useState('')
+  const [selectedTag, setSelectedTag] = useState<FeedbackTag | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [editTag, setEditTag] = useState<FeedbackTag | null>(null)
   const editTextareaRef = useRef<HTMLTextAreaElement>(null)
   const qc = useQueryClient()
 
@@ -45,9 +68,10 @@ export default function FeedbackCard({
   }, [editText, editingId])
 
   const addMutation = useMutation({
-    mutationFn: () => addFeedbackLog(voyageId, text.trim(), author),
+    mutationFn: () => addFeedbackLog(voyageId, text.trim(), author, selectedTag),
     onSuccess: () => {
       setText('')
+      setSelectedTag(null)
       qc.invalidateQueries({ queryKey: ['feedback', voyageId] })
       toast.success('피드백이 저장됐습니다')
     },
@@ -55,11 +79,12 @@ export default function FeedbackCard({
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, content }: { id: string; content: string }) =>
-      updateFeedbackLog(id, content),
+    mutationFn: ({ id, content, tag }: { id: string; content: string; tag: FeedbackTag | null }) =>
+      updateFeedbackLog(id, content, tag),
     onSuccess: () => {
       setEditingId(null)
       setEditText('')
+      setEditTag(null)
       qc.invalidateQueries({ queryKey: ['feedback', voyageId] })
       toast.success('수정됐습니다')
     },
@@ -82,16 +107,18 @@ export default function FeedbackCard({
   function startEdit(log: FeedbackLog) {
     setEditingId(log.id)
     setEditText(log.content)
+    setEditTag(log.tag)
   }
 
   function cancelEdit() {
     setEditingId(null)
     setEditText('')
+    setEditTag(null)
   }
 
   function saveEdit(id: string) {
     if (!editText.trim()) return
-    updateMutation.mutate({ id, content: editText.trim() })
+    updateMutation.mutate({ id, content: editText.trim(), tag: editTag })
   }
 
   function handleDelete(log: FeedbackLog) {
@@ -99,7 +126,7 @@ export default function FeedbackCard({
       (prev ?? []).filter(l => l.id !== log.id)
     )
     deleteMutation.mutate(log.id)
-    const restore = () => addFeedbackLog(voyageId, log.content, log.author ?? author)
+    const restore = () => addFeedbackLog(voyageId, log.content, log.author ?? author, log.tag)
       .then(() => qc.invalidateQueries({ queryKey: ['feedback', voyageId] }))
       .catch(() => toast.error('복원에 실패했습니다'))
     toast.custom(id => (
@@ -124,9 +151,24 @@ export default function FeedbackCard({
       <CardContent className="p-0">
         {canWrite && (
           <div className="px-5 py-3 border-b border-slate-100">
+            {/* 태그 선택 */}
+            <div className="flex items-center gap-1.5 mb-2">
+              {TAGS.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setSelectedTag(prev => prev === tag ? null : tag)}
+                  className={`text-xs font-semibold px-2.5 py-1 rounded border transition ${
+                    selectedTag === tag ? TAG_ACTIVE[tag] : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+            {/* 입력창 */}
             <div className="flex gap-2 items-end">
               <textarea
-                ref={textareaRef}
                 value={text}
                 onChange={e => setText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit() }}
@@ -154,6 +196,7 @@ export default function FeedbackCard({
           ) : (
             logs.map(log => (
               <li key={log.id} className="group px-5 py-3">
+                {/* 작성자 + 시간 */}
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-slate-600">{log.author ?? '알 수 없음'}</span>
@@ -178,8 +221,25 @@ export default function FeedbackCard({
                     </div>
                   )}
                 </div>
+
+                {/* 태그 + 내용 */}
                 {editingId === log.id ? (
                   <div className="space-y-2">
+                    {/* 수정 중 태그 선택 */}
+                    <div className="flex items-center gap-1.5">
+                      {TAGS.map(tag => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => setEditTag(prev => prev === tag ? null : tag)}
+                          className={`text-xs font-semibold px-2 py-0.5 rounded border transition ${
+                            editTag === tag ? TAG_ACTIVE[tag] : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
                     <textarea
                       ref={editTextareaRef}
                       value={editText}
@@ -212,7 +272,10 @@ export default function FeedbackCard({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{log.content}</p>
+                  <div className="flex items-start gap-2">
+                    {log.tag && <TagBadge tag={log.tag} />}
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed flex-1">{log.content}</p>
+                  </div>
                 )}
               </li>
             ))

@@ -123,21 +123,22 @@ export async function fetchFeedbackLogs(voyageId: string): Promise<FeedbackLog[]
 export async function addFeedbackLog(
   voyageId: string,
   content: string,
-  author: string
+  author: string,
+  tag: string | null
 ): Promise<FeedbackLog> {
   const { data, error } = await sb()
     .from('feedback_logs')
-    .insert({ voyage_id: voyageId, content, author })
+    .insert({ voyage_id: voyageId, content, author, tag })
     .select()
     .single()
   if (error) throw error
   return data as FeedbackLog
 }
 
-export async function updateFeedbackLog(id: string, content: string): Promise<FeedbackLog> {
+export async function updateFeedbackLog(id: string, content: string, tag: string | null): Promise<FeedbackLog> {
   const { data, error } = await sb()
     .from('feedback_logs')
-    .update({ content })
+    .update({ content, tag })
     .eq('id', id)
     .select()
     .single()
