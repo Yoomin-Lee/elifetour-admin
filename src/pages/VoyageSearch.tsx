@@ -34,13 +34,15 @@ function Skeleton({ className }: { className?: string }) {
 function VoyageSearchInner() {
   const [searchParams, setSearchParams] = useSearchParams()
   const voyageId = searchParams.get('voyage')
-  const { user, canWrite, isAdmin } = useAuth() as {
+  const { user, profile, canWrite, isAdmin } = useAuth() as {
     user: { email?: string; user_metadata?: { name?: string; full_name?: string } } | null
+    profile: { display_name?: string | null } | null
     canWrite: boolean
     isAdmin: boolean
   }
 
   const authorName =
+    profile?.display_name ??
     user?.user_metadata?.name ??
     user?.user_metadata?.full_name ??
     user?.email ??
