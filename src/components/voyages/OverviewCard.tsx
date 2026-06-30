@@ -155,7 +155,7 @@ export default function OverviewCard({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <CardTitle>개요</CardTitle>
+            <CardTitle>기본 정보</CardTitle>
             <Badge variant={STATUS_VARIANT[f.status]}>{f.status}</Badge>
           </div>
           <div className="flex items-center gap-1">
