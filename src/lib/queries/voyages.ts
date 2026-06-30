@@ -4,11 +4,13 @@ import type { VoyageFormValues } from '../schemas/voyage'
 import { insertVoyageFlight } from './voyageFlights'
 
 type VoyageRef = Pick<Voyage, 'region' | 'departure_date' | 'boarding_date'>
+type FeedbackVoyageRef = Pick<Voyage, 'region' | 'departure_date' | 'ship_name'>
 export type FlightRow = Flight & { voyages: VoyageRef }
 export type ItineraryRow = ItineraryDay & { voyages: VoyageRef }
 export type CancellationRow = CancellationPolicy & { voyages: VoyageRef }
 export type HistoryRow = HistoryLog & { voyages: VoyageRef }
 export type HotelRow = Hotel & { voyages: VoyageRef }
+export type FeedbackRow = FeedbackLog & { voyages: FeedbackVoyageRef | null }
 
 function sb() {
   if (!supabase) throw new Error('Supabase 클라이언트 미초기화')
@@ -299,6 +301,15 @@ export async function fetchAllHistoryLogs(): Promise<HistoryRow[]> {
     .order('logged_at', { ascending: false })
   if (error) throw error
   return data as HistoryRow[]
+}
+
+export async function fetchAllFeedbackLogs(): Promise<FeedbackRow[]> {
+  const { data, error } = await sb()
+    .from('feedback_logs')
+    .select('*, voyages(region, departure_date, ship_name)')
+    .order('logged_at', { ascending: false })
+  if (error) throw error
+  return data as FeedbackRow[]
 }
 
 export async function fetchAllHotels(): Promise<HotelRow[]> {

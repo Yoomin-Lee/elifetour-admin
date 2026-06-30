@@ -11,7 +11,7 @@ import FlightsTab     from '@/components/voyages/tabs/FlightsTab'
 import HotelTab       from '@/components/voyages/tabs/HotelTab'
 import CancellationTab from '@/components/voyages/tabs/CancellationTab'
 import ShoreTab       from '@/components/voyages/tabs/ShoreTab'
-import HistoryTab     from '@/components/voyages/tabs/HistoryTab'
+import FeedbackMasterTab from '@/components/voyages/tabs/FeedbackMasterTab'
 import MNTab          from '@/components/voyages/tabs/MNTab'
 import CalendarTab    from '@/components/voyages/tabs/CalendarTab'
 import PaymentTab     from '@/components/voyages/tabs/PaymentTab'
@@ -30,7 +30,7 @@ const TABS = [
   { key: '호텔',     label: '호텔'     },
   { key: '취소료',   label: '취소료'   },
   { key: '지상',     label: '지상'     },
-  { key: '히스토리', label: '히스토리' },
+  { key: '히스토리', label: '피드백'   },
   { key: 'MN',       label: '취소료 규정' },
   { key: '달력',     label: '달력'     },
   { key: '결제',     label: '결제'     },
@@ -48,7 +48,7 @@ function tabContent(tab: TabKey) {
     case '호텔':     return <HotelTab />
     case '취소료':   return <CancellationTab />
     case '지상':     return <ShoreTab />
-    case '히스토리': return <HistoryTab />
+    case '히스토리': return <FeedbackMasterTab />
     case 'MN':       return <MNTab />
     case '달력':     return <CalendarTab />
     case '결제':     return <PaymentTab />
