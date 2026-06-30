@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useFormContext, Controller } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { Settings } from 'lucide-react'
@@ -35,9 +35,27 @@ function Field({
 }
 
 export default function BasicInfoSection() {
-  const { register, control, formState: { errors } } = useFormContext<VoyageFormValues>()
+  const { register, control, setValue, formState: { errors } } = useFormContext<VoyageFormValues>()
   const [regionManagerOpen, setRegionManagerOpen] = useState(false)
   const [airlineManagerOpen, setAirlineManagerOpen] = useState(false)
+
+  const [nights, setNights] = useState('')
+  const [days, setDays]     = useState('')
+  const daysRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setValue('duration', nights || days ? `${nights || 0}박 ${days || 0}일` : '')
+  }, [nights, days, setValue])
+
+  function handleNightsChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 2)
+    setNights(val)
+    if (val.length >= 2) daysRef.current?.focus()
+  }
+
+  function handleNightsKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); daysRef.current?.focus() }
+  }
 
   const { data: regionOptionsFull = [] } = useQuery({
     queryKey: ['region-options'],
@@ -151,6 +169,33 @@ export default function BasicInfoSection() {
                   />
                 )}
               />
+            </Field>
+
+            <Field label="여행 기간">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={nights}
+                  onChange={handleNightsChange}
+                  onKeyDown={handleNightsKeyDown}
+                  maxLength={2}
+                  placeholder="0"
+                  className="w-12 rounded-md border border-slate-200 px-2 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-brand"
+                />
+                <span className="text-sm text-slate-500 shrink-0">박</span>
+                <input
+                  ref={daysRef}
+                  type="text"
+                  inputMode="numeric"
+                  value={days}
+                  onChange={e => setDays(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
+                  maxLength={2}
+                  placeholder="0"
+                  className="w-12 rounded-md border border-slate-200 px-2 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-brand"
+                />
+                <span className="text-sm text-slate-500 shrink-0">일</span>
+              </div>
             </Field>
 
             <Field label="항공사" error={errors.airline?.message}>
