@@ -228,7 +228,8 @@ export default function BasicInfoSection() {
                 {...register('hotel')}
                 placeholder="미정"
                 rows={2}
-                className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 resize-y focus:outline-none focus:ring-1 focus:ring-brand min-h-[52px]"
+                onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }}
+                className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-brand min-h-[52px]"
               />
             </Field>
 

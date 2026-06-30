@@ -269,9 +269,10 @@ export default function OverviewCard({
                 <textarea
                   value={f.hotel}
                   onChange={e => setF(p => ({ ...p, hotel: e.target.value }))}
+                  onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }}
                   placeholder="미정"
                   rows={2}
-                  className="w-full text-sm border border-slate-200 rounded px-2 py-1 resize-y focus:outline-none focus:ring-1 focus:ring-brand min-h-[52px]"
+                  className="w-full text-sm border border-slate-200 rounded px-2 py-1 resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-brand min-h-[52px]"
                 />
               </dd>
             </div>
