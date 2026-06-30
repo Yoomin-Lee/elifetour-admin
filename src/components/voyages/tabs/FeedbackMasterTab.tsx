@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ExternalLink, Search, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Plus } from 'lucide-react'
+import { ExternalLink, Search, Pencil, Trash2, Check, X, Settings2, Plus } from 'lucide-react'
 import {
   fetchAllFeedbackLogs,
   updateFeedbackLog,
@@ -125,11 +125,7 @@ export default function FeedbackMasterTab() {
     onError: () => toast.error('삭제에 실패했습니다'),
   })
 
-  function startEdit(r: FeedbackRow) {
-    setEditingId(r.id)
-    setEditText(r.content)
-    setEditTag(r.tag)
-  }
+  function startEdit(r: FeedbackRow) { setEditingId(r.id); setEditText(r.content); setEditTag(r.tag) }
   function cancelEdit() { setEditingId(null); setEditText(''); setEditTag(null) }
   function saveEdit(id: string) {
     if (!editText.trim()) return
@@ -142,240 +138,196 @@ export default function FeedbackMasterTab() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더 */}
-      <div>
-        <h1 className="text-lg font-bold text-slate-800">피드백</h1>
-        <p className="text-sm text-slate-400">전체 {feedbacks.length}건 · 필터 {filtered.length}건</p>
+
+      {/* ── 헤더: 제목 + 필터 한 줄 ── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-slate-800">피드백</h1>
+          <p className="text-sm text-slate-400">전체 {feedbacks.length}건 · 필터 {filtered.length}건</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* 지역별 드롭다운 */}
+          <select
+            value={regionFilter}
+            onChange={e => setRegionFilter(e.target.value)}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:border-brand/50 focus:outline-none focus:ring-1 focus:ring-brand"
+          >
+            <option value="ALL">전체 지역</option>
+            {regions.map(r => (
+              <option key={r.id} value={r.label}>{r.label}</option>
+            ))}
+          </select>
+
+          {/* 지역 관리 토글 버튼 */}
+          <button
+            type="button"
+            onClick={() => setRegionMgrOpen(v => !v)}
+            title="지역 관리"
+            className={`flex h-9 w-9 items-center justify-center rounded-lg border transition ${
+              regionMgrOpen
+                ? 'border-brand bg-brand/10 text-brand'
+                : 'border-slate-200 bg-white text-slate-400 hover:border-brand/50 hover:text-brand'
+            }`}
+          >
+            <Settings2 className="h-4 w-4" />
+          </button>
+
+          {/* 크루즈 검색 */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              value={cruiseFilter}
+              onChange={e => setCruiseFilter(e.target.value)}
+              placeholder="크루즈명 검색"
+              className="h-9 pl-8 pr-3 text-sm border border-slate-200 rounded-lg w-44 bg-white transition hover:border-brand/50 focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="flex gap-5 items-start">
-        {/* ── 왼쪽: 피드백 피드 ── */}
-        <div className="flex-1 min-w-0 space-y-2">
-          {isLoading && (
-            <div className="py-16 text-center text-sm text-slate-400">불러오는 중…</div>
-          )}
-          {!isLoading && filtered.length === 0 && (
-            <div className="py-16 text-center text-sm text-slate-400">피드백이 없습니다</div>
-          )}
-          {filtered.map(r => (
-            <div key={r.id} className="group rounded-xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-              {/* 행사명 + 링크 */}
-              <div className="flex items-center justify-between gap-2 mb-2">
-                {r.voyages ? (
-                  <button
-                    onClick={() => navigate(`/voyages?tab=항차검색&voyage=${r.voyage_id}`)}
-                    className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand transition"
-                  >
-                    {voyageTitle(r.voyages)}
-                    {r.voyages.ship_name && (
-                      <span className="text-slate-400 font-normal">· {r.voyages.ship_name}</span>
-                    )}
-                    <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
-                  </button>
+      {/* ── 지역 관리 패널 (토글) ── */}
+      {regionMgrOpen && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">지역 관리</p>
+          <div className="flex flex-wrap gap-2 items-center">
+            {regions.map(r => (
+              <div key={r.id} className="flex items-center gap-1 group/item">
+                {editingRegionId === r.id ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      value={editingRegionLabel}
+                      onChange={e => setEditingRegionLabel(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && editingRegionLabel.trim()) updateRegionMut.mutate({ id: r.id, label: editingRegionLabel.trim() })
+                        if (e.key === 'Escape') setEditingRegionId(null)
+                      }}
+                      autoFocus
+                      className="text-xs border border-brand rounded px-2 py-1 w-28 focus:outline-none"
+                    />
+                    <button onClick={() => { if (editingRegionLabel.trim()) updateRegionMut.mutate({ id: r.id, label: editingRegionLabel.trim() }) }} className="p-1 rounded text-brand hover:bg-brand/10 transition"><Check className="h-3 w-3" /></button>
+                    <button onClick={() => setEditingRegionId(null)} className="p-1 rounded text-slate-400 hover:bg-slate-100 transition"><X className="h-3 w-3" /></button>
+                  </div>
                 ) : (
-                  <span className="text-xs text-slate-400">행사 없음</span>
-                )}
-                {/* 수정/삭제 버튼 */}
-                {editingId !== r.id && (
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => startEdit(r)}
-                      className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-                      aria-label="수정"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(r)}
-                      className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition"
-                      aria-label="삭제"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                  <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+                    <span className="text-xs text-slate-700">{r.label}</span>
+                    <div className="flex items-center gap-0.5 ml-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                      <button onClick={() => { setEditingRegionId(r.id); setEditingRegionLabel(r.label) }} className="p-0.5 rounded text-slate-400 hover:text-slate-600 transition"><Pencil className="h-3 w-3" /></button>
+                      <button onClick={() => deleteRegionMut.mutate(r.id)} className="p-0.5 rounded text-slate-400 hover:text-red-500 transition"><Trash2 className="h-3 w-3" /></button>
+                    </div>
                   </div>
                 )}
               </div>
+            ))}
+            {/* 새 지역 추가 */}
+            <div className="flex items-center gap-1">
+              <input
+                value={newLabel}
+                onChange={e => setNewLabel(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && newLabel.trim()) addRegionMut.mutate() }}
+                placeholder="새 지역"
+                className="text-xs border border-slate-200 rounded-full px-3 py-1 w-24 focus:outline-none focus:ring-1 focus:ring-brand"
+              />
+              <button
+                onClick={() => { if (newLabel.trim()) addRegionMut.mutate() }}
+                disabled={!newLabel.trim() || addRegionMut.isPending}
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-brand text-white hover:bg-brand-dark disabled:opacity-40 transition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-              {/* 태그 + 내용 / 수정 폼 */}
-              {editingId === r.id ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    {TAGS.map(tag => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => setEditTag(prev => prev === tag ? null : tag)}
-                        className={`text-xs font-semibold px-2 py-0.5 rounded border transition ${
-                          editTag === tag ? TAG_ACTIVE[tag] : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                  <textarea
-                    ref={editTextareaRef}
-                    value={editText}
-                    onChange={e => setEditText(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(r.id)
-                      if (e.key === 'Escape') cancelEdit()
-                    }}
-                    rows={2}
-                    autoFocus
-                    className="w-full resize-none rounded-lg border border-brand px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand/20 transition"
-                    style={{ minHeight: '4rem' }}
-                  />
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => saveEdit(r.id)}
-                      disabled={!editText.trim() || updateMut.isPending}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand text-white text-xs font-medium hover:bg-brand-dark disabled:opacity-40 transition"
-                    >
-                      <Check className="h-3 w-3" />저장
-                    </button>
-                    <button
-                      onClick={cancelEdit}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-md text-slate-500 text-xs font-medium hover:bg-slate-100 transition"
-                    >
-                      <X className="h-3 w-3" />취소
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start gap-2 mb-2">
-                  {r.tag && (
-                    <span className={`shrink-0 inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded border mt-0.5 ${TAG_STYLE[r.tag]}`}>
-                      {r.tag}
-                    </span>
+      {/* ── 피드백 피드 ── */}
+      <div className="space-y-2">
+        {isLoading && (
+          <div className="py-16 text-center text-sm text-slate-400">불러오는 중…</div>
+        )}
+        {!isLoading && filtered.length === 0 && (
+          <div className="py-16 text-center text-sm text-slate-400">피드백이 없습니다</div>
+        )}
+        {filtered.map(r => (
+          <div key={r.id} className="group rounded-xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+            {/* 행사명 + 수정/삭제 */}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              {r.voyages ? (
+                <button
+                  onClick={() => navigate(`/voyages?tab=항차검색&voyage=${r.voyage_id}`)}
+                  className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand transition"
+                >
+                  {voyageTitle(r.voyages)}
+                  {r.voyages.ship_name && (
+                    <span className="text-slate-400 font-normal">· {r.voyages.ship_name}</span>
                   )}
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed flex-1">{r.content}</p>
-                </div>
+                  <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
+                </button>
+              ) : (
+                <span className="text-xs text-slate-400">행사 없음</span>
               )}
-
-              {/* 작성자 · 시간 */}
               {editingId !== r.id && (
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                  <span className="font-medium text-slate-500">{r.author ?? '알 수 없음'}</span>
-                  <span>·</span>
-                  <span>{formatDateTime(r.logged_at)}</span>
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => startEdit(r)} className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition" aria-label="수정"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => handleDelete(r)} className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition" aria-label="삭제"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               )}
             </div>
-          ))}
-        </div>
 
-        {/* ── 오른쪽: 필터 패널 ── */}
-        <div className="w-60 shrink-0 space-y-4">
-          {/* 지역별 필터 */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">지역별</p>
-            <select
-              value={regionFilter}
-              onChange={e => setRegionFilter(e.target.value)}
-              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
-            >
-              <option value="ALL">전체</option>
-              {regions.map(r => (
-                <option key={r.id} value={r.label}>{r.label}</option>
-              ))}
-            </select>
-
-            {/* 지역 관리 토글 */}
-            <button
-              type="button"
-              onClick={() => setRegionMgrOpen(v => !v)}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition"
-            >
-              {regionMgrOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-              지역 관리
-            </button>
-
-            {regionMgrOpen && (
-              <div className="space-y-1 pt-1 border-t border-slate-100">
-                {regions.map(r => (
-                  <div key={r.id} className="flex items-center gap-1 group/item">
-                    {editingRegionId === r.id ? (
-                      <>
-                        <input
-                          value={editingRegionLabel}
-                          onChange={e => setEditingRegionLabel(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' && editingRegionLabel.trim()) updateRegionMut.mutate({ id: r.id, label: editingRegionLabel.trim() })
-                            if (e.key === 'Escape') setEditingRegionId(null)
-                          }}
-                          autoFocus
-                          className="flex-1 min-w-0 text-xs border border-brand rounded px-2 py-1 focus:outline-none"
-                        />
-                        <button
-                          onClick={() => { if (editingRegionLabel.trim()) updateRegionMut.mutate({ id: r.id, label: editingRegionLabel.trim() }) }}
-                          className="p-1 rounded text-brand hover:bg-brand/10 transition"
-                        >
-                          <Check className="h-3 w-3" />
-                        </button>
-                        <button
-                          onClick={() => setEditingRegionId(null)}
-                          className="p-1 rounded text-slate-400 hover:bg-slate-100 transition"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="flex-1 min-w-0 text-xs text-slate-700 truncate">{r.label}</span>
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => { setEditingRegionId(r.id); setEditingRegionLabel(r.label) }}
-                            className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => deleteRegionMut.mutate(r.id)}
-                            className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-                {/* 새 지역 추가 */}
-                <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
-                  <input
-                    value={newLabel}
-                    onChange={e => setNewLabel(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && newLabel.trim()) addRegionMut.mutate() }}
-                    placeholder="새 지역 추가"
-                    className="flex-1 min-w-0 text-xs border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand"
-                  />
-                  <button
-                    onClick={() => { if (newLabel.trim()) addRegionMut.mutate() }}
-                    disabled={!newLabel.trim() || addRegionMut.isPending}
-                    className="p-1 rounded bg-brand text-white hover:bg-brand-dark disabled:opacity-40 transition"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
+            {/* 태그 + 내용 / 수정 폼 */}
+            {editingId === r.id ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  {TAGS.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setEditTag(prev => prev === tag ? null : tag)}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded border transition ${editTag === tag ? TAG_ACTIVE[tag] : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
                 </div>
+                <textarea
+                  ref={editTextareaRef}
+                  value={editText}
+                  onChange={e => setEditText(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(r.id)
+                    if (e.key === 'Escape') cancelEdit()
+                  }}
+                  rows={2}
+                  autoFocus
+                  className="w-full resize-none rounded-lg border border-brand px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand/20 transition"
+                  style={{ minHeight: '4rem' }}
+                />
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => saveEdit(r.id)} disabled={!editText.trim() || updateMut.isPending} className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand text-white text-xs font-medium hover:bg-brand-dark disabled:opacity-40 transition"><Check className="h-3 w-3" />저장</button>
+                  <button onClick={cancelEdit} className="flex items-center gap-1 px-2.5 py-1 rounded-md text-slate-500 text-xs font-medium hover:bg-slate-100 transition"><X className="h-3 w-3" />취소</button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 mb-2">
+                {r.tag && (
+                  <span className={`shrink-0 inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded border mt-0.5 ${TAG_STYLE[r.tag]}`}>
+                    {r.tag}
+                  </span>
+                )}
+                <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed flex-1">{r.content}</p>
+              </div>
+            )}
+
+            {/* 작성자 · 시간 */}
+            {editingId !== r.id && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                <span className="font-medium text-slate-500">{r.author ?? '알 수 없음'}</span>
+                <span>·</span>
+                <span>{formatDateTime(r.logged_at)}</span>
               </div>
             )}
           </div>
-
-          {/* 크루즈 텍스트 검색 */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">크루즈</p>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <input
-                value={cruiseFilter}
-                onChange={e => setCruiseFilter(e.target.value)}
-                placeholder="크루즈명 검색"
-                className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand"
-              />
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   )
