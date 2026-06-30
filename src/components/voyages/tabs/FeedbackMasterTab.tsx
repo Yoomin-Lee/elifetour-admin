@@ -121,6 +121,7 @@ export default function FeedbackMasterTab() {
       updateFeedbackLog(id, content, tag),
     onSuccess: () => {
       setEditingId(null)
+      setEditingVoyageId(null)
       if (editingVoyageId) invalidateBoth(editingVoyageId)
       else qc.invalidateQueries({ queryKey: ['all-feedback'] })
       toast.success('수정됐습니다')

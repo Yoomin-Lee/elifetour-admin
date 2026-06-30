@@ -67,12 +67,17 @@ export default function FeedbackCard({
     el.style.height = el.scrollHeight + 'px'
   }, [editText, editingId])
 
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ['feedback', voyageId] })
+    qc.invalidateQueries({ queryKey: ['all-feedback'] })
+  }
+
   const addMutation = useMutation({
     mutationFn: () => addFeedbackLog(voyageId, text.trim(), author, selectedTag),
     onSuccess: () => {
       setText('')
       setSelectedTag(null)
-      qc.invalidateQueries({ queryKey: ['feedback', voyageId] })
+      invalidateAll()
       toast.success('피드백이 저장됐습니다')
     },
     onError: () => toast.error('저장에 실패했습니다'),
@@ -85,7 +90,7 @@ export default function FeedbackCard({
       setEditingId(null)
       setEditText('')
       setEditTag(null)
-      qc.invalidateQueries({ queryKey: ['feedback', voyageId] })
+      invalidateAll()
       toast.success('수정됐습니다')
     },
     onError: () => toast.error('수정에 실패했습니다'),
@@ -93,8 +98,9 @@ export default function FeedbackCard({
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteFeedbackLog(id),
+    onSuccess: () => invalidateAll(),
     onError: () => {
-      qc.invalidateQueries({ queryKey: ['feedback', voyageId] })
+      invalidateAll()
       toast.error('삭제에 실패했습니다')
     },
   })
@@ -127,7 +133,7 @@ export default function FeedbackCard({
     )
     deleteMutation.mutate(log.id)
     const restore = () => addFeedbackLog(voyageId, log.content, log.author ?? author, log.tag)
-      .then(() => qc.invalidateQueries({ queryKey: ['feedback', voyageId] }))
+      .then(() => invalidateAll())
       .catch(() => toast.error('복원에 실패했습니다'))
     toast.custom(id => (
       <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg shadow-slate-200/60 text-sm min-w-[260px]">
