@@ -291,7 +291,7 @@ export default function OverviewCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>개요</CardTitle>
+        <CardTitle>기본 정보</CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant={STATUS_VARIANT[voyage.status]}>{voyage.status}</Badge>
           {canWrite && (
