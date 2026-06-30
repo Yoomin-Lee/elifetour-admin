@@ -97,6 +97,14 @@ export interface HistoryLog {
   content: string
 }
 
+export interface FeedbackLog {
+  id: string
+  voyage_id: string
+  logged_at: string
+  author: string | null
+  content: string
+}
+
 export interface Hotel {
   id: string
   voyage_id: string

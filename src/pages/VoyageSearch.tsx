@@ -13,12 +13,14 @@ import FlightsCard from '@/components/voyages/FlightsCard'
 import ItineraryCard from '@/components/voyages/ItineraryCard'
 import CancellationCard from '@/components/voyages/CancellationCard'
 import HistoryCard from '@/components/voyages/HistoryCard'
+import FeedbackCard from '@/components/voyages/FeedbackCard'
 import {
   fetchVoyages,
   fetchFlights,
   fetchItinerary,
   fetchCancellationPolicies,
   fetchHistory,
+  fetchFeedbackLogs,
   fetchCabinGrades,
   deleteVoyage,
 } from '@/lib/queries/voyages'
@@ -113,9 +115,14 @@ function VoyageSearchInner() {
     queryFn: () => fetchCabinGrades(voyageId!),
     enabled: !!voyageId,
   })
+  const feedbackQuery = useQuery({
+    queryKey: ['feedback', voyageId],
+    queryFn: () => fetchFeedbackLogs(voyageId!),
+    enabled: !!voyageId,
+  })
 
   const selectedVoyage = voyagesQuery.data?.find(v => v.id === voyageId)
-  const isLoading = flightsQuery.isLoading || itineraryQuery.isLoading || cancellationQuery.isLoading || historyQuery.isLoading || cabinGradesQuery.isLoading
+  const isLoading = flightsQuery.isLoading || itineraryQuery.isLoading || cancellationQuery.isLoading || historyQuery.isLoading || cabinGradesQuery.isLoading || feedbackQuery.isLoading
 
   return (
     <div className="space-y-5">
@@ -215,7 +222,7 @@ function VoyageSearchInner() {
               canWrite={canWrite}
             />
           </div>
-          {/* 오른쪽: 캐빈가 + 항공 + 취소료 */}
+          {/* 오른쪽: 캐빈가 + 항공 + 취소료 + 피드백 */}
           <div className="flex flex-col gap-4">
             <CabinPriceCard grades={cabinGradesQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
             <FlightsCard flights={flightsQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} airline={selectedVoyage.airline} airlineReturn={selectedVoyage.airline_return} />
@@ -224,6 +231,12 @@ function VoyageSearchInner() {
               departureDate={selectedVoyage.departure_date}
               boardingDate={selectedVoyage.boarding_date}
               voyageId={voyageId}
+              canWrite={canWrite}
+            />
+            <FeedbackCard
+              logs={feedbackQuery.data ?? []}
+              voyageId={voyageId}
+              author={authorName}
               canWrite={canWrite}
             />
           </div>

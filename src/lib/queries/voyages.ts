@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, Hotel, CabinGrade, PaymentSchedule } from '../../types/database'
+import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, FeedbackLog, Hotel, CabinGrade, PaymentSchedule } from '../../types/database'
 import type { VoyageFormValues } from '../schemas/voyage'
 import { insertVoyageFlight } from './voyageFlights'
 
@@ -105,6 +105,48 @@ export async function updateHistoryLog(id: string, content: string): Promise<His
 
 export async function deleteHistoryLog(id: string): Promise<void> {
   const { error } = await sb().from('history_logs').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Feedback ──────────────────────────────────────────────────────────────
+
+export async function fetchFeedbackLogs(voyageId: string): Promise<FeedbackLog[]> {
+  const { data, error } = await sb()
+    .from('feedback_logs')
+    .select('*')
+    .eq('voyage_id', voyageId)
+    .order('logged_at', { ascending: false })
+  if (error) throw error
+  return data as FeedbackLog[]
+}
+
+export async function addFeedbackLog(
+  voyageId: string,
+  content: string,
+  author: string
+): Promise<FeedbackLog> {
+  const { data, error } = await sb()
+    .from('feedback_logs')
+    .insert({ voyage_id: voyageId, content, author })
+    .select()
+    .single()
+  if (error) throw error
+  return data as FeedbackLog
+}
+
+export async function updateFeedbackLog(id: string, content: string): Promise<FeedbackLog> {
+  const { data, error } = await sb()
+    .from('feedback_logs')
+    .update({ content })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as FeedbackLog
+}
+
+export async function deleteFeedbackLog(id: string): Promise<void> {
+  const { error } = await sb().from('feedback_logs').delete().eq('id', id)
   if (error) throw error
 }
 
