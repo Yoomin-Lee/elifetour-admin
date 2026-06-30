@@ -59,6 +59,7 @@ export default function FeedbackMasterTab() {
 
   // 피드백 인라인 편집
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingVoyageId, setEditingVoyageId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [editTag, setEditTag] = useState<FeedbackTag | null>(null)
   const editTextareaRef = useRef<HTMLTextAreaElement>(null)
@@ -109,31 +110,42 @@ export default function FeedbackMasterTab() {
     onError: () => toast.error('삭제에 실패했습니다'),
   })
 
+  const invalidateBoth = (voyageId: string) => {
+    qc.invalidateQueries({ queryKey: ['all-feedback'] })
+    qc.invalidateQueries({ queryKey: ['feedback', voyageId] })
+  }
+
   // 피드백 뮤테이션
   const updateMut = useMutation({
     mutationFn: ({ id, content, tag }: { id: string; content: string; tag: FeedbackTag | null }) =>
       updateFeedbackLog(id, content, tag),
     onSuccess: () => {
       setEditingId(null)
-      qc.invalidateQueries({ queryKey: ['all-feedback'] })
+      if (editingVoyageId) invalidateBoth(editingVoyageId)
+      else qc.invalidateQueries({ queryKey: ['all-feedback'] })
       toast.success('수정됐습니다')
     },
     onError: () => toast.error('수정에 실패했습니다'),
   })
   const deleteMut = useMutation({
-    mutationFn: (id: string) => deleteFeedbackLog(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['all-feedback'] }),
+    mutationFn: ({ id }: { id: string; voyageId: string }) => deleteFeedbackLog(id),
+    onSuccess: (_, variables) => invalidateBoth(variables.voyageId),
     onError: () => toast.error('삭제에 실패했습니다'),
   })
 
-  function startEdit(r: FeedbackRow) { setEditingId(r.id); setEditText(r.content); setEditTag(r.tag) }
-  function cancelEdit() { setEditingId(null); setEditText(''); setEditTag(null) }
+  function startEdit(r: FeedbackRow) {
+    setEditingId(r.id)
+    setEditingVoyageId(r.voyage_id)
+    setEditText(r.content)
+    setEditTag(r.tag)
+  }
+  function cancelEdit() { setEditingId(null); setEditingVoyageId(null); setEditText(''); setEditTag(null) }
   function saveEdit(id: string) {
     if (!editText.trim()) return
     updateMut.mutate({ id, content: editText.trim(), tag: editTag })
   }
   function handleDelete(r: FeedbackRow) {
-    deleteMut.mutate(r.id)
+    deleteMut.mutate({ id: r.id, voyageId: r.voyage_id })
     toast.success('삭제되었습니다')
   }
 
