@@ -59,8 +59,6 @@ type Form = {
   return_date: string
   boarding_date: string
   duration: string
-  cabin_total: string
-  cabin_remaining: string
   customer_count: string
   tour_leader: string
   hotel: string
@@ -79,8 +77,6 @@ function toForm(v: Voyage): Form {
     return_date: v.return_date ?? '',
     boarding_date: v.boarding_date ?? '',
     duration: v.duration ?? '',
-    cabin_total: String(v.cabin_total ?? ''),
-    cabin_remaining: String(v.cabin_remaining ?? ''),
     customer_count: String(v.customer_count ?? ''),
     tour_leader: v.tour_leader ?? '',
     hotel: v.hotel ?? '',
@@ -130,8 +126,6 @@ export default function OverviewCard({
       return_date: f.return_date || null,
       boarding_date: f.boarding_date || null,
       duration: f.duration || null,
-      cabin_total: Number(f.cabin_total) || 0,
-      cabin_remaining: Number(f.cabin_remaining) || 0,
       customer_count: Number(f.customer_count) || 0,
       tour_leader: f.tour_leader || null,
       hotel: f.hotel || null,
@@ -251,12 +245,6 @@ export default function OverviewCard({
             <ERow label="크루즈">
               <Input value={f.ship_name} onChange={set('ship_name')} placeholder="WORLD EUROPA" className="h-7 text-sm" />
             </ERow>
-            <ERow label="보유 캐빈">
-              <Input type="number" min={0} value={f.cabin_total} onChange={set('cabin_total')} className="h-7 text-sm" />
-            </ERow>
-            <ERow label="잔여 캐빈">
-              <Input type="number" min={0} value={f.cabin_remaining} onChange={set('cabin_remaining')} className="h-7 text-sm" />
-            </ERow>
             <ERow label="고객 수">
               <Input type="number" min={0} value={f.customer_count} onChange={set('customer_count')} className="h-7 text-sm" />
             </ERow>
@@ -326,12 +314,6 @@ export default function OverviewCard({
           <Row label="항공사" value={voyage.airline_return} />
           <Row label="선사"      value={<CruiseLineBadge value={voyage.cruise_line} />} />
           <Row label="크루즈"    value={voyage.ship_name} />
-          <Row label="보유 캐빈" value={voyage.cabin_total ? `${voyage.cabin_total}개` : '-'} />
-          <Row label="잔여 캐빈" value={
-            voyage.cabin_remaining != null
-              ? <span className={voyage.cabin_remaining === 0 ? 'text-red-500' : ''}>{voyage.cabin_remaining}개</span>
-              : '-'
-          } />
           <Row label="고객 수"   value={voyage.customer_count ? `${voyage.customer_count}명` : '-'} />
           <Row label="인솔자"    value={voyage.tour_leader} />
           <Row label="호텔"      value={voyage.hotel ? <span className="whitespace-pre-wrap">{voyage.hotel}</span> : undefined} />
