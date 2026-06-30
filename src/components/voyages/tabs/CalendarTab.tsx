@@ -203,10 +203,8 @@ export default function CalendarTab() {
                         key={p.id}
                         onClick={() => goToPayment(p.voyage_id)}
                         title={`${PAYMENT_CATEGORY_LABEL[p.category]} ${ptLabel(p.payment_type)}${p.voyages ? ` · ${fmtDep(p.voyages.departure_date)} ${p.voyages.region}` : ''}`}
-                        className={`w-full flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border truncate transition hover:opacity-80 ${
-                          p.is_completed
-                            ? 'opacity-35 line-through bg-slate-50 border-slate-200 text-slate-400'
-                            : PAYMENT_STYLE[p.category]
+                        className={`w-full flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border truncate transition hover:opacity-80 ${PAYMENT_STYLE[p.category]} ${
+                          p.is_completed ? 'line-through' : ''
                         }`}
                       >
                         <span className="shrink-0 font-bold">
@@ -270,9 +268,7 @@ export default function CalendarTab() {
                 <button
                   key={p.id}
                   onClick={() => goToPayment(p.voyage_id)}
-                  className={`w-full flex items-center gap-3 px-2 py-2.5 text-left transition hover:bg-slate-50 rounded-lg ${
-                    p.is_completed ? 'opacity-50' : ''
-                  }`}
+                  className="w-full flex items-center gap-3 px-2 py-2.5 text-left transition hover:bg-slate-50 rounded-lg"
                 >
                   <span className={`shrink-0 w-2 h-2 rounded-full ${PAYMENT_DOT[p.category]}`} />
                   <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded border ${PAYMENT_STYLE[p.category]}`}>
