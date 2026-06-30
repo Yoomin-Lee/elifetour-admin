@@ -1,7 +1,10 @@
 import { useState, useMemo, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, ChevronDown, ChevronRight, ExternalLink, Ship, Plane } from 'lucide-react'
+import {
+  Search, ChevronDown, ChevronRight, ExternalLink,
+  Ship, Plane, ArrowUp, ArrowDown, ArrowUpDown,
+} from 'lucide-react'
 import { Building2 } from 'lucide-react'
 import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
@@ -38,7 +41,71 @@ function calcCabinPrice(g: CabinGrade): number | null {
   return g.price_per_person
 }
 
-// ── 보유 현황 서브 패널 ────────────────────────────────────────────────────
+// ── 잔여율 Progress Bar ──────────────────────────────────────────────────────
+function barColor(pct: number): string {
+  if (pct >= 50) return 'bg-emerald-400'
+  if (pct >= 20) return 'bg-amber-400'
+  return 'bg-red-400'
+}
+
+function MiniProgressBar({
+  total,
+  remaining,
+  className = '',
+}: {
+  total: number
+  remaining: number
+  className?: string
+}) {
+  if (total === 0) return null
+  const pct = Math.round((remaining / total) * 100)
+  return (
+    <div className={`h-1 w-full rounded-full bg-slate-200 overflow-hidden ${className}`}>
+      <div className={`h-full rounded-full ${barColor(pct)}`} style={{ width: `${pct}%` }} />
+    </div>
+  )
+}
+
+// ── 상태 배지 ────────────────────────────────────────────────────────────────
+const STATUS_BADGE: Record<string, string> = {
+  '미오픈':   'bg-slate-100 text-slate-500',
+  '판매중':   'bg-emerald-50 text-emerald-600',
+  '마감':     'bg-red-50 text-red-500',
+  '출발완료': 'bg-sky-50 text-sky-600',
+  '취소':     'bg-slate-100 text-slate-400',
+}
+
+function StatusBadge({ status }: { status: string | null | undefined }) {
+  if (!status) return null
+  const cls = STATUS_BADGE[status] ?? 'bg-slate-100 text-slate-500'
+  return (
+    <span
+      className={`inline-block text-[10px] font-semibold px-1.5 py-px rounded-full leading-tight ${cls} ${status === '취소' ? 'line-through' : ''}`}
+    >
+      {status}
+    </span>
+  )
+}
+
+// ── 정렬 아이콘 ──────────────────────────────────────────────────────────────
+type SortCol = 'departure_date' | 'remaining'
+
+function SortIcon({
+  col,
+  sortCol,
+  sortDir,
+}: {
+  col: SortCol
+  sortCol: SortCol | null
+  sortDir: 'asc' | 'desc'
+}) {
+  if (sortCol !== col) return <ArrowUpDown className="h-3 w-3 text-slate-300" />
+  return sortDir === 'asc'
+    ? <ArrowUp className="h-3 w-3 text-brand" />
+    : <ArrowDown className="h-3 w-3 text-brand" />
+}
+
+// ── 보유 현황 서브 패널 ──────────────────────────────────────────────────────
 function InventoryPanel({
   grades,
   flights,
@@ -67,7 +134,7 @@ function InventoryPanel({
                   <th className="text-left pb-1.5 w-16 font-medium">등급</th>
                   <th className="text-right pb-1.5 w-12 font-medium">보유</th>
                   <th className="text-right pb-1.5 w-12 font-medium">예약</th>
-                  <th className="text-right pb-1.5 w-12 font-medium">잔여</th>
+                  <th className="text-right pb-1.5 w-20 font-medium">잔여</th>
                   <th className="text-left pb-1.5 pl-4 font-medium">에이전트</th>
                   <th className="text-right pb-1.5 font-medium">CCF</th>
                   <th className="text-right pb-1.5 font-medium">NCCF</th>
@@ -88,6 +155,7 @@ function InventoryPanel({
                         <span className={remaining === 0 && g.total > 0 ? 'text-red-500 font-semibold' : 'text-slate-700'}>
                           {remaining}
                         </span>
+                        <MiniProgressBar total={g.total} remaining={remaining} className="mt-0.5" />
                       </td>
                       <td className="py-1.5 pl-4 text-slate-500">{g.agent ?? '—'}</td>
                       <td className="py-1.5 text-right text-slate-500">{g.ccf != null ? g.ccf.toLocaleString() : '—'}</td>
@@ -100,7 +168,6 @@ function InventoryPanel({
                     </tr>
                   )
                 })}
-                {/* 합계 행 */}
                 {grades.length > 1 && (
                   <tr className="border-t border-slate-200 bg-slate-100/60">
                     <td className="py-1.5 text-[10px] text-slate-400 font-medium">합계</td>
@@ -187,7 +254,6 @@ function InventoryPanel({
                     </tr>
                   )
                 })}
-                {/* 합계 행 */}
                 {flights.length > 1 && (
                   <tr className="border-t border-slate-200 bg-slate-100/60">
                     <td className="py-1.5 text-[10px] text-slate-400 font-medium">합계</td>
@@ -248,13 +314,16 @@ function InventoryPanel({
   )
 }
 
-// ── 메인 InventoryTab ──────────────────────────────────────────────────────
+// ── 메인 InventoryTab ────────────────────────────────────────────────────────
 export default function InventoryTab() {
   const navigate = useNavigate()
-  const [filter, setFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState<string>('ALL')
+  const [filter, setFilter]           = useState('')
+  const [yearFilter, setYearFilter]   = useState<string>('ALL')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [remainFilter, setRemainFilter] = useState<string>('ALL')
+  const [sortCol, setSortCol]         = useState<SortCol | null>(null)
+  const [sortDir, setSortDir]         = useState<'asc' | 'desc'>('asc')
+  const [expandedId, setExpandedId]   = useState<string | null>(null)
 
   const { data: voyages = [], isLoading } = useQuery({
     queryKey: ['voyages'],
@@ -306,22 +375,62 @@ export default function InventoryTab() {
     return Array.from(ys).sort().reverse()
   }, [voyages])
 
+  // 항차별 캐빈·좌석 수 사전 집계
+  const voyageRows = useMemo(() => voyages.map(v => {
+    const grades  = gradeMap[v.id]  ?? []
+    const flights = flightMap[v.id] ?? []
+    const hotels  = hotelMap[v.id]  ?? []
+
+    const totalCabin     = grades.length > 0
+      ? grades.reduce((s, g) => s + g.total, 0)
+      : (v.cabin_total ?? 0)
+    const remainingCabin = grades.length > 0
+      ? grades.reduce((s, g) => s + (g.total - g.reserved), 0)
+      : (v.cabin_remaining ?? 0)
+    const totalSeats     = flights.reduce(
+      (s, f) => s + (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0), 0,
+    )
+
+    return { v, grades, flights, hotels, totalCabin, remainingCabin, totalSeats }
+  }), [voyages, gradeMap, flightMap, hotelMap])
+
+  // 필터 + 정렬
   const filtered = useMemo(() => {
-    return voyages.filter(v => {
+    let rows = voyageRows.filter(({ v, remainingCabin, totalCabin, hotels }) => {
       if (yearFilter !== 'ALL' && !v.departure_date?.startsWith(yearFilter)) return false
       if (statusFilter !== 'ALL' && v.status !== statusFilter) return false
+      if (remainFilter !== 'ALL') {
+        if (remainFilter === '마감'    && !(remainingCabin === 0 && totalCabin > 0))       return false
+        if (remainFilter === '마감임박' && !(remainingCabin >= 1 && remainingCabin <= 3))   return false
+        if (remainFilter === '여유있음' && remainingCabin < 4)                              return false
+      }
       if (!filter) return true
       const q = filter.toLowerCase()
-      const hotels = hotelMap[v.id] ?? []
       return (
         voyageTitle(v).toLowerCase().includes(q) ||
-        (v.ship_name ?? '').toLowerCase().includes(q) ||
-        (v.cruise_line ?? '').toLowerCase().includes(q) ||
-        (v.airline ?? '').toLowerCase().includes(q) ||
+        (v.ship_name    ?? '').toLowerCase().includes(q) ||
+        (v.cruise_line  ?? '').toLowerCase().includes(q) ||
+        (v.airline      ?? '').toLowerCase().includes(q) ||
         hotels.some(h => h.hotel_name.toLowerCase().includes(q))
       )
     })
-  }, [voyages, yearFilter, statusFilter, filter, hotelMap])
+
+    if (sortCol) {
+      rows = [...rows].sort((a, b) => {
+        let cmp = 0
+        if (sortCol === 'departure_date') cmp = (a.v.departure_date ?? '').localeCompare(b.v.departure_date ?? '')
+        else if (sortCol === 'remaining') cmp = a.remainingCabin - b.remainingCabin
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+    }
+
+    return rows
+  }, [voyageRows, yearFilter, statusFilter, remainFilter, filter, sortCol, sortDir])
+
+  function toggleSort(col: SortCol) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+  }
 
   function toggleExpand(id: string) {
     setExpandedId(prev => prev === id ? null : id)
@@ -335,7 +444,7 @@ export default function InventoryTab() {
           <h1 className="text-lg font-bold text-slate-800">보유 현황</h1>
           <p className="text-sm text-slate-400">행사별 크루즈·항공·호텔 보유 현황 — ▶ 클릭으로 상세 확인</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
           <FieldSelect
             value={statusFilter}
@@ -345,6 +454,17 @@ export default function InventoryTab() {
             ]}
             onChange={setStatusFilter}
             className="h-8 text-sm w-28"
+          />
+          <FieldSelect
+            value={remainFilter}
+            options={[
+              { value: 'ALL',    label: '전체 잔여'      },
+              { value: '여유있음', label: '여유있음 (4+)'  },
+              { value: '마감임박', label: '마감임박 (1-3)' },
+              { value: '마감',    label: '마감 (0개)'    },
+            ]}
+            onChange={setRemainFilter}
+            className="h-8 text-sm w-32"
           />
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -360,13 +480,21 @@ export default function InventoryTab() {
 
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[860px] w-full text-xs table-fixed">
+        <table className="min-w-[920px] w-full text-xs table-fixed">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-2 py-2.5 w-8" />
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-32">행사명</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">출발일</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
+              <th
+                className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20 cursor-pointer select-none hover:text-slate-700 transition"
+                onClick={() => toggleSort('departure_date')}
+              >
+                <div className="flex items-center gap-1">
+                  출발일
+                  <SortIcon col="departure_date" sortCol={sortCol} sortDir={sortDir} />
+                </div>
+              </th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">
                 <div className="flex items-center gap-1">
                   <Ship className="h-3 w-3 text-blue-400" />크루즈
                 </div>
@@ -382,7 +510,15 @@ export default function InventoryTab() {
                 </div>
               </th>
               <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-14 whitespace-nowrap">보유캐빈</th>
-              <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-14 whitespace-nowrap">잔여캐빈</th>
+              <th
+                className="px-2 py-2.5 text-right font-semibold text-slate-500 w-20 whitespace-nowrap cursor-pointer select-none hover:text-slate-700 transition"
+                onClick={() => toggleSort('remaining')}
+              >
+                <div className="flex items-center justify-end gap-1">
+                  잔여캐빈
+                  <SortIcon col="remaining" sortCol={sortCol} sortDir={sortDir} />
+                </div>
+              </th>
               <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-14 whitespace-nowrap">보유좌석</th>
             </tr>
           </thead>
@@ -393,25 +529,15 @@ export default function InventoryTab() {
             {!isLoading && filtered.length === 0 && (
               <tr><td colSpan={9} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
-            {filtered.map(v => {
-              const grades  = gradeMap[v.id] ?? []
-              const flights = flightMap[v.id] ?? []
-              const hotels  = hotelMap[v.id] ?? []
-
-              const totalCabin     = grades.length > 0 ? grades.reduce((s, g) => s + g.total, 0) : (v.cabin_total ?? 0)
-              const reservedCabin  = grades.length > 0 ? grades.reduce((s, g) => s + g.reserved, 0) : ((v.cabin_total ?? 0) - (v.cabin_remaining ?? 0))
-              const remainingCabin = grades.length > 0 ? grades.reduce((s, g) => s + (g.total - g.reserved), 0) : (v.cabin_remaining ?? 0)
-              const totalSeats     = flights.reduce((s, f) => s + (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0), 0)
-
+            {filtered.map(({ v, grades, flights, hotels, totalCabin, remainingCabin, totalSeats }) => {
               const firstHotelName = hotels[0]?.hotel_name ?? null
               const hotelDisplay   = hotels.length > 1
                 ? `${firstHotelName} 외 ${hotels.length - 1}곳`
                 : firstHotelName
 
               const airlineLabel = [v.airline, v.airline_return].filter(Boolean).join(' / ') || null
-
-              const isCancelled = v.status === '취소'
-              const isExpanded  = expandedId === v.id
+              const isCancelled  = v.status === '취소'
+              const isExpanded   = expandedId === v.id
 
               return (
                 <Fragment key={v.id}>
@@ -435,28 +561,50 @@ export default function InventoryTab() {
                       </button>
                     </td>
 
-                    {/* 행사명 */}
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      {isCancelled ? (
-                        <span className="line-through text-slate-400">{voyageTitle(v)}</span>
-                      ) : (
-                        <button
-                          onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
-                          className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition"
-                          title="항차 상세에서 보기"
-                        >
-                          {voyageTitle(v)}
-                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition" />
-                        </button>
-                      )}
+                    {/* 행사명 + 상태 배지 */}
+                    <td className="px-3 py-2">
+                      <div className="flex flex-col gap-0.5">
+                        <StatusBadge status={v.status} />
+                        {isCancelled ? (
+                          <span className="line-through text-slate-400">{voyageTitle(v)}</span>
+                        ) : (
+                          <button
+                            onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
+                            className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition text-left"
+                            title="항차 상세에서 보기"
+                          >
+                            <span className="truncate">{voyageTitle(v)}</span>
+                            <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition flex-shrink-0" />
+                          </button>
+                        )}
+                      </div>
                     </td>
 
                     {/* 출발일 */}
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
 
-                    {/* 크루즈 */}
-                    <td className="px-3 py-2 text-slate-600 truncate">
-                      {v.ship_name ?? v.cruise_line ?? '—'}
+                    {/* 크루즈 + 등급별 잔여 뱃지 */}
+                    <td className="px-3 py-2">
+                      <div className="text-slate-600 truncate">{v.ship_name ?? v.cruise_line ?? '—'}</div>
+                      {grades.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {grades.map(g => {
+                            const rem = g.total - g.reserved
+                            return (
+                              <span
+                                key={g.id}
+                                className={`text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight ${
+                                  rem === 0 && g.total > 0
+                                    ? 'bg-red-50 text-red-500 border-red-200'
+                                    : 'bg-slate-50 text-slate-500 border-slate-200'
+                                }`}
+                              >
+                                {g.grade} {rem}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      )}
                     </td>
 
                     {/* 항공 */}
@@ -468,11 +616,14 @@ export default function InventoryTab() {
                     {/* 보유캐빈 */}
                     <td className="px-2 py-2 text-right text-slate-700">{totalCabin || '—'}</td>
 
-                    {/* 잔여캐빈 */}
+                    {/* 잔여캐빈 + 프로그레스바 */}
                     <td className="px-2 py-2 text-right">
                       <span className={remainingCabin === 0 && totalCabin > 0 ? 'text-red-500 font-semibold' : 'text-slate-700'}>
                         {totalCabin > 0 ? remainingCabin : '—'}
                       </span>
+                      {totalCabin > 0 && (
+                        <MiniProgressBar total={totalCabin} remaining={remainingCabin} className="mt-0.5" />
+                      )}
                     </td>
 
                     {/* 보유좌석 */}
