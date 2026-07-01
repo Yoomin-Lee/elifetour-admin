@@ -785,7 +785,7 @@ export default function PaymentTab() {
             {/* ── 결제 섹션 ── */}
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">결제</h3>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto scrollbar-navy">
                 <table className="border-collapse" style={{ minWidth: `${112 + columns.length * 200}px` }}>
                   <thead>
                     <tr>
@@ -850,7 +850,7 @@ export default function PaymentTab() {
             {/* ── 환불 섹션 ── */}
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">환불</h3>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto scrollbar-navy">
                 <table className="border-collapse" style={{ minWidth: `${112 + columns.length * 200}px` }}>
                   <thead>
                     <tr>
