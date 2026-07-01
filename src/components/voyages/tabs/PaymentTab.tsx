@@ -172,7 +172,7 @@ function SortableColumnHeader({
           </button>
 
           {/* 태그 레이블 */}
-          {isAgent && editingLabel === col.colId ? (
+          {editingLabel === col.colId ? (
             <input
               autoFocus
               value={col.label}
@@ -183,9 +183,9 @@ function SortableColumnHeader({
             />
           ) : (
             <span
-              className={`inline-block text-xs font-bold rounded-full px-3 py-1 border ${CATEGORY_STYLE[col.baseCategory].header} ${isAgent ? 'cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-brand/40 transition' : ''}`}
-              onClick={() => isAgent && setEditingLabel(col.colId)}
-              title={isAgent ? '클릭해서 이름 변경' : undefined}
+              className={`inline-block text-xs font-bold rounded-full px-3 py-1 border ${CATEGORY_STYLE[col.baseCategory].header} cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-brand/40 transition`}
+              onClick={() => setEditingLabel(col.colId)}
+              title="클릭해서 이름 변경"
             >
               {col.label}
             </span>
