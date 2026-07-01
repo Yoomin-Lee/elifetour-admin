@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import type { PaymentSchedule, PaymentCategory, PaymentType, Voyage } from '../../types/database'
+import type { PaymentSchedule, PaymentCategory, PaymentType, PaymentColumn, Voyage } from '../../types/database'
 
 type VoyageRef = Pick<Voyage, 'region' | 'departure_date'>
 export type PaymentScheduleRow = PaymentSchedule & { voyages: VoyageRef | null }
@@ -55,6 +55,7 @@ export interface UpsertPaymentSchedulePayload {
   category: PaymentCategory
   payment_type: PaymentType
   section: string
+  agent_id: string
   amount: number
   currency: string
   due_date: string | null
@@ -69,12 +70,47 @@ export async function upsertPaymentSchedule(
     .from('payment_schedules')
     .upsert(
       { ...payload, updated_at: new Date().toISOString() },
-      { onConflict: 'voyage_id,category,payment_type,section' },
+      { onConflict: 'voyage_id,category,payment_type,section,agent_id' },
     )
     .select()
     .single()
   if (error) throw error
   return data as PaymentSchedule
+}
+
+/** voyage의 열 구성(payment_col_order) 조회 */
+export async function fetchPaymentColOrder(voyageId: string): Promise<PaymentColumn[] | null> {
+  const { data, error } = await sb()
+    .from('voyages')
+    .select('payment_col_order')
+    .eq('id', voyageId)
+    .single()
+  if (error) throw error
+  return (data as { payment_col_order: PaymentColumn[] | null }).payment_col_order
+}
+
+/** voyages.payment_col_order 저장 (열 순서·구성 팀 공유) */
+export async function savePaymentColOrder(
+  voyageId: string,
+  columns: PaymentColumn[],
+): Promise<void> {
+  const { error } = await sb()
+    .from('voyages')
+    .update({ payment_col_order: columns })
+    .eq('id', voyageId)
+  if (error) throw error
+}
+
+/** 에이전트 열 원자적 삭제 — payment_schedules 행 + payment_col_order 항목을 단일 트랜잭션으로 */
+export async function deleteAgentColumn(
+  voyageId: string,
+  agentId: string,
+): Promise<void> {
+  const { error } = await sb().rpc('delete_payment_agent_column', {
+    p_voyage_id: voyageId,
+    p_agent_id:  agentId,
+  })
+  if (error) throw error
 }
 
 export async function deletePaymentSchedule(id: string): Promise<void> {

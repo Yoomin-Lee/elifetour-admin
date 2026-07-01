@@ -20,6 +20,7 @@ export interface Voyage {
   hotel: string | null
   product_price: number | null
   agent: string | null
+  payment_col_order: PaymentColumn[] | null
   created_at: string
   updated_at: string
 }
@@ -156,6 +157,7 @@ export interface PaymentSchedule {
   category: PaymentCategory
   payment_type: PaymentType
   section: string        // 'PAYMENT' | 'REFUND'
+  agent_id: string       // 'default' | UUID (에이전트 열 구분)
   amount: number
   currency: string
   due_date: string | null  // YYYY-MM-DD, null for TOTAL type
@@ -163,6 +165,14 @@ export interface PaymentSchedule {
   memo: string | null
   created_at: string
   updated_at: string
+}
+
+/** 결제 스케줄 테이블의 열 하나 (기본 카테고리 열 + 에이전트 추가 열) */
+export interface PaymentColumn {
+  colId: string           // 고유 식별자: `${baseCategory}_${agentId}`
+  baseCategory: PaymentCategory
+  agentId: string         // 'default' | UUID
+  label: string           // 표시명 (편집 가능)
 }
 
 export type PartnerType = 'LAND' | 'CRUISE' | 'AIRLINE' | 'HOTEL' | 'BUS' | 'GUIDE' | 'OTHER'
