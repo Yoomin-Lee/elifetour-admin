@@ -30,6 +30,18 @@
   html { scroll-behavior: smooth; }
   body { @apply font-sans text-slate-800 antialiased bg-slate-50; }
   * { -webkit-tap-highlight-color: transparent; }
+
+  /* 전역 스크롤바 네이비 통일 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #0F4C8A transparent;
+  }
+  *::-webkit-scrollbar { width: 4px; height: 4px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background-color: #0F4C8A;
+    border-radius: 99px;
+  }
 }
 
 @layer utilities {
