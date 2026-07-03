@@ -33,6 +33,7 @@ import {
 } from '@/lib/queries/paymentSchedules'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
+import { AutoTextarea } from '@/components/ui/auto-textarea'
 import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
 import { voyageTitle } from '@/types/database'
@@ -629,7 +630,7 @@ export default function PaymentTab() {
             {pt !== 'TOTAL' && (
               <div>
                 <label className="label">메모</label>
-                <Input value={cell.memo} onChange={e => updateCell(key, { memo: e.target.value })}
+                <AutoTextarea value={cell.memo} onChange={e => updateCell(key, { memo: e.target.value })}
                   placeholder="메모 (선택)" />
               </div>
             )}
@@ -688,7 +689,7 @@ export default function PaymentTab() {
                 {section === 'REFUND' ? '환불' : '마감'} {cell.due_date}
               </p>
             )}
-            {cell.memo && <p className="text-xs font-medium text-red-600 truncate">{cell.memo}</p>}
+            {cell.memo && <p className="text-xs font-medium text-red-600 whitespace-pre-wrap break-words">{cell.memo}</p>}
             <div className="flex gap-1 pt-0.5">
               <button type="button" onClick={() => setEditing(key)}
                 className="flex-1 text-center text-[11px] opacity-50 hover:opacity-100 py-0.5 rounded hover:bg-black/5 transition">
