@@ -56,6 +56,20 @@ function calcCabinPrice(g: CabinGrade): number | null {
   return g.price_per_person
 }
 
+function groupByOccupancy(grades: CabinGrade[]): { occupancy: number; total: number; remaining: number }[] {
+  const map = new Map<number, { total: number; reserved: number }>()
+  grades.forEach(g => {
+    if (g.occupancy == null) return
+    const cur = map.get(g.occupancy) ?? { total: 0, reserved: 0 }
+    cur.total += g.total
+    cur.reserved += g.reserved
+    map.set(g.occupancy, cur)
+  })
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([occupancy, { total, reserved }]) => ({ occupancy, total, remaining: total - reserved }))
+}
+
 // ── 잔여율 Progress Bar ──────────────────────────────────────────────────────
 function barColor(pct: number): string {
   if (pct >= 50) return 'bg-emerald-400'
@@ -689,7 +703,8 @@ export default function InventoryTab() {
     const totalCabin     = grades.length > 0 ? grades.reduce((s, g) => s + g.total, 0) : (v.cabin_total ?? 0)
     const remainingCabin = grades.length > 0 ? grades.reduce((s, g) => s + (g.total - g.reserved), 0) : (v.cabin_remaining ?? 0)
     const totalSeats     = flights.reduce((s, f) => s + (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0), 0)
-    return { v, grades, flights, hotels, totalCabin, remainingCabin, totalSeats }
+    const occGroups      = groupByOccupancy(grades)
+    return { v, grades, flights, hotels, totalCabin, remainingCabin, totalSeats, occGroups }
   }), [voyages, gradeMap, flightMap, hotelMap])
 
   const filtered = useMemo(() => {
@@ -805,7 +820,7 @@ export default function InventoryTab() {
             {!isLoading && filtered.length === 0 && (
               <tr><td colSpan={9} className="px-3 py-8 text-center text-slate-400">데이터가 없습니다</td></tr>
             )}
-            {filtered.map(({ v, grades, flights, hotels, totalCabin, remainingCabin, totalSeats }) => {
+            {filtered.map(({ v, grades, flights, hotels, totalCabin, remainingCabin, totalSeats, occGroups }) => {
               const firstHotelName = hotels[0]?.hotel_name ?? null
               const hotelDisplay   = hotels.length > 1 ? `${firstHotelName} 외 ${hotels.length - 1}곳` : firstHotelName
               const airlineLabel   = [v.airline, v.airline_return].filter(Boolean).join(' / ') || null
@@ -841,9 +856,18 @@ export default function InventoryTab() {
 
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
 
-                    {/* 크루즈 + 등급별 잔여 뱃지 */}
+                    {/* 크루즈 + n인실별·등급별 잔여 뱃지 */}
                     <td className="px-3 py-2">
                       <div className="text-slate-600 truncate">{v.ship_name ?? v.cruise_line ?? '—'}</div>
+                      {occGroups.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {occGroups.map(o => (
+                            <span key={o.occupancy} className={`text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight ${o.remaining === 0 && o.total > 0 ? 'bg-red-50 text-red-500 border-red-200' : 'bg-brand/5 text-brand border-brand/20'}`}>
+                              {o.occupancy}인실 {o.remaining}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {grades.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {grades.map(g => {
