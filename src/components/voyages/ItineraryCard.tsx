@@ -364,6 +364,7 @@ export default function ItineraryCard({
                           options={ITINERARY_CATEGORIES}
                           onChange={v => upd(r._key, 'category', v)}
                           placeholder="구분"
+                          className="h-7 text-sm"
                         />
                       </div>
                       <div className="col-span-2 sm:col-span-1">

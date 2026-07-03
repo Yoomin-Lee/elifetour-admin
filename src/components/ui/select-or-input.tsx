@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { FieldSelect } from './field-select'
+import { cn } from '@/lib/utils'
 
 const CUSTOM = '__CUSTOM__'
 
@@ -23,12 +24,12 @@ export function SelectOrInput({ value, onChange, options, placeholder = '선택�
           onChange={e => onChange(e.target.value)}
           placeholder="직접 입력"
           autoFocus
-          className={`input h-9 flex-1 min-w-0 ${className ?? ''}`}
+          className={cn('input h-9 flex-1 min-w-0', className)}
         />
         <button
           type="button"
           onClick={() => { setIsCustom(false); onChange('') }}
-          className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-100 transition"
+          className={cn('shrink-0 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-100 transition', className?.match(/h-\d+/)?.[0])}
           title="목록으로"
         >
           <ChevronDown className="h-3.5 w-3.5" />
