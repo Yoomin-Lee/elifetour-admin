@@ -10,6 +10,7 @@ import {
 import { Building2 } from 'lucide-react'
 import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
+import { SelectOrInput } from '@/components/ui/select-or-input'
 import {
   fetchVoyages,
   fetchAllCabinGrades,
@@ -31,6 +32,9 @@ import { format } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import { getAirportTimezone } from '@/lib/utils/flightCalc'
 import type { CabinGrade, Hotel } from '@/types/database'
+
+const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
+const OCCUPANCY_OPTIONS = [1, 2, 3, 4].map(n => ({ value: String(n), label: `${n}인실` }))
 
 // ── 날짜/가격 헬퍼 ───────────────────────────────────────────────────────────
 function localDt(isoUtc: string, airportCode: string): string {
@@ -146,11 +150,13 @@ function CurrencySelect({ value, onChange }: { value: string; onChange: (v: stri
 
 function OccupancySelect({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
   return (
-    <select value={value ?? ''} onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
-      className="w-full px-1 py-0.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand bg-white">
-      <option value="">—</option>
-      {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}인실</option>)}
-    </select>
+    <FieldSelect
+      value={value != null ? String(value) : ''}
+      options={OCCUPANCY_OPTIONS}
+      onChange={v => onChange(v ? Number(v) : null)}
+      placeholder="선택"
+      className="h-7 px-1.5 text-xs"
+    />
   )
 }
 
@@ -417,7 +423,7 @@ function InventoryPanel({
                       </td>
                       <td className="py-1.5 pr-1">
                         {editMode
-                          ? <TxtInput value={g.grade} onChange={v => setGrade(idx, { grade: v })} placeholder="등급명" />
+                          ? <SelectOrInput value={g.grade} options={CABIN_GRADES} onChange={v => setGrade(idx, { grade: v })} placeholder="등급 선택" className="h-7 px-1.5 text-xs" />
                           : <span className="font-semibold text-slate-700">{g.grade}</span>}
                       </td>
                       <td className="py-1.5 pr-1 text-right">
