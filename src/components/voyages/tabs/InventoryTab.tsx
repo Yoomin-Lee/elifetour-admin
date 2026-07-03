@@ -251,7 +251,7 @@ function InventoryPanel({
   function addGradeRow() {
     setDraftGrades(prev => [...prev, {
       id: `__new__${Date.now()}`, voyage_id: voyageId,
-      grade: '', total: 0, reserved: 0, price_per_person: null,
+      grade: '', occupancy: null, total: 0, reserved: 0, price_per_person: null,
       ccf: null, nccf: null, tax: null, tip: null,
       currency: 'USD', agent: null, sort_order: prev.length,
       created_at: '', _isNew: true,

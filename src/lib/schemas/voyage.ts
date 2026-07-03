@@ -60,15 +60,16 @@ export const policySchema = z.object({
 })
 
 export const cabinGradeItemSchema = z.object({
-  grade:    z.string().default(''),
-  total:    z.coerce.number().min(0).default(0),
-  reserved: z.coerce.number().min(0).default(0),
-  ccf:      z.coerce.number().nullable().optional(),
-  nccf:     z.coerce.number().nullable().optional(),
-  tax:      z.coerce.number().nullable().optional(),
-  tip:      z.coerce.number().nullable().optional(),
-  currency: z.string().default('USD'),
-  agent:    z.string().optional(),
+  grade:     z.string().default(''),
+  occupancy: z.coerce.number().min(1).max(4).nullable().optional(),
+  total:     z.coerce.number().min(0).default(0),
+  reserved:  z.coerce.number().min(0).default(0),
+  ccf:       z.coerce.number().nullable().optional(),
+  nccf:      z.coerce.number().nullable().optional(),
+  tax:       z.coerce.number().nullable().optional(),
+  tip:       z.coerce.number().nullable().optional(),
+  currency:  z.string().default('USD'),
+  agent:     z.string().optional(),
 })
 
 export type CabinGradeItem = z.infer<typeof cabinGradeItemSchema>

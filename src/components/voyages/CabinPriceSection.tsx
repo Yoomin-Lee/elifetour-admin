@@ -8,13 +8,14 @@ import { SelectOrInput } from '@/components/ui/select-or-input'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
+const OCCUPANCY_OPTIONS = [1, 2, 3, 4].map(n => ({ value: String(n), label: `${n}인실` }))
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 const AGENTS = ['TMK', 'COSTA', 'ONLINE', 'DONGBO', 'VASCO', 'FLORENCE']
 const SYM: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
 const PRICE_FIELDS = ['ccf', 'nccf', 'tax', 'tip'] as const
 
 const EMPTY_GRADE = {
-  grade: '', total: 0, reserved: 0,
+  grade: '', occupancy: null, total: 0, reserved: 0,
   ccf: null, nccf: null, tax: null, tip: null,
   currency: 'USD', agent: '',
 }
@@ -31,13 +32,23 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
   const values = useWatch({ control, name: `cabin_grades.${index}` })
   const currency = values?.currency ?? 'USD'
   const grade = values?.grade ?? ''
+  const occupancy = values?.occupancy != null ? String(values.occupancy) : ''
   const agent = values?.agent ?? ''
   const remaining = (Number(values?.total) || 0) - (Number(values?.reserved) || 0)
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 space-y-2">
-      {/* 1행: 캐빈등급 / 에이전트 / 보유 / 예약 / 잔여 */}
+      {/* 1행: n인실 / 캐빈등급 / 에이전트 / 보유 / 예약 / 잔여 */}
       <div className="flex flex-wrap items-end gap-2">
+        <div className="min-w-[88px] flex-1">
+          <p className="text-[10px] text-slate-400 mb-0.5">n인실</p>
+          <FieldSelect
+            value={occupancy}
+            options={OCCUPANCY_OPTIONS}
+            onChange={v => setValue(`cabin_grades.${index}.occupancy`, Number(v))}
+            placeholder="인실 선택"
+          />
+        </div>
         <div className="min-w-[88px] flex-1">
           <p className="text-[10px] text-slate-400 mb-0.5">캐빈 등급</p>
           <SelectOrInput

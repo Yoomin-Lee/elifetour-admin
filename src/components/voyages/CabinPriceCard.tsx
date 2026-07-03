@@ -10,6 +10,7 @@ import { saveCabinGrades } from '@/lib/queries/voyages'
 import type { CabinGrade } from '@/types/database'
 
 const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
+const OCCUPANCY_OPTIONS = [1, 2, 3, 4].map(n => ({ value: String(n), label: `${n}인실` }))
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 const AGENTS = ['TMK', 'COSTA', 'ONLINE', 'DONGBO', 'VASCO', 'FLORENCE']
 const SYM: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€', SGD: 'S$', JPY: '¥' }
@@ -26,6 +27,7 @@ type DraftGrade = {
   _key: string
   id: string
   grade: string
+  occupancy: string
   agent: string
   total: string
   reserved: string
@@ -42,6 +44,7 @@ function toDraft(g: CabinGrade): DraftGrade {
     _key: g.id,
     id: g.id,
     grade: g.grade,
+    occupancy: g.occupancy != null ? String(g.occupancy) : '',
     agent: g.agent ?? '',
     total: String(g.total ?? 0),
     reserved: String(g.reserved ?? 0),
@@ -83,7 +86,7 @@ export default function CabinPriceCard({
 
   function addGrade() {
     setDrafts(prev => [...prev, {
-      _key: newKey(), id: '', grade: '', agent: '',
+      _key: newKey(), id: '', grade: '', occupancy: '', agent: '',
       total: '0', reserved: '0', ccf: '', nccf: '', tax: '', tip: '',
       currency: 'USD', sort_order: prev.length,
     }])
@@ -101,6 +104,7 @@ export default function CabinPriceCard({
       drafts.map((d, i) => ({
         id: d.id || undefined,
         grade: d.grade,
+        occupancy: d.occupancy ? Number(d.occupancy) : null,
         agent: d.agent || null,
         total: Number(d.total) || 0,
         reserved: Number(d.reserved) || 0,
@@ -154,8 +158,15 @@ export default function CabinPriceCard({
             const remaining = (Number(d.total) || 0) - (Number(d.reserved) || 0)
             return (
               <div key={d._key} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 space-y-2">
-                {/* 1행: 캐빈등급 / 에이전트 / 보유 / 예약 / 잔여 */}
+                {/* 1행: n인실 / 캐빈등급 / 에이전트 / 보유 / 예약 / 잔여 */}
                 <div className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-[88px] flex-1">
+                    <p className="text-[10px] text-slate-400 mb-0.5">n인실</p>
+                    <FieldSelect
+                      value={d.occupancy} options={OCCUPANCY_OPTIONS}
+                      onChange={v => upd(d._key, 'occupancy', v)} placeholder="인실 선택"
+                    />
+                  </div>
                   <div className="min-w-[88px] flex-1">
                     <p className="text-[10px] text-slate-400 mb-0.5">캐빈 등급</p>
                     <SelectOrInput
@@ -259,6 +270,9 @@ export default function CabinPriceCard({
                 <div key={g.id} className="rounded-lg border border-slate-100 p-3 space-y-1.5">
                   {/* 등급명 / 에이전트 / 보유·예약·잔여 */}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {g.occupancy && (
+                      <span className="rounded bg-brand/10 px-1.5 py-0.5 text-xs font-medium text-brand">{g.occupancy}인실</span>
+                    )}
                     <span className="text-sm font-semibold text-slate-800">{g.grade || '—'}</span>
                     {g.agent && <span className="text-xs text-slate-400">{g.agent}</span>}
                     <div className="flex items-center gap-3 ml-auto text-sm">

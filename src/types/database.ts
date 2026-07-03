@@ -124,6 +124,7 @@ export interface CabinGrade {
   id: string
   voyage_id: string
   grade: string
+  occupancy: number | null
   total: number
   reserved: number
   price_per_person: number | null

@@ -248,6 +248,7 @@ export async function createVoyageWithChildren(values: VoyageFormValues): Promis
       const price = (Number(g.ccf) || 0) + (Number(g.nccf) || 0) + (Number(g.tax) || 0) + (Number(g.tip) || 0)
       return {
         grade:            g.grade || '기본',
+        occupancy:        g.occupancy ?? null,
         total:            g.total || 0,
         reserved:         g.reserved || 0,
         price_per_person: price || null,
@@ -511,7 +512,7 @@ export async function fetchCabinGrades(voyageId: string): Promise<CabinGrade[]> 
 
 export async function saveCabinGrades(
   voyageId: string,
-  grades: Array<{ id?: string; grade: string; total: number; reserved: number; price_per_person: number | null; ccf?: number | null; nccf?: number | null; tax?: number | null; tip?: number | null; currency: string; agent?: string | null; sort_order: number }>,
+  grades: Array<{ id?: string; grade: string; occupancy?: number | null; total: number; reserved: number; price_per_person: number | null; ccf?: number | null; nccf?: number | null; tax?: number | null; tip?: number | null; currency: string; agent?: string | null; sort_order: number }>,
   deletedIds: string[],
 ): Promise<void> {
   if (deletedIds.length > 0) {
