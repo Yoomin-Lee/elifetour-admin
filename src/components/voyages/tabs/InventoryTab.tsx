@@ -20,7 +20,6 @@ import {
   addHotel,
   deleteHotel,
   resyncVoyageFlights,
-  saveFlight,
   deleteFlightRow,
   updateFlightSeatsAndFare,
 } from '@/lib/queries/voyages'
@@ -173,33 +172,13 @@ function OccupancySelect({ value, onChange }: { value: number | null; onChange: 
 type DraftGrade = CabinGrade & { _isNew?: true }
 type DraftHotel = Hotel      & { _isNew?: true }
 
-// 신규 항공편(_isNew)만 편명·구간·일시를 직접 입력한다. 기존 항공편은
-// 항차 상세에서 편집(FlightsCard)하고, 여기선 좌석·운임만 수정한다.
-type DraftFlight = VoyageFlight & {
-  _isNew?: true
-  departure_date: string
-  departure_time: string
-  arrival_date: string
-  arrival_time: string
-}
+// 항공편은 항차 상세(FlightsCard)에서 편명·구간·일시를 편집하고,
+// 여기선 좌석·운임만 수정한다. 수정 시 연결된 flights 행(source_flight_id)에도
+// 반영한 뒤 재동기화해, 항차 상세 저장 때 자동 동기화가 이 수정을 덮어쓰지 않게 한다.
+type DraftFlight = VoyageFlight
 
 function toDraftFlight(f: VoyageFlight): DraftFlight {
-  return { ...f, departure_date: '', departure_time: '', arrival_date: '', arrival_time: '' }
-}
-
-function emptyDraftFlight(sortOrder: number): DraftFlight {
-  return {
-    _isNew: true,
-    id: `__new__${Date.now()}${Math.random().toString(36).slice(2)}`,
-    voyage_id: '', pnr: null, source_flight_id: null,
-    flight_num: '', dep_airport: '', arr_airport: '',
-    dep_datetime: '', arr_datetime: '', flight_duration: null,
-    flight_fare: null, currency_code: 'KRW', sort_order: sortOrder,
-    seats_group: 0, seats_indivi: 0, seats_business: 0,
-    fare_base: 0, fare_fuel: 0, fare_tax: 0,
-    created_at: '', updated_at: '',
-    departure_date: '', departure_time: '', arrival_date: '', arrival_time: '',
-  }
+  return { ...f }
 }
 
 // ── 보유 현황 서브 패널 ──────────────────────────────────────────────────────
@@ -282,40 +261,10 @@ function InventoryPanel({
         delGradeIds.filter(id => !id.startsWith('__new__')),
       )
 
-      // 2. 항공편 — 모든 변경을 flights(단일 소스)에 반영한 뒤 voyage_flights를 재구성
-      //    (신규 행 추가 / 기존 행 좌석·운임 수정 / 삭제 모두 flights 기준으로 처리)
+      // 2. 항공편 좌석·운임 수정 — 연결된 flights 행(source_flight_id)에도 반영한 뒤
+      //    voyage_flights를 재구성 (그래야 항차 상세 저장 시 자동 동기화가 이 수정을 덮어쓰지 않음)
       await Promise.all([
-        // 신규 항공편 → flights에 새 행 생성
-        ...draftFlights.filter(f => f._isNew).map(f => saveFlight(voyageId, {
-          flight_no: f.flight_num || null,
-          origin: f.dep_airport || null,
-          destination: f.arr_airport || null,
-          departure_date: f.departure_date || null,
-          departure_time: f.departure_time || null,
-          arrival_date: f.arrival_date || null,
-          arrival_time: f.arrival_time || null,
-          duration: null,
-          fare: null,
-          sort_order: f.sort_order,
-          seats_group: f.seats_group,
-          seats_indivi: f.seats_indivi,
-          seats_business: f.seats_business,
-          fare_base: f.fare_base,
-          fare_fuel: f.fare_fuel,
-          fare_tax: f.fare_tax,
-          segments: [{
-            flight_no: f.flight_num || null,
-            origin: f.dep_airport || null,
-            destination: f.arr_airport || null,
-            departure_date: f.departure_date || null,
-            departure_time: f.departure_time || null,
-            arrival_date: f.arrival_date || null,
-            arrival_time: f.arrival_time || null,
-            duration: null,
-          }],
-        })),
-        // 기존 항공편 좌석·운임 수정 → 연결된 flights 행에 반영 (링크 없는 구버전 행은 voyage_flights에 직접 반영)
-        ...draftFlights.filter(f => !f._isNew && !delFlightIds.includes(f.id)).map(f =>
+        ...draftFlights.filter(f => !delFlightIds.includes(f.id)).map(f =>
           f.source_flight_id
             ? updateFlightSeatsAndFare(f.source_flight_id, {
                 seats_group: f.seats_group, seats_indivi: f.seats_indivi, seats_business: f.seats_business,
@@ -389,12 +338,9 @@ function InventoryPanel({
   function setFlight(idx: number, patch: Partial<DraftFlight>) {
     setDraftFlights(prev => prev.map((f, i) => i === idx ? { ...f, ...patch } : f))
   }
-  function addFlightRow() {
-    setDraftFlights(prev => [...prev, emptyDraftFlight(prev.length)])
-  }
   function removeFlightRow(idx: number) {
     const f = draftFlights[idx]
-    if (!f._isNew) setDelFlightIds(p => [...p, f.id])
+    setDelFlightIds(p => [...p, f.id])
     setDraftFlights(p => p.filter((_, i) => i !== idx))
   }
 
@@ -629,11 +575,11 @@ function InventoryPanel({
           )}
         </div>
 
-        {flights.length === 0 && !editMode ? (
+        {flights.length === 0 ? (
           <p className="text-xs text-slate-400">등록된 항공편이 없습니다</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs" style={{ minWidth: editMode ? 760 : 580 }}>
+            <table className="w-full text-xs" style={{ minWidth: editMode ? 700 : 580 }}>
               <thead>
                 <tr className="text-[10px] text-slate-400 border-b border-slate-100">
                   <th className="text-left pb-1.5 w-16 font-medium">편명</th>
@@ -650,45 +596,20 @@ function InventoryPanel({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {(flights as DraftFlight[]).map((f, idx) => {
+                {flights.map((f, idx) => {
                   const totalSeats = (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0)
                   const totalFare  = (f.fare_base ?? 0) + (f.fare_fuel ?? 0) + (f.fare_tax ?? 0)
                   const depLocal   = localDt(f.dep_datetime, f.dep_airport)
                   const arrLocal   = localDt(f.arr_datetime, f.arr_airport)
                   return (
-                    <tr key={f.id} className={editMode ? 'align-top' : 'hover:bg-white/60 transition-colors'}>
-                      <td className="py-1.5 pr-1">
-                        {f._isNew
-                          ? <TxtInput value={f.flight_num} onChange={v => setFlight(idx, { flight_num: v })} placeholder="편명" className="w-16" />
-                          : <span className="font-mono font-semibold text-slate-700">{f.flight_num}</span>}
+                    <tr key={f.id} className={editMode ? 'align-middle' : 'hover:bg-white/60 transition-colors'}>
+                      <td className="py-1.5 font-mono font-semibold text-slate-700">{f.flight_num}</td>
+                      <td className="py-1.5 text-slate-500 text-[10px]">
+                        <span className="font-medium text-slate-600">{f.dep_airport}</span>
+                        <span className="text-slate-300 mx-0.5">→</span>
+                        <span className="font-medium text-slate-600">{f.arr_airport}</span>
+                        <span className="ml-1 text-slate-300">{depLocal} ~ {arrLocal}</span>
                       </td>
-                      {f._isNew ? (
-                        <td className="py-1.5 pr-1 space-y-1">
-                          <div className="flex items-center gap-1">
-                            <TxtInput value={f.dep_airport} onChange={v => setFlight(idx, { dep_airport: v.toUpperCase() })} placeholder="출발공항" className="w-14 uppercase" />
-                            <span className="text-slate-300">→</span>
-                            <TxtInput value={f.arr_airport} onChange={v => setFlight(idx, { arr_airport: v.toUpperCase() })} placeholder="도착공항" className="w-14 uppercase" />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <input type="date" value={f.departure_date} onChange={e => setFlight(idx, { departure_date: e.target.value })}
-                              className="px-1 py-0.5 border border-slate-200 rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-brand" />
-                            <input type="time" value={f.departure_time} onChange={e => setFlight(idx, { departure_time: e.target.value })}
-                              className="w-16 px-1 py-0.5 border border-slate-200 rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-brand" />
-                            <span className="text-slate-300">~</span>
-                            <input type="date" value={f.arrival_date} onChange={e => setFlight(idx, { arrival_date: e.target.value })}
-                              className="px-1 py-0.5 border border-slate-200 rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-brand" />
-                            <input type="time" value={f.arrival_time} onChange={e => setFlight(idx, { arrival_time: e.target.value })}
-                              className="w-16 px-1 py-0.5 border border-slate-200 rounded text-[10px] focus:outline-none focus:ring-1 focus:ring-brand" />
-                          </div>
-                        </td>
-                      ) : (
-                        <td className="py-1.5 text-slate-500 text-[10px]">
-                          <span className="font-medium text-slate-600">{f.dep_airport}</span>
-                          <span className="text-slate-300 mx-0.5">→</span>
-                          <span className="font-medium text-slate-600">{f.arr_airport}</span>
-                          <span className="ml-1 text-slate-300">{depLocal} ~ {arrLocal}</span>
-                        </td>
-                      )}
                       <td className="py-1.5 pr-1 text-right">
                         {editMode
                           ? <NumInput value={f.seats_group} onChange={v => setFlight(idx, { seats_group: v ?? 0 })} />
@@ -747,11 +668,7 @@ function InventoryPanel({
                 )}
               </tbody>
             </table>
-            {editMode && <AddBtn label="항공편 추가" onClick={addFlightRow} />}
           </div>
-        )}
-        {flights.length === 0 && editMode && (
-          <AddBtn label="항공편 추가" onClick={addFlightRow} />
         )}
       </div>
 
