@@ -237,12 +237,13 @@ function SegmentDraftRow({
 
 // ── 항공편 편집 행 ────────────────────────────────────────────────────────────
 function FlightDraftRow({
-  r, index, onRemove, onUpdate,
+  r, index, onRemove, onUpdate, onDuplicate,
 }: {
   r: DraftFlight
   index: number
   onRemove: () => void
   onUpdate: (updater: (prev: DraftFlight) => DraftFlight) => void
+  onDuplicate: () => void
 }) {
   const [detailOpen, setDetailOpen] = useState(false)
   const [focusTarget, setFocusTarget] = useState<number | null>(null)
@@ -366,10 +367,16 @@ function FlightDraftRow({
                 autoFocus={si === focusTarget}
               />
             ))}
-            <button type="button" onClick={addSeg}
-              className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
-              <Plus className="h-3 w-3" /> 구간 추가
-            </button>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={addSeg}
+                className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
+                <Plus className="h-3 w-3" /> 구간 추가
+              </button>
+              <button type="button" onClick={onDuplicate} title="편명·구간·일시는 그대로 복제하고 좌석·운임만 새로 입력합니다"
+                className="flex items-center gap-1 text-xs text-slate-500 hover:bg-slate-100 rounded px-2 py-1.5 transition">
+                <Plus className="h-3 w-3" /> 같은 구간으로 메인 추가
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -437,6 +444,15 @@ export default function FlightsCard({
     setDraft(d => [...d, { ...EMPTY, _key: `new-${Date.now()}` }])
   }
 
+  /** 편명·구간·일시는 그대로 복제하고 좌석·운임만 새로 입력하도록 메인 행 추가 */
+  function duplicateRow(source: DraftFlight) {
+    setDraft(d => [...d, {
+      ...EMPTY,
+      _key: `new-${Date.now()}`,
+      segments: source.segments.map(s => ({ ...s })),
+    }])
+  }
+
   function removeRow(key: string) {
     setDraft(d =>
       d.map(r => r._key === key
@@ -494,6 +510,7 @@ export default function FlightsCard({
                   index={i}
                   onRemove={() => removeRow(r._key)}
                   onUpdate={updater => upd(r._key, updater)}
+                  onDuplicate={() => duplicateRow(r)}
                 />
               ))
             )}

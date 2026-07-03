@@ -158,8 +158,8 @@ function SegmentRow({
 }
 
 // ── 메인 항공편 행 ──────────────────────────────────────────────────────────
-function FlightRow({ index, onRemove }: { index: number; onRemove: () => void }) {
-  const { register, control } = useFormContext<VoyageFormValues>()
+function FlightRow({ index, onRemove, onDuplicate }: { index: number; onRemove: () => void; onDuplicate: (segments: VoyageFormValues['flights'][number]['segments']) => void }) {
+  const { register, control, getValues } = useFormContext<VoyageFormValues>()
   const [detailOpen, setDetailOpen] = useState(false)
   const [newSegIdx, setNewSegIdx] = useState<number | null>(null)
 
@@ -270,10 +270,17 @@ function FlightRow({ index, onRemove }: { index: number; onRemove: () => void })
                 autoFocus={si === newSegIdx}
               />
             ))}
-            <button type="button" onClick={() => { setNewSegIdx(segments.length); appendSeg(EMPTY_SEGMENT, { shouldFocus: false }) }}
-              className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
-              <Plus className="h-3 w-3" /> 구간 추가
-            </button>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => { setNewSegIdx(segments.length); appendSeg(EMPTY_SEGMENT, { shouldFocus: false }) }}
+                className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
+                <Plus className="h-3 w-3" /> 구간 추가
+              </button>
+              <button type="button" onClick={() => onDuplicate(getValues(`flights.${index}.segments`))}
+                title="편명·구간·일시는 그대로 복제하고 좌석·운임만 새로 입력합니다"
+                className="flex items-center gap-1 text-xs text-slate-500 hover:bg-slate-100 rounded px-2 py-1.5 transition">
+                <Plus className="h-3 w-3" /> 같은 구간으로 메인 추가
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -284,6 +291,10 @@ function FlightRow({ index, onRemove }: { index: number; onRemove: () => void })
 // ── 메인 컴포넌트 ──────────────────────────────────────────────────────────
 export default function FlightsEditor() {
   const { fields, append, remove } = useFieldArray<VoyageFormValues, 'flights'>({ name: 'flights' })
+
+  function duplicateRow(segments: VoyageFormValues['flights'][number]['segments']) {
+    append({ ...EMPTY_FLIGHT, segments: segments.map(s => ({ ...s })) })
+  }
 
   return (
     <Card>
@@ -300,7 +311,7 @@ export default function FlightsEditor() {
           <p className="py-4 text-center text-sm text-slate-400">항공편을 직접 입력하세요</p>
         ) : (
           fields.map((field, i) => (
-            <FlightRow key={field.id} index={i} onRemove={() => remove(i)} />
+            <FlightRow key={field.id} index={i} onRemove={() => remove(i)} onDuplicate={duplicateRow} />
           ))
         )}
       </CardContent>
