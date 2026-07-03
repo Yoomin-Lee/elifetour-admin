@@ -222,6 +222,7 @@ function InventoryPanel({
     qc.invalidateQueries({ queryKey: ['cabin-grades'] })
     qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
     qc.invalidateQueries({ queryKey: ['all-hotels'] })
+    qc.invalidateQueries({ queryKey: ['hotels', voyageId] })
     qc.invalidateQueries({ queryKey: ['voyages'] })
   }
 

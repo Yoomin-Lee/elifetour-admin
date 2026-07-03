@@ -352,6 +352,16 @@ export async function fetchAllFeedbackLogs(): Promise<FeedbackRow[]> {
   return data as FeedbackRow[]
 }
 
+export async function fetchHotels(voyageId: string): Promise<Hotel[]> {
+  const { data, error } = await sb()
+    .from('hotels')
+    .select('*')
+    .eq('voyage_id', voyageId)
+    .order('sort_order')
+  if (error) throw error
+  return data as Hotel[]
+}
+
 export async function fetchAllHotels(): Promise<HotelRow[]> {
   const { data, error } = await sb()
     .from('hotels')

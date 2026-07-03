@@ -10,6 +10,7 @@ import { FieldSelect } from '@/components/ui/field-select'
 import OverviewCard from '@/components/voyages/OverviewCard'
 import CabinPriceCard from '@/components/voyages/CabinPriceCard'
 import FlightsCard from '@/components/voyages/FlightsCard'
+import HotelCard from '@/components/voyages/HotelCard'
 import ItineraryCard from '@/components/voyages/ItineraryCard'
 import CancellationCard from '@/components/voyages/CancellationCard'
 import HistoryCard from '@/components/voyages/HistoryCard'
@@ -22,6 +23,7 @@ import {
   fetchHistory,
   fetchFeedbackLogs,
   fetchCabinGrades,
+  fetchHotels,
   deleteVoyage,
 } from '@/lib/queries/voyages'
 import { getLastVoyageId, setLastVoyageId } from '@/lib/lastVoyage'
@@ -134,6 +136,11 @@ function VoyageSearchInner() {
     queryFn: () => fetchCabinGrades(voyageId!),
     enabled: !!voyageId,
   })
+  const hotelsQuery = useQuery({
+    queryKey: ['hotels', voyageId],
+    queryFn: () => fetchHotels(voyageId!),
+    enabled: !!voyageId,
+  })
   const feedbackQuery = useQuery({
     queryKey: ['feedback', voyageId],
     queryFn: () => fetchFeedbackLogs(voyageId!),
@@ -141,7 +148,7 @@ function VoyageSearchInner() {
   })
 
   const selectedVoyage = voyagesQuery.data?.find(v => v.id === voyageId)
-  const isLoading = flightsQuery.isLoading || itineraryQuery.isLoading || cancellationQuery.isLoading || historyQuery.isLoading || cabinGradesQuery.isLoading || feedbackQuery.isLoading
+  const isLoading = flightsQuery.isLoading || itineraryQuery.isLoading || cancellationQuery.isLoading || historyQuery.isLoading || cabinGradesQuery.isLoading || feedbackQuery.isLoading || hotelsQuery.isLoading
 
   return (
     <div className="space-y-5">
@@ -245,6 +252,7 @@ function VoyageSearchInner() {
           <div className="flex flex-col gap-4">
             <CabinPriceCard grades={cabinGradesQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
             <FlightsCard flights={flightsQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} airline={selectedVoyage.airline} airlineReturn={selectedVoyage.airline_return} />
+            <HotelCard hotels={hotelsQuery.data ?? []} voyageId={voyageId} canWrite={canWrite} />
             <CancellationCard
               policies={cancellationQuery.data ?? []}
               departureDate={selectedVoyage.departure_date}
