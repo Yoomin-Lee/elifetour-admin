@@ -39,6 +39,7 @@ import { FieldSelect } from '@/components/ui/field-select'
 import { voyageTitle } from '@/types/database'
 import type { PaymentCategory, PaymentColumn } from '@/types/database'
 import type { PaymentSchedule } from '@/types/database'
+import { getLastVoyageId, setLastVoyageId } from '@/lib/lastVoyage'
 
 // ─── 상수 ──────────────────────────────────────────────────────────────────
 
@@ -234,6 +235,21 @@ export default function PaymentTab() {
   const didAutoSelectRef = useRef(false)
 
   useEffect(() => { if (urlVoyageId) setVoyageId(urlVoyageId) }, [urlVoyageId])
+
+  // 다른 탭·메뉴를 봤다가 돌아왔을 때(=이 컴포넌트가 새로 마운트될 때) 한 번만,
+  // 마지막으로 조회한 항차를 복원한다. '이번달 결제' 진입 시엔 자체 자동선택을 우선한다.
+  useEffect(() => {
+    if (!urlVoyageId && urlFilter !== 'this-month') {
+      const remembered = getLastVoyageId('payment')
+      if (remembered) setVoyageId(remembered)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 조회한 항차는 계속 최신 상태로 기억해둔다.
+  useEffect(() => {
+    if (voyageId) setLastVoyageId('payment', voyageId)
+  }, [voyageId])
 
   // ─ 편집 상태
   const [editing, setEditing]         = useState<DraftKey | null>(null)

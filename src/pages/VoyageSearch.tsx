@@ -43,7 +43,7 @@ function VoyageSearchInner() {
   // 선택 해제는 다시 덮어쓰지 않도록 마운트 시 1회로 한정.
   useEffect(() => {
     if (!voyageId) {
-      const remembered = getLastVoyageId()
+      const remembered = getLastVoyageId('search')
       if (remembered) setSearchParams(prev => { const next = new URLSearchParams(prev); next.set('voyage', remembered); return next }, { replace: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,7 +51,7 @@ function VoyageSearchInner() {
 
   // 조회한 항차는 계속 최신 상태로 기억해둔다.
   useEffect(() => {
-    if (voyageId) setLastVoyageId(voyageId)
+    if (voyageId) setLastVoyageId('search', voyageId)
   }, [voyageId])
 
   const { user, profile, canWrite, isAdmin } = useAuth() as {
@@ -77,7 +77,7 @@ function VoyageSearchInner() {
     onSuccess: () => {
       toast.success('삭제되었습니다')
       qc.invalidateQueries({ queryKey: ['voyages'] })
-      setLastVoyageId(null)
+      setLastVoyageId('search', null)
       setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('voyage'); return next })
     },
     onError: () => toast.error('삭제에 실패했습니다'),
