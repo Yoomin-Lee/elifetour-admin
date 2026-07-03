@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -24,6 +24,7 @@ import {
   fetchCabinGrades,
   deleteVoyage,
 } from '@/lib/queries/voyages'
+import { getLastVoyageId, setLastVoyageId } from '@/lib/lastVoyage'
 
 export default function VoyageSearch() {
   return <VoyageSearchInner />
@@ -36,6 +37,23 @@ function Skeleton({ className }: { className?: string }) {
 function VoyageSearchInner() {
   const [searchParams, setSearchParams] = useSearchParams()
   const voyageId = searchParams.get('voyage')
+
+  // 다른 탭·메뉴를 봤다가 돌아왔을 때(=이 컴포넌트가 새로 마운트될 때) 한 번만,
+  // 마지막으로 조회한 항차를 복원한다. 조회 중 필터 변경/삭제로 인한 명시적
+  // 선택 해제는 다시 덮어쓰지 않도록 마운트 시 1회로 한정.
+  useEffect(() => {
+    if (!voyageId) {
+      const remembered = getLastVoyageId()
+      if (remembered) setSearchParams(prev => { const next = new URLSearchParams(prev); next.set('voyage', remembered); return next }, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 조회한 항차는 계속 최신 상태로 기억해둔다.
+  useEffect(() => {
+    if (voyageId) setLastVoyageId(voyageId)
+  }, [voyageId])
+
   const { user, profile, canWrite, isAdmin } = useAuth() as {
     user: { email?: string; user_metadata?: { name?: string; full_name?: string } } | null
     profile: { display_name?: string | null } | null
@@ -59,6 +77,7 @@ function VoyageSearchInner() {
     onSuccess: () => {
       toast.success('삭제되었습니다')
       qc.invalidateQueries({ queryKey: ['voyages'] })
+      setLastVoyageId(null)
       setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('voyage'); return next })
     },
     onError: () => toast.error('삭제에 실패했습니다'),
