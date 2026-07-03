@@ -950,12 +950,17 @@ export default function InventoryTab() {
                       )}
                     </td>
 
-                    {/* 항공사 + 편명 뱃지 (2개 이하는 한 줄, 그 이상은 출발/도착편으로 두 줄) */}
+                    {/* 항공사 + 편명 뱃지 (같은 항공사끼리 같은 줄) */}
                     <td className="px-3 py-2">
                       <div className="text-slate-600 truncate">{airlineLabel ?? '—'}</div>
                       {flights.length > 0 && (() => {
-                        const half = Math.ceil(flights.length / 2)
-                        const rows = flights.length <= 2 ? [flights] : [flights.slice(0, half), flights.slice(half)]
+                        const byAirline = new Map<string, typeof flights>()
+                        flights.forEach(f => {
+                          const code = f.flight_num.match(/^[A-Za-z]+/)?.[0] ?? f.flight_num
+                          if (!byAirline.has(code)) byAirline.set(code, [])
+                          byAirline.get(code)!.push(f)
+                        })
+                        const rows = Array.from(byAirline.values())
                         return (
                           <div className="mt-1 space-y-0.5">
                             {rows.map((row, ri) => (
