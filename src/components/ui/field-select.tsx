@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +15,16 @@ type Props = {
 
 export function FieldSelect({ value, options, onChange, placeholder, className, defaultOpen }: Props) {
   const [open, setOpen] = useState(defaultOpen ?? false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handlePointerDown(e: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [open])
 
   const normalized: Option[] = options.map(o =>
     typeof o === 'string' ? { value: o, label: o } : o,
@@ -23,7 +33,7 @@ export function FieldSelect({ value, options, onChange, placeholder, className, 
   const current = normalized.find(o => o.value === value)
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -43,24 +53,21 @@ export function FieldSelect({ value, options, onChange, placeholder, className, 
       </button>
 
       {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-20 mt-1 w-max min-w-full max-h-52 overflow-y-auto scrollbar-navy rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-            {normalized.map(o => (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => { onChange(o.value); setOpen(false) }}
-                className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-50"
-              >
-                <span className={cn('whitespace-nowrap', o.value === value ? 'font-semibold text-brand' : 'text-slate-700')}>
-                  {o.label ?? o.value}
-                </span>
-                {o.value === value && <Check className="h-3.5 w-3.5 shrink-0 text-brand" />}
-              </button>
-            ))}
-          </div>
-        </>
+        <div className="absolute left-0 top-full z-20 mt-1 w-max min-w-full max-h-52 overflow-y-auto scrollbar-navy rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          {normalized.map(o => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => { onChange(o.value); setOpen(false) }}
+              className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-50"
+            >
+              <span className={cn('whitespace-nowrap', o.value === value ? 'font-semibold text-brand' : 'text-slate-700')}>
+                {o.label ?? o.value}
+              </span>
+              {o.value === value && <Check className="h-3.5 w-3.5 shrink-0 text-brand" />}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   )
