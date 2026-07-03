@@ -880,7 +880,7 @@ export default function InventoryTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">
                 <div className="flex items-center gap-1"><Ship className="h-3 w-3 text-blue-400" />크루즈</div>
               </th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">
                 <div className="flex items-center gap-1"><Plane className="h-3 w-3 text-sky-400" />항공</div>
               </th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">
