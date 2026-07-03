@@ -248,7 +248,7 @@ export async function resyncVoyageFlights(voyageId: string): Promise<void> {
 }
 
 export async function createVoyageWithChildren(values: VoyageFormValues): Promise<Voyage> {
-  const { flights, itinerary, policies, cabin_grades, ...voyageData } = values
+  const { flights, itinerary, policies, cabin_grades, hotels, ...voyageData } = values
 
   const { data: voyage, error: ve } = await sb()
     .from('voyages')
@@ -300,6 +300,22 @@ export async function createVoyageWithChildren(values: VoyageFormValues): Promis
         sort_order:       i,
       }
     }), [])
+  }
+
+  // stay_date는 DB에서 NOT NULL이라, 날짜가 비어있는 행은 건너뛴다(flights의 구간 스킵과 동일한 원칙)
+  const validHotels = hotels.filter(h => h.stay_date)
+  if (validHotels.length > 0) {
+    const { error } = await sb()
+      .from('hotels')
+      .insert(validHotels.map((h, i) => ({
+        hotel_name: h.hotel_name || '',
+        stay_date:  h.stay_date,
+        room_rate:  h.room_rate ?? null,
+        currency:   h.currency || 'USD',
+        voyage_id:  id,
+        sort_order: i,
+      })))
+    if (error) throw error
   }
 
   return voyage as Voyage

@@ -40,6 +40,7 @@ export function useRealtimeSync(): { connected: boolean } {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cabin_grades' }, () => {
         qc.invalidateQueries({ queryKey: ['cabin-grades'] })
+        qc.invalidateQueries({ queryKey: ['all-cabin-grades'] })
         qc.invalidateQueries({ queryKey: ['voyages'] })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_schedules' }, () => {

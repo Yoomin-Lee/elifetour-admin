@@ -120,6 +120,7 @@ export default function CabinPriceCard({
     ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['cabin-grades', voyageId] })
+      qc.invalidateQueries({ queryKey: ['all-cabin-grades'] })
       qc.invalidateQueries({ queryKey: ['voyages'] })
       setEditing(false)
       toast.success('저장됐습니다')

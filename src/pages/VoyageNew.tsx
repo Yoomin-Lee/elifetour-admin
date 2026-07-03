@@ -11,6 +11,7 @@ import FlightsEditor from '@/components/voyages/FlightsEditor'
 import ItineraryEditor from '@/components/voyages/ItineraryEditor'
 import CancellationEditor from '@/components/voyages/CancellationEditor'
 import CabinPriceSection from '@/components/voyages/CabinPriceSection'
+import HotelEditor from '@/components/voyages/HotelEditor'
 import { Button } from '@/components/ui/button'
 
 const queryClient = new QueryClient()
@@ -35,6 +36,7 @@ function VoyageNewInner() {
       cabin_remaining: 0,
       customer_count: 0,
       flights: [],
+      hotels: [],
       itinerary: [],
       policies: [],
     },
@@ -82,6 +84,7 @@ function VoyageNewInner() {
             <div className="space-y-4">
               <CabinPriceSection />
               <FlightsEditor />
+              <HotelEditor />
             </div>
           </div>
           {/* 하단: 기항지(좌) + 취소료(우) */}

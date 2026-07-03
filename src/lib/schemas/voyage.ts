@@ -74,6 +74,16 @@ export const cabinGradeItemSchema = z.object({
 
 export type CabinGradeItem = z.infer<typeof cabinGradeItemSchema>
 
+export const hotelItemSchema = z.object({
+  hotel_name: z.string().default(''),
+  stay_date:  emptyToUndef,
+  room_rate:  z.coerce.number().nullable().optional(),
+  currency:   z.string().default('USD'),
+  sort_order: z.coerce.number().default(0),
+})
+
+export type HotelItem = z.infer<typeof hotelItemSchema>
+
 export const voyageFormSchema = z.object({
   region:          z.string().min(1, '지역/상품명을 입력하세요'),
   status:          z.enum(['미오픈', '판매중', '마감', '출발완료', '취소']),
@@ -93,6 +103,7 @@ export const voyageFormSchema = z.object({
   product_price:   z.coerce.number().nullable().optional(),
   cabin_grades:    z.array(cabinGradeItemSchema).default([]),
   flights:         z.array(flightSchema).default([]),
+  hotels:          z.array(hotelItemSchema).default([]),
   itinerary:       z.array(itinerarySchema).default([]),
   policies:        z.array(policySchema).default([]),
 }).superRefine((data, ctx) => {

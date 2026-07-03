@@ -265,27 +265,38 @@ function InventoryPanel({
 
       // 2. 항공편 좌석·운임 수정 — 연결된 flights 행(source_flight_id)에도 반영한 뒤
       //    voyage_flights를 재구성 (그래야 항차 상세 저장 시 자동 동기화가 이 수정을 덮어쓰지 않음)
-      await Promise.all([
-        ...draftFlights.filter(f => !delFlightIds.includes(f.id)).map(f =>
-          f.source_flight_id
-            ? updateFlightSeatsAndFare(f.source_flight_id, {
-                seats_group: f.seats_group, seats_indivi: f.seats_indivi, seats_business: f.seats_business,
-                fare_base: f.fare_base, fare_fuel: f.fare_fuel, fare_tax: f.fare_tax,
-              })
-            : updateVoyageFlight(f.id, {
-                seats_group: f.seats_group, seats_indivi: f.seats_indivi, seats_business: f.seats_business,
-                fare_base: f.fare_base, fare_fuel: f.fare_fuel, fare_tax: f.fare_tax,
-              }),
-        ),
-        // 삭제된 항공편 → 연결된 flights 행도 삭제 (링크 없으면 voyage_flights만 삭제)
-        ...delFlightIds.map(id => {
-          const original = initFlights.find(f => f.id === id)
-          return original?.source_flight_id
-            ? deleteFlightRow(original.source_flight_id)
-            : deleteVoyageFlight(id)
-        }),
-      ])
-      await resyncVoyageFlights(voyageId)
+      //    항공편을 실제로 건드리지 않았으면 재동기화를 건너뛴다 — resync는 flights에 연결
+      //    되지 않은(다른 화면에서 직접 추가된) voyage_flights 행을 지워버리므로, 관련 없는
+      //    저장(캐빈/호텔 등)마다 매번 돌리면 그런 행이 조용히 삭제될 수 있다.
+      const flightsChanged = delFlightIds.length > 0 || draftFlights.some(f => {
+        const orig = initFlights.find(o => o.id === f.id)
+        return !orig
+          || orig.seats_group !== f.seats_group || orig.seats_indivi !== f.seats_indivi || orig.seats_business !== f.seats_business
+          || orig.fare_base !== f.fare_base || orig.fare_fuel !== f.fare_fuel || orig.fare_tax !== f.fare_tax
+      })
+      if (flightsChanged) {
+        await Promise.all([
+          ...draftFlights.filter(f => !delFlightIds.includes(f.id)).map(f =>
+            f.source_flight_id
+              ? updateFlightSeatsAndFare(f.source_flight_id, {
+                  seats_group: f.seats_group, seats_indivi: f.seats_indivi, seats_business: f.seats_business,
+                  fare_base: f.fare_base, fare_fuel: f.fare_fuel, fare_tax: f.fare_tax,
+                })
+              : updateVoyageFlight(f.id, {
+                  seats_group: f.seats_group, seats_indivi: f.seats_indivi, seats_business: f.seats_business,
+                  fare_base: f.fare_base, fare_fuel: f.fare_fuel, fare_tax: f.fare_tax,
+                }),
+          ),
+          // 삭제된 항공편 → 연결된 flights 행도 삭제 (링크 없으면 voyage_flights만 삭제)
+          ...delFlightIds.map(id => {
+            const original = initFlights.find(f => f.id === id)
+            return original?.source_flight_id
+              ? deleteFlightRow(original.source_flight_id)
+              : deleteVoyageFlight(id)
+          }),
+        ])
+        await resyncVoyageFlights(voyageId)
+      }
 
       // 3. 호텔
       await Promise.all([
