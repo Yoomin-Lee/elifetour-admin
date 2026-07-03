@@ -41,6 +41,7 @@ const EMPTY_SEGMENT: SegmentDraft = {
 
 type DraftFlight = {
   _key:         string
+  _groupKey:    string
   _isNew:       boolean
   _deleted:     boolean
   id:           string
@@ -53,6 +54,15 @@ type DraftFlight = {
   fare_fuel:    string
   fare_tax:     string
   segments:     SegmentDraft[]
+}
+
+/** 구간(편명·구간·일시) 내용이 같으면 같은 그룹으로 묶어 하나의 구간 섹션을 공유한다 */
+function segmentsKey(segments: SegmentDraft[]): string {
+  if (segments.length === 0) return ''
+  return JSON.stringify(segments.map(s => [
+    s.flight_no, s.origin, s.destination,
+    s.departure_date, s.departure_time, s.arrival_date, s.arrival_time,
+  ]))
 }
 
 function toDraft(f: Flight): DraftFlight {
@@ -82,7 +92,7 @@ function toDraft(f: Flight): DraftFlight {
   }
 
   return {
-    _key: f.id, _isNew: false, _deleted: false, id: f.id,
+    _key: f.id, _groupKey: segmentsKey(segments) || f.id, _isNew: false, _deleted: false, id: f.id,
     fare:           f.fare != null ? String(f.fare) : '',
     sort_order:     f.sort_order,
     seats_group:    String(f.seats_group    ?? 0),
@@ -95,7 +105,7 @@ function toDraft(f: Flight): DraftFlight {
   }
 }
 
-const EMPTY: Omit<DraftFlight, '_key'> = {
+const EMPTY: Omit<DraftFlight, '_key' | '_groupKey'> = {
   _isNew: true, _deleted: false, id: '',
   fare: '', sort_order: 0,
   seats_group: '0', seats_indivi: '0', seats_business: '0',
@@ -235,45 +245,24 @@ function SegmentDraftRow({
   )
 }
 
-// ── 항공편 편집 행 ────────────────────────────────────────────────────────────
-function FlightDraftRow({
-  r, index, onRemove, onUpdate, onDuplicate,
+// ── 메인(좌석/운임) 한 블록 — 그룹 안에 여러 개 나열될 수 있음 ──────────────────
+function MainFareBlock({
+  r, index, onRemove, onUpdate,
 }: {
   r: DraftFlight
   index: number
   onRemove: () => void
   onUpdate: (updater: (prev: DraftFlight) => DraftFlight) => void
-  onDuplicate: () => void
 }) {
-  const [detailOpen, setDetailOpen] = useState(false)
-  const [focusTarget, setFocusTarget] = useState<number | null>(null)
-
   const totalSeats = (Number(r.seats_group) || 0) + (Number(r.seats_indivi) || 0) + (Number(r.seats_business) || 0)
   const totalFare  = (Number(r.fare_base) || 0) + (Number(r.fare_fuel) || 0) + (Number(r.fare_tax) || 0)
-
-  function updSeg(segIdx: number, field: keyof SegmentDraft, value: string) {
-    onUpdate(prev => ({
-      ...prev,
-      segments: prev.segments.map((s, i) => i === segIdx ? { ...s, [field]: value } : s),
-    }))
-  }
-
-  function addSeg() {
-    setFocusTarget(r.segments.length)
-    onUpdate(prev => ({ ...prev, segments: [...prev.segments, { ...EMPTY_SEGMENT }] }))
-    setDetailOpen(true)
-  }
-
-  function removeSeg(segIdx: number) {
-    onUpdate(prev => ({ ...prev, segments: prev.segments.filter((_, i) => i !== segIdx) }))
-  }
 
   function updMain(field: keyof DraftFlight, value: string) {
     onUpdate(prev => ({ ...prev, [field]: value }))
   }
 
   return (
-    <div className="relative rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+    <div className="relative rounded-md border border-slate-200 bg-white p-2.5 space-y-2">
       <button type="button" onClick={onRemove}
         className="absolute right-2 top-2 rounded p-1 text-slate-400 hover:text-red-500 transition">
         <Trash2 className="h-3.5 w-3.5" />
@@ -337,8 +326,60 @@ function FlightDraftRow({
           </div>
         </div>
       </div>
+    </div>
+  )
+}
 
-      {/* ── 편명·날짜·시각 구간 (하위, 접이식 + 복수 추가) ── */}
+// ── 항공편 그룹 카드 (메인 여러 개 + 구간 1개 공유) ────────────────────────────
+function FlightGroupCard({
+  rows, startIndex, onRemoveOne, onUpdateOne, onUpdateGroupSegments, onAddMain,
+}: {
+  rows: DraftFlight[]
+  startIndex: number
+  onRemoveOne: (key: string) => void
+  onUpdateOne: (key: string, updater: (prev: DraftFlight) => DraftFlight) => void
+  onUpdateGroupSegments: (updater: (segments: SegmentDraft[]) => SegmentDraft[]) => void
+  onAddMain: () => void
+}) {
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [focusTarget, setFocusTarget] = useState<number | null>(null)
+  const segments = rows[0].segments
+
+  function updSeg(segIdx: number, field: keyof SegmentDraft, value: string) {
+    onUpdateGroupSegments(segs => segs.map((s, i) => i === segIdx ? { ...s, [field]: value } : s))
+  }
+
+  function addSeg() {
+    setFocusTarget(segments.length)
+    onUpdateGroupSegments(segs => [...segs, { ...EMPTY_SEGMENT }])
+    setDetailOpen(true)
+  }
+
+  function removeSeg(segIdx: number) {
+    onUpdateGroupSegments(segs => segs.filter((_, i) => i !== segIdx))
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+      <div className="space-y-2">
+        {rows.map((r, ri) => (
+          <MainFareBlock
+            key={r._key}
+            r={r}
+            index={startIndex + ri}
+            onRemove={() => onRemoveOne(r._key)}
+            onUpdate={updater => onUpdateOne(r._key, updater)}
+          />
+        ))}
+      </div>
+
+      <button type="button" onClick={onAddMain}
+        title="편명·구간·일시는 그대로 복제하고 좌석·운임만 새로 입력합니다"
+        className="flex items-center gap-1 text-xs text-slate-500 hover:bg-slate-100 rounded px-2 py-1.5 transition">
+        <Plus className="h-3 w-3" /> 같은 구간으로 좌석 수 및 요금 추가
+      </button>
+
+      {/* ── 편명·날짜·시각 구간 (그룹 공유, 접이식 + 복수 추가) ── */}
       <div className="border-t border-slate-100">
         <button type="button" onClick={() => {
           const opening = !detailOpen
@@ -348,16 +389,16 @@ function FlightDraftRow({
           className="flex items-center gap-1 mt-2 text-xs text-slate-400 hover:text-brand transition">
           {detailOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           편명 · 날짜 · 시각 상세
-          {r.segments.length > 0 && (
+          {segments.length > 0 && (
             <span className="ml-1 rounded-full bg-brand/10 px-1.5 py-0.5 text-[10px] font-medium text-brand">
-              총 {r.segments.length}구간
+              총 {segments.length}구간
             </span>
           )}
         </button>
 
         {detailOpen && (
           <div className="mt-2 space-y-2">
-            {r.segments.map((seg, si) => (
+            {segments.map((seg, si) => (
               <SegmentDraftRow
                 key={si}
                 seg={seg}
@@ -367,16 +408,10 @@ function FlightDraftRow({
                 autoFocus={si === focusTarget}
               />
             ))}
-            <div className="flex items-center gap-1">
-              <button type="button" onClick={addSeg}
-                className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
-                <Plus className="h-3 w-3" /> 구간 추가
-              </button>
-              <button type="button" onClick={onDuplicate} title="편명·구간·일시는 그대로 복제하고 좌석·운임만 새로 입력합니다"
-                className="flex items-center gap-1 text-xs text-slate-500 hover:bg-slate-100 rounded px-2 py-1.5 transition">
-                <Plus className="h-3 w-3" /> 같은 구간으로 좌석 수 및 요금 추가
-              </button>
-            </div>
+            <button type="button" onClick={addSeg}
+              className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
+              <Plus className="h-3 w-3" /> 구간 추가
+            </button>
           </div>
         )}
       </div>
@@ -441,16 +476,24 @@ export default function FlightsCard({
   }
 
   function addRow() {
-    setDraft(d => [...d, { ...EMPTY, _key: `new-${Date.now()}` }])
+    const key = `new-${Date.now()}`
+    setDraft(d => [...d, { ...EMPTY, _key: key, _groupKey: key }])
   }
 
-  /** 편명·구간·일시는 그대로 복제하고 좌석·운임만 새로 입력하도록 메인 행 추가 */
+  /** 같은 그룹(구간 공유)의 메인을 하나 더 추가 — 편명·구간·일시는 복제, 좌석·운임만 새로 입력 */
   function duplicateRow(source: DraftFlight) {
-    setDraft(d => [...d, {
-      ...EMPTY,
-      _key: `new-${Date.now()}`,
-      segments: source.segments.map(s => ({ ...s })),
-    }])
+    const newKey = `new-${Date.now()}`
+    setDraft(d => {
+      const idx = d.findIndex(x => x._key === source._key)
+      const newRow: DraftFlight = {
+        ...EMPTY,
+        _key: newKey,
+        _groupKey: source._groupKey,
+        segments: source.segments.map(s => ({ ...s })),
+      }
+      if (idx === -1) return [...d, newRow]
+      return [...d.slice(0, idx + 1), newRow, ...d.slice(idx + 1)]
+    })
   }
 
   function removeRow(key: string) {
@@ -466,7 +509,20 @@ export default function FlightsCard({
     setDraft(d => d.map(r => r._key === key ? updater(r) : r))
   }
 
+  /** 그룹 내 모든 메인이 구간(편명·일시)을 공유하므로, 구간 수정은 그룹 전체에 반영 */
+  function updGroupSegments(groupKey: string, updater: (segments: SegmentDraft[]) => SegmentDraft[]) {
+    setDraft(d => d.map(r => r._groupKey === groupKey ? { ...r, segments: updater(r.segments) } : r))
+  }
+
   const visible = draft.filter(r => !r._deleted)
+
+  /** 인접한 같은 그룹의 메인들을 하나의 카드로 묶는다 */
+  const groups: DraftFlight[][] = []
+  for (const r of visible) {
+    const last = groups[groups.length - 1]
+    if (last && last[0]._groupKey === r._groupKey) last.push(r)
+    else groups.push([r])
+  }
 
   // ── 편집 모드 ──────────────────────────────────────────────────────────────
   if (editing) {
@@ -503,16 +559,24 @@ export default function FlightsCard({
             {visible.length === 0 ? (
               <p className="py-4 text-center text-sm text-slate-400">행 추가를 눌러 항공편을 등록하세요</p>
             ) : (
-              visible.map((r, i) => (
-                <FlightDraftRow
-                  key={r._key}
-                  r={r}
-                  index={i}
-                  onRemove={() => removeRow(r._key)}
-                  onUpdate={updater => upd(r._key, updater)}
-                  onDuplicate={() => duplicateRow(r)}
-                />
-              ))
+              (() => {
+                let counter = 0
+                return groups.map(rows => {
+                  const startIndex = counter
+                  counter += rows.length
+                  return (
+                    <FlightGroupCard
+                      key={rows[0]._key}
+                      rows={rows}
+                      startIndex={startIndex}
+                      onRemoveOne={key => removeRow(key)}
+                      onUpdateOne={(key, updater) => upd(key, updater)}
+                      onUpdateGroupSegments={updater => updGroupSegments(rows[0]._groupKey, updater)}
+                      onAddMain={() => duplicateRow(rows[rows.length - 1])}
+                    />
+                  )
+                })
+              })()
             )}
           </div>
         </CardContent>

@@ -30,6 +30,15 @@ function extractIata(str: string): string {
   return m ? m[1] : (str?.trim().toUpperCase() ?? '')
 }
 
+/** 구간(편명·구간·일시) 내용이 같으면 같은 그룹으로 묶어 하나의 구간 섹션을 공유한다 */
+function segmentsKey(segments: VoyageFormValues['flights'][number]['segments'] | undefined): string {
+  if (!segments || segments.length === 0) return ''
+  return JSON.stringify(segments.map(s => [
+    s.flight_no, s.origin, s.destination,
+    s.departure_date, s.departure_time, s.arrival_date, s.arrival_time,
+  ]))
+}
+
 // ── 구간 한 행 ──────────────────────────────────────────────────────────────
 function SegmentRow({
   flightIndex,
@@ -157,17 +166,9 @@ function SegmentRow({
   )
 }
 
-// ── 메인 항공편 행 ──────────────────────────────────────────────────────────
-function FlightRow({ index, onRemove, onDuplicate }: { index: number; onRemove: () => void; onDuplicate: (segments: VoyageFormValues['flights'][number]['segments']) => void }) {
-  const { register, control, getValues } = useFormContext<VoyageFormValues>()
-  const [detailOpen, setDetailOpen] = useState(false)
-  const [newSegIdx, setNewSegIdx] = useState<number | null>(null)
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { fields: segments, append: appendSeg, remove: removeSeg } = useFieldArray({
-    control,
-    name: `flights.${index}.segments` as any,
-  })
+// ── 메인(좌석/운임) 한 블록 — 그룹 안에 여러 개 나열될 수 있음 ──────────────────
+function FlightMainOnly({ index, onRemove }: { index: number; onRemove: () => void }) {
+  const { register, control } = useFormContext<VoyageFormValues>()
 
   const [sg, si, sb, fb, ff, ft] = useWatch({
     control,
@@ -245,8 +246,60 @@ function FlightRow({ index, onRemove, onDuplicate }: { index: number; onRemove: 
           </div>
         </div>
       </div>
+    </div>
+  )
+}
 
-      {/* ── 편명·날짜·시각 구간 (하위, 접이식 + 복수 추가) ── */}
+// ── 항공편 그룹 (메인 여러 개 + 구간 1개 공유) ─────────────────────────────────
+function FlightGroupBlock({
+  indices, onRemoveOne, onAddMain,
+}: {
+  indices: number[]
+  onRemoveOne: (index: number) => void
+  onAddMain: () => void
+}) {
+  const { control, setValue } = useFormContext<VoyageFormValues>()
+  const leadIndex = indices[0]
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [newSegIdx, setNewSegIdx] = useState<number | null>(null)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { fields: segments, append: appendSeg, remove: removeSeg } = useFieldArray({
+    control,
+    name: `flights.${leadIndex}.segments` as any,
+  })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const leadSegments = useWatch({ control, name: `flights.${leadIndex}.segments` as any }) as VoyageFormValues['flights'][number]['segments']
+  const otherIndices = indices.slice(1)
+  const leadSegmentsKey = segmentsKey(leadSegments)
+
+  // 그룹 내 다른 메인들도 같은 구간을 공유하도록 값 동기화
+  useEffect(() => {
+    if (otherIndices.length === 0) return
+    const cloned = (leadSegments ?? []).map(s => ({ ...s }))
+    for (const i of otherIndices) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setValue(`flights.${i}.segments` as any, cloned, { shouldDirty: true })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadSegmentsKey, otherIndices.join(',')])
+
+  return (
+    <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-3">
+      <div className="space-y-3">
+        {indices.map(i => (
+          <FlightMainOnly key={i} index={i} onRemove={() => onRemoveOne(i)} />
+        ))}
+      </div>
+
+      <button type="button" onClick={onAddMain}
+        title="편명·구간·일시는 그대로 복제하고 좌석·운임만 새로 입력합니다"
+        className="flex items-center gap-1 text-xs text-slate-500 hover:bg-slate-100 rounded px-2 py-1.5 transition">
+        <Plus className="h-3 w-3" /> 같은 구간으로 좌석 수 및 요금 추가
+      </button>
+
+      {/* ── 편명·날짜·시각 구간 (그룹 공유, 접이식 + 복수 추가) ── */}
       <div className="border-t border-slate-100">
         <button type="button" onClick={() => setDetailOpen(o => !o)}
           className="flex items-center gap-1 mt-2 text-xs text-slate-400 hover:text-brand transition">
@@ -264,23 +317,16 @@ function FlightRow({ index, onRemove, onDuplicate }: { index: number; onRemove: 
             {segments.map((seg, si) => (
               <SegmentRow
                 key={seg.id}
-                flightIndex={index}
+                flightIndex={leadIndex}
                 segIndex={si}
                 onRemove={() => removeSeg(si)}
                 autoFocus={si === newSegIdx}
               />
             ))}
-            <div className="flex items-center gap-1">
-              <button type="button" onClick={() => { setNewSegIdx(segments.length); appendSeg(EMPTY_SEGMENT, { shouldFocus: false }) }}
-                className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
-                <Plus className="h-3 w-3" /> 구간 추가
-              </button>
-              <button type="button" onClick={() => onDuplicate(getValues(`flights.${index}.segments`))}
-                title="편명·구간·일시는 그대로 복제하고 좌석·운임만 새로 입력합니다"
-                className="flex items-center gap-1 text-xs text-slate-500 hover:bg-slate-100 rounded px-2 py-1.5 transition">
-                <Plus className="h-3 w-3" /> 같은 구간으로 좌석 수 및 요금 추가
-              </button>
-            </div>
+            <button type="button" onClick={() => { setNewSegIdx(segments.length); appendSeg(EMPTY_SEGMENT, { shouldFocus: false }) }}
+              className="flex items-center gap-1 text-xs text-brand hover:bg-brand/10 rounded px-2 py-1.5 transition">
+              <Plus className="h-3 w-3" /> 구간 추가
+            </button>
           </div>
         )}
       </div>
@@ -290,10 +336,22 @@ function FlightRow({ index, onRemove, onDuplicate }: { index: number; onRemove: 
 
 // ── 메인 컴포넌트 ──────────────────────────────────────────────────────────
 export default function FlightsEditor() {
-  const { fields, append, remove } = useFieldArray<VoyageFormValues, 'flights'>({ name: 'flights' })
+  const { control, getValues } = useFormContext<VoyageFormValues>()
+  const { fields, append, insert, remove } = useFieldArray<VoyageFormValues, 'flights'>({ name: 'flights' })
+  const watchedFlights = useWatch({ control, name: 'flights' })
 
-  function duplicateRow(segments: VoyageFormValues['flights'][number]['segments']) {
-    append({ ...EMPTY_FLIGHT, segments: segments.map(s => ({ ...s })) })
+  // 인접한 같은 구간(segments) 값을 가진 메인들을 하나의 그룹으로 묶는다
+  const groups: number[][] = []
+  fields.forEach((_, i) => {
+    const key = segmentsKey(watchedFlights?.[i]?.segments)
+    const last = groups[groups.length - 1]
+    if (key && last && segmentsKey(watchedFlights?.[last[0]]?.segments) === key) last.push(i)
+    else groups.push([i])
+  })
+
+  function duplicateRow(afterIndex: number) {
+    const segments = getValues(`flights.${afterIndex}.segments`)
+    insert(afterIndex + 1, { ...EMPTY_FLIGHT, segments: segments.map(s => ({ ...s })) })
   }
 
   return (
@@ -310,8 +368,13 @@ export default function FlightsEditor() {
         {fields.length === 0 ? (
           <p className="py-4 text-center text-sm text-slate-400">항공편을 직접 입력하세요</p>
         ) : (
-          fields.map((field, i) => (
-            <FlightRow key={field.id} index={i} onRemove={() => remove(i)} onDuplicate={duplicateRow} />
+          groups.map(indices => (
+            <FlightGroupBlock
+              key={fields[indices[0]].id}
+              indices={indices}
+              onRemoveOne={i => remove(i)}
+              onAddMain={() => duplicateRow(indices[indices.length - 1])}
+            />
           ))
         )}
       </CardContent>
