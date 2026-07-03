@@ -8,7 +8,7 @@ import { TimePicker } from '@/components/ui/time-picker'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatTime } from '@/lib/utils'
-import { saveFlight, deleteFlightRow } from '@/lib/queries/voyages'
+import { saveFlight, deleteFlightRow, resyncVoyageFlights } from '@/lib/queries/voyages'
 import { useFlightCalc } from '@/hooks/useFlightCalc'
 import type { Flight } from '@/types/database'
 
@@ -414,9 +414,13 @@ export default function FlightsCard({
         if (!r._isNew && !r._deleted) return saveFlight(voyageId, toInput(r, voyageId, idx++), r.id)
         return Promise.resolve()
       }))
+      // 보유 현황(voyage_flights)도 항상 항차 상세와 동일하게 자동 동기화
+      await resyncVoyageFlights(voyageId)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['flights', voyageId] })
+      qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
+      qc.invalidateQueries({ queryKey: ['voyage-flights', voyageId] })
       setEditing(false)
       setDraft([])
       toast.success('저장됐습니다')
