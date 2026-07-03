@@ -278,7 +278,7 @@ function FlightRow({ index, onRemove, onDuplicate }: { index: number; onRemove: 
               <button type="button" onClick={() => onDuplicate(getValues(`flights.${index}.segments`))}
                 title="편명·구간·일시는 그대로 복제하고 좌석·운임만 새로 입력합니다"
                 className="flex items-center gap-1 text-xs text-slate-500 hover:bg-slate-100 rounded px-2 py-1.5 transition">
-                <Plus className="h-3 w-3" /> 같은 구간으로 메인 추가
+                <Plus className="h-3 w-3" /> 같은 구간으로 좌석 수 및 요금 추가
               </button>
             </div>
           </div>
