@@ -883,7 +883,7 @@ export default function InventoryTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">
                 <div className="flex items-center gap-1"><Plane className="h-3 w-3 text-sky-400" />항공</div>
               </th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500">
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">
                 <div className="flex items-center gap-1"><Building2 className="h-3 w-3 text-amber-400" />호텔</div>
               </th>
               <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-14 whitespace-nowrap">보유캐빈</th>
@@ -949,18 +949,26 @@ export default function InventoryTab() {
                       )}
                     </td>
 
-                    {/* 항공사 + 편명 뱃지 */}
+                    {/* 항공사 + 편명 뱃지 (2개 이하는 한 줄, 그 이상은 출발/도착편으로 두 줄) */}
                     <td className="px-3 py-2">
                       <div className="text-slate-600 truncate">{airlineLabel ?? '—'}</div>
-                      {flights.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {flights.map(f => (
-                            <span key={f.id} className="text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight bg-sky-50 text-sky-600 border-sky-200">
-                              {f.flight_num}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {flights.length > 0 && (() => {
+                        const half = Math.ceil(flights.length / 2)
+                        const rows = flights.length <= 2 ? [flights] : [flights.slice(0, half), flights.slice(half)]
+                        return (
+                          <div className="mt-1 space-y-0.5">
+                            {rows.map((row, ri) => (
+                              <div key={ri} className="flex flex-wrap gap-1">
+                                {row.map(f => (
+                                  <span key={f.id} className="text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight bg-sky-50 text-sky-600 border-sky-200">
+                                    {f.flight_num}
+                                  </span>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })()}
                     </td>
                     <td className="px-3 py-2 text-slate-600">{hotelDisplay ?? '—'}</td>
                     <td className="px-2 py-2 text-right text-slate-700">{totalCabin || '—'}</td>
