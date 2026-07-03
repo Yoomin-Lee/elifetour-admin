@@ -11,6 +11,7 @@ import { Building2 } from 'lucide-react'
 import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
 import { SelectOrInput } from '@/components/ui/select-or-input'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   fetchVoyages,
   fetchAllCabinGrades,
@@ -682,7 +683,7 @@ function InventoryPanel({
         {hotels.length === 0 && !editMode ? (
           <p className="text-xs text-slate-400">등록된 호텔이 없습니다</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
             <table className="w-full text-xs" style={{ minWidth: editMode ? 480 : 380 }}>
               <thead>
                 <tr className="text-[10px] text-slate-400 border-b border-slate-100">
@@ -703,8 +704,7 @@ function InventoryPanel({
                     </td>
                     <td className="py-1.5 pr-1">
                       {editMode
-                        ? <input type="date" value={h.stay_date} onChange={e => setHotel(idx, { stay_date: e.target.value })}
-                            className="w-full px-1.5 py-0.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand" />
+                        ? <DatePicker size="sm" value={h.stay_date} onChange={v => setHotel(idx, { stay_date: v })} placeholder="투숙일" />
                         : <span className="text-slate-500">{formatDate(h.stay_date)}</span>}
                     </td>
                     {editMode && (
