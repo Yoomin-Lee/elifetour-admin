@@ -689,7 +689,7 @@ export default function PaymentTab() {
                 {section === 'REFUND' ? '환불' : '마감'} {cell.due_date}
               </p>
             )}
-            {cell.memo && <p className="text-xs font-medium text-red-600 whitespace-pre-wrap break-words">{cell.memo}</p>}
+            {cell.memo && <p className="text-xs font-medium text-red-600 whitespace-pre">{cell.memo}</p>}
             <div className="flex gap-1 pt-0.5">
               <button type="button" onClick={() => setEditing(key)}
                 className="flex-1 text-center text-[11px] opacity-50 hover:opacity-100 py-0.5 rounded hover:bg-black/5 transition">
