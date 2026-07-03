@@ -392,7 +392,7 @@ function InventoryPanel({
         {grades.length === 0 && !editMode ? (
           <p className="text-xs text-slate-400">등록된 캐빈 등급이 없습니다</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
             <table className="w-full text-xs" style={{ minWidth: editMode ? 830 : 580 }}>
               <thead>
                 <tr className="text-[10px] text-slate-400 border-b border-slate-100">
