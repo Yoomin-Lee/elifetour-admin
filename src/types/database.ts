@@ -116,6 +116,7 @@ export interface Hotel {
   hotel_name: string
   room_rate: number | null
   currency: string
+  memo: string | null
   sort_order: number
   created_at: string
 }

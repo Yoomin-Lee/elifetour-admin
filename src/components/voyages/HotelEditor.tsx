@@ -4,12 +4,13 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { DatePicker } from '@/components/ui/date-picker'
+import { AutoTextarea } from '@/components/ui/auto-textarea'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 
 const EMPTY_HOTEL = {
-  hotel_name: '', stay_date: '', room_rate: null, currency: 'USD', sort_order: 0,
+  hotel_name: '', stay_date: '', room_rate: null, currency: 'USD', memo: '', sort_order: 0,
 }
 
 function HotelRow({ index, onRemove }: { index: number; onRemove: () => void }) {
@@ -18,29 +19,35 @@ function HotelRow({ index, onRemove }: { index: number; onRemove: () => void }) 
   const stayDate = useWatch({ control, name: `hotels.${index}.stay_date` }) ?? ''
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 flex flex-wrap items-end gap-2">
-      <div className="min-w-[140px] flex-1">
-        <p className="text-[10px] text-slate-400 mb-0.5">호텔명</p>
-        <Input {...register(`hotels.${index}.hotel_name`)} placeholder="호텔명" className="h-8 text-sm" />
+    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 space-y-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="min-w-[140px] flex-1">
+          <p className="text-[10px] text-slate-400 mb-0.5">호텔명</p>
+          <Input {...register(`hotels.${index}.hotel_name`)} placeholder="호텔명" className="h-8 text-sm" />
+        </div>
+        <div className="w-32">
+          <p className="text-[10px] text-slate-400 mb-0.5">투숙일</p>
+          <DatePicker size="sm" value={stayDate} onChange={v => setValue(`hotels.${index}.stay_date`, v)} placeholder="투숙일" />
+        </div>
+        <div className="w-20">
+          <p className="text-[10px] text-slate-400 mb-0.5">통화</p>
+          <FieldSelect value={currency} options={CURRENCIES}
+            onChange={v => setValue(`hotels.${index}.currency`, v)} className="h-8 text-sm" />
+        </div>
+        <div className="w-28">
+          <p className="text-[10px] text-slate-400 mb-0.5">요금</p>
+          <Input type="number" min={0} {...register(`hotels.${index}.room_rate`, { valueAsNumber: true })}
+            placeholder="0" className="h-8 text-sm text-right" />
+        </div>
+        <button type="button" onClick={onRemove}
+          className="self-end p-1.5 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition">
+          <Trash2 className="h-4 w-4" />
+        </button>
       </div>
-      <div className="w-32">
-        <p className="text-[10px] text-slate-400 mb-0.5">투숙일</p>
-        <DatePicker size="sm" value={stayDate} onChange={v => setValue(`hotels.${index}.stay_date`, v)} placeholder="투숙일" />
+      <div>
+        <p className="text-[10px] text-slate-400 mb-0.5">메모</p>
+        <AutoTextarea {...register(`hotels.${index}.memo`)} placeholder="특이사항 (선택)" className="text-sm" />
       </div>
-      <div className="w-20">
-        <p className="text-[10px] text-slate-400 mb-0.5">통화</p>
-        <FieldSelect value={currency} options={CURRENCIES}
-          onChange={v => setValue(`hotels.${index}.currency`, v)} className="h-8 text-sm" />
-      </div>
-      <div className="w-28">
-        <p className="text-[10px] text-slate-400 mb-0.5">요금</p>
-        <Input type="number" min={0} {...register(`hotels.${index}.room_rate`, { valueAsNumber: true })}
-          placeholder="0" className="h-8 text-sm text-right" />
-      </div>
-      <button type="button" onClick={onRemove}
-        className="self-end p-1.5 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition">
-        <Trash2 className="h-4 w-4" />
-      </button>
     </div>
   )
 }

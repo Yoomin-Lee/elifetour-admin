@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { DatePicker } from '@/components/ui/date-picker'
+import { AutoTextarea } from '@/components/ui/auto-textarea'
 import { addHotel, updateHotel, deleteHotel } from '@/lib/queries/voyages'
 import { formatDate } from '@/lib/utils'
 import type { Hotel } from '@/types/database'
@@ -27,6 +28,7 @@ type DraftHotel = {
   stay_date: string
   room_rate: number | null
   currency: string
+  memo: string
   sort_order: number
 }
 
@@ -34,7 +36,7 @@ function toDraft(h: Hotel): DraftHotel {
   return {
     _key: h.id, id: h.id,
     hotel_name: h.hotel_name, stay_date: h.stay_date,
-    room_rate: h.room_rate, currency: h.currency, sort_order: h.sort_order,
+    room_rate: h.room_rate, currency: h.currency, memo: h.memo ?? '', sort_order: h.sort_order,
   }
 }
 
@@ -69,7 +71,7 @@ export default function HotelCard({
     setDrafts(prev => [...prev, {
       _key: newKey(), id: '', _isNew: true,
       hotel_name: '', stay_date: '', room_rate: null,
-      currency: 'USD', sort_order: prev.length,
+      currency: 'USD', memo: '', sort_order: prev.length,
     }])
   }
 
@@ -89,6 +91,7 @@ export default function HotelCard({
               stay_date:  d.stay_date,
               room_rate:  d.room_rate,
               currency:   d.currency,
+              memo:       d.memo || null,
               sort_order: i,
             })
           : updateHotel(d.id, {
@@ -96,6 +99,7 @@ export default function HotelCard({
               stay_date:  d.stay_date,
               room_rate:  d.room_rate,
               currency:   d.currency,
+              memo:       d.memo || null,
               sort_order: i,
             }),
         ),
@@ -139,31 +143,38 @@ export default function HotelCard({
         </CardHeader>
         <CardContent className="space-y-2">
           {drafts.map(d => (
-            <div key={d._key} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 flex flex-wrap items-end gap-2">
-              <div className="min-w-[140px] flex-1">
-                <p className="text-[10px] text-slate-400 mb-0.5">호텔명</p>
-                <Input value={d.hotel_name} onChange={e => upd(d._key, { hotel_name: e.target.value })}
-                  placeholder="호텔명" className="h-8 text-sm" />
+            <div key={d._key} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 space-y-2">
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-[140px] flex-1">
+                  <p className="text-[10px] text-slate-400 mb-0.5">호텔명</p>
+                  <Input value={d.hotel_name} onChange={e => upd(d._key, { hotel_name: e.target.value })}
+                    placeholder="호텔명" className="h-8 text-sm" />
+                </div>
+                <div className="w-32">
+                  <p className="text-[10px] text-slate-400 mb-0.5">투숙일</p>
+                  <DatePicker size="sm" value={d.stay_date} onChange={v => upd(d._key, { stay_date: v })} placeholder="투숙일" />
+                </div>
+                <div className="w-20">
+                  <p className="text-[10px] text-slate-400 mb-0.5">통화</p>
+                  <FieldSelect value={d.currency} options={CURRENCIES}
+                    onChange={v => upd(d._key, { currency: v })} className="h-8 text-sm" />
+                </div>
+                <div className="w-28">
+                  <p className="text-[10px] text-slate-400 mb-0.5">요금</p>
+                  <Input type="number" min={0} value={d.room_rate ?? ''}
+                    onChange={e => upd(d._key, { room_rate: e.target.value === '' ? null : Number(e.target.value) })}
+                    placeholder="0" className="h-8 text-sm text-right" />
+                </div>
+                <button type="button" onClick={() => removeRow(d._key)}
+                  className="self-end p-1.5 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition">
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
-              <div className="w-32">
-                <p className="text-[10px] text-slate-400 mb-0.5">투숙일</p>
-                <DatePicker size="sm" value={d.stay_date} onChange={v => upd(d._key, { stay_date: v })} placeholder="투숙일" />
+              <div>
+                <p className="text-[10px] text-slate-400 mb-0.5">메모</p>
+                <AutoTextarea value={d.memo} onChange={e => upd(d._key, { memo: e.target.value })}
+                  placeholder="특이사항 (선택)" className="text-sm" />
               </div>
-              <div className="w-20">
-                <p className="text-[10px] text-slate-400 mb-0.5">통화</p>
-                <FieldSelect value={d.currency} options={CURRENCIES}
-                  onChange={v => upd(d._key, { currency: v })} className="h-8 text-sm" />
-              </div>
-              <div className="w-28">
-                <p className="text-[10px] text-slate-400 mb-0.5">요금</p>
-                <Input type="number" min={0} value={d.room_rate ?? ''}
-                  onChange={e => upd(d._key, { room_rate: e.target.value === '' ? null : Number(e.target.value) })}
-                  placeholder="0" className="h-8 text-sm text-right" />
-              </div>
-              <button type="button" onClick={() => removeRow(d._key)}
-                className="self-end p-1.5 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition">
-                <Trash2 className="h-4 w-4" />
-              </button>
             </div>
           ))}
           <button type="button" onClick={addRow}
@@ -197,12 +208,15 @@ export default function HotelCard({
         ) : (
           <div className="space-y-2">
             {hotels.map(h => (
-              <div key={h.id} className="rounded-lg border border-slate-100 p-3 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-800">{h.hotel_name}</span>
-                  <span className="text-xs text-slate-400">{formatDate(h.stay_date)}</span>
+              <div key={h.id} className="rounded-lg border border-slate-100 p-3 space-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-800">{h.hotel_name}</span>
+                    <span className="text-xs text-slate-400">{formatDate(h.stay_date)}</span>
+                  </div>
+                  <span className="text-sm font-semibold text-brand">{formatPrice(h.room_rate, h.currency)}</span>
                 </div>
-                <span className="text-sm font-semibold text-brand">{formatPrice(h.room_rate, h.currency)}</span>
+                {h.memo && <p className="text-xs text-slate-500 whitespace-pre">{h.memo}</p>}
               </div>
             ))}
           </div>

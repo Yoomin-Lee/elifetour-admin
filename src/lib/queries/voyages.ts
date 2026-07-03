@@ -312,6 +312,7 @@ export async function createVoyageWithChildren(values: VoyageFormValues): Promis
         stay_date:  h.stay_date,
         room_rate:  h.room_rate ?? null,
         currency:   h.currency || 'USD',
+        memo:       h.memo || null,
         voyage_id:  id,
         sort_order: i,
       })))

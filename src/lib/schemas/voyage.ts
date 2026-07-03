@@ -79,6 +79,7 @@ export const hotelItemSchema = z.object({
   stay_date:  emptyToUndef,
   room_rate:  z.coerce.number().nullable().optional(),
   currency:   z.string().default('USD'),
+  memo:       z.string().optional(),
   sort_order: z.coerce.number().default(0),
 })
 
