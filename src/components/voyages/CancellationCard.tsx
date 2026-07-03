@@ -7,6 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 function fmtShort(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -138,6 +139,7 @@ export default function CancellationCard({
   const [pendingMn, setPendingMn] = useState<MnSection | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const presetBtnRef = useRef<HTMLDivElement>(null)
+  useClickOutside(presetBtnRef, presetOpen, () => setPresetOpen(false))
   const qc = useQueryClient()
 
   const { data: presets = [] } = useQuery({
@@ -280,8 +282,6 @@ export default function CancellationCard({
                 <ChevronDown className={`h-3 w-3 transition-transform ${presetOpen ? 'rotate-180' : ''}`} />
               </Button>
               {presetOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
                   <div className={`absolute right-0 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden flex flex-col ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
                     <div className="overflow-y-auto max-h-64">
                       {mnSections.length > 0 && (
@@ -320,7 +320,6 @@ export default function CancellationCard({
                       </button>
                     </div>
                   </div>
-                </>
               )}
             </div>
 

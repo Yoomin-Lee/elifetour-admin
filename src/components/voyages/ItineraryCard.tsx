@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { SelectOrInput } from '@/components/ui/select-or-input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { formatDate, formatTime } from '@/lib/utils'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import { saveItineraryDay, deleteItineraryDay } from '@/lib/queries/voyages'
 import { fetchItineraryPresets } from '@/lib/queries/itineraryPresets'
 import type { ItineraryPreset } from '@/lib/queries/itineraryPresets'
@@ -112,6 +113,7 @@ export default function ItineraryCard({
   const [managerOpen, setManagerOpen] = useState(false)
   const [pendingPreset, setPendingPreset] = useState<ItineraryPreset | null>(null)
   const presetBtnRef = useRef<HTMLDivElement>(null)
+  useClickOutside(presetBtnRef, presetOpen, () => setPresetOpen(false))
   const qc = useQueryClient()
 
   const { data: presets = [] } = useQuery({
@@ -240,8 +242,6 @@ export default function ItineraryCard({
                   <ChevronDown className={`h-3 w-3 transition-transform ${presetOpen ? 'rotate-180' : ''}`} />
                 </Button>
                 {presetOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
                     <div className={`absolute right-0 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden flex flex-col ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
                       <div className="overflow-y-auto max-h-56">
                         {presets.length === 0 && (
@@ -271,7 +271,6 @@ export default function ItineraryCard({
                         </button>
                       </div>
                     </div>
-                  </>
                 )}
               </div>
 

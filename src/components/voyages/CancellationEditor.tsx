@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import { fetchCancellationPresets } from '@/lib/queries/cancellationPresets'
 import type { CancellationPresetDB } from '@/lib/queries/cancellationPresets'
 import { fetchMnSections } from '@/lib/queries/mnSections'
@@ -78,6 +79,7 @@ export default function CancellationEditor() {
   const [pendingMn, setPendingMn] = useState<MnSection | null>(null)
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const presetBtnRef = useRef<HTMLDivElement>(null)
+  useClickOutside(presetBtnRef, presetOpen, () => setPresetOpen(false))
 
   const { data: presets = [] } = useQuery({
     queryKey: ['cancellation-presets'],
@@ -184,8 +186,6 @@ export default function CancellationEditor() {
                 <ChevronDown className={`h-3 w-3 transition-transform ${presetOpen ? 'rotate-180' : ''}`} />
               </Button>
               {presetOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
                   <div className={`absolute left-0 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden flex flex-col ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
                     <div className="overflow-y-auto max-h-64 scrollbar-navy">
                       {mnSections.length > 0 && (
@@ -235,7 +235,6 @@ export default function CancellationEditor() {
                       </button>
                     </div>
                   </div>
-                </>
               )}
             </div>
 

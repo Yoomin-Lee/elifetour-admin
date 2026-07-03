@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 type Props = {
   value: string
@@ -11,9 +12,11 @@ type Props = {
 
 export function YearSelect({ value, years, onChange, className }: Props) {
   const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  useClickOutside(rootRef, open, () => setOpen(false))
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -34,34 +37,31 @@ export function YearSelect({ value, years, onChange, className }: Props) {
       </button>
 
       {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 min-w-[104px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute right-0 top-full z-20 mt-1 min-w-[104px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <button
+            type="button"
+            onClick={() => { onChange('ALL'); setOpen(false) }}
+            className={cn(
+              'w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50',
+              value === 'ALL' ? 'font-semibold text-brand' : 'text-slate-700',
+            )}
+          >
+            전체 연도
+          </button>
+          {years.map(y => (
             <button
+              key={y}
               type="button"
-              onClick={() => { onChange('ALL'); setOpen(false) }}
+              onClick={() => { onChange(y); setOpen(false) }}
               className={cn(
                 'w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50',
-                value === 'ALL' ? 'font-semibold text-brand' : 'text-slate-700',
+                value === y ? 'font-semibold text-brand' : 'text-slate-700',
               )}
             >
-              전체 연도
+              {y}년
             </button>
-            {years.map(y => (
-              <button
-                key={y}
-                type="button"
-                onClick={() => { onChange(y); setOpen(false) }}
-                className={cn(
-                  'w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50',
-                  value === y ? 'font-semibold text-brand' : 'text-slate-700',
-                )}
-              >
-                {y}년
-              </button>
-            ))}
-          </div>
-        </>
+          ))}
+        </div>
       )}
     </div>
   )

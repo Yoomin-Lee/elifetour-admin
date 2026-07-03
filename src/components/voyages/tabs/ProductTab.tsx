@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -13,12 +13,15 @@ import { Input } from '@/components/ui/input'
 import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
 import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 function StatusSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  useClickOutside(rootRef, open, () => setOpen(false))
   const options = ['ALL', '미오픈', '판매중', '마감', '출발완료', '취소'] as const
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -30,21 +33,18 @@ function StatusSelect({ value, onChange }: { value: string; onChange: (v: string
         <svg className={`h-3.5 w-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
       </button>
       {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-1 min-w-[100px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-            {options.map(opt => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => { onChange(opt); setOpen(false) }}
-                className={`w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50 ${value === opt ? 'font-semibold text-brand' : 'text-slate-700'}`}
-              >
-                {opt === 'ALL' ? '전체 상태' : opt}
-              </button>
-            ))}
-          </div>
-        </>
+        <div className="absolute right-0 top-full z-20 mt-1 min-w-[100px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          {options.map(opt => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => { onChange(opt); setOpen(false) }}
+              className={`w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50 ${value === opt ? 'font-semibold text-brand' : 'text-slate-700'}`}
+            >
+              {opt === 'ALL' ? '전체 상태' : opt}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   )

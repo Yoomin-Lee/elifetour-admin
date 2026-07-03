@@ -13,6 +13,7 @@ import { fetchItineraryPresets } from '@/lib/queries/itineraryPresets'
 import type { ItineraryPreset } from '@/lib/queries/itineraryPresets'
 import ItineraryPresetManager from './ItineraryPresetManager'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 const ITINERARY_CATEGORIES = ['랜드', '쇼렉스', '자유']
 
@@ -45,6 +46,7 @@ export default function ItineraryEditor() {
   const [managerOpen, setManagerOpen] = useState(false)
   const [pendingPreset, setPendingPreset] = useState<ItineraryPreset | null>(null)
   const presetBtnRef = useRef<HTMLDivElement>(null)
+  useClickOutside(presetBtnRef, presetOpen, () => setPresetOpen(false))
 
   const { data: presets = [] } = useQuery({
     queryKey: ['itinerary-presets'],
@@ -111,8 +113,6 @@ export default function ItineraryEditor() {
                 <ChevronDown className={`h-3 w-3 transition-transform ${presetOpen ? 'rotate-180' : ''}`} />
               </Button>
               {presetOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
                   <div className={`absolute left-0 z-20 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1 overflow-hidden flex flex-col ${dropUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
                     <div className="overflow-y-auto max-h-56">
                       {presets.length === 0 && (
@@ -143,7 +143,6 @@ export default function ItineraryEditor() {
                       </button>
                     </div>
                   </div>
-                </>
               )}
             </div>
 

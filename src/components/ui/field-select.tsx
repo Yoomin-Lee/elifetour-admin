@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 type Option = { value: string; label?: string }
 
@@ -16,15 +17,7 @@ type Props = {
 export function FieldSelect({ value, options, onChange, placeholder, className, defaultOpen }: Props) {
   const [open, setOpen] = useState(defaultOpen ?? false)
   const rootRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handlePointerDown(e: PointerEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('pointerdown', handlePointerDown)
-    return () => document.removeEventListener('pointerdown', handlePointerDown)
-  }, [open])
+  useClickOutside(rootRef, open, () => setOpen(false))
 
   const normalized: Option[] = options.map(o =>
     typeof o === 'string' ? { value: o, label: o } : o,
