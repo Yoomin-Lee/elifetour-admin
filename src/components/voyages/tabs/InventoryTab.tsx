@@ -763,7 +763,9 @@ export default function InventoryTab() {
         return sortDir === 'asc' ? cmp : -cmp
       })
     }
-    return rows
+    const active    = rows.filter(r => r.v.status !== '취소')
+    const cancelled = rows.filter(r => r.v.status === '취소')
+    return [...active, ...cancelled]
   }, [voyageRows, yearFilter, statusFilter, remainFilter, filter, sortCol, sortDir])
 
   function toggleSort(col: SortCol) {
