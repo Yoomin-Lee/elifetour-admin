@@ -295,19 +295,6 @@ export default function OverviewCard({
             <ERow label="인솔자">
               <Input value={f.tour_leader} onChange={set('tour_leader')} placeholder="미정" className="h-7 text-sm" />
             </ERow>
-            <div className="flex gap-2 py-1 border-b border-slate-50 last:border-0 items-start">
-              <dt className="w-28 shrink-0 text-xs text-slate-400 pt-1.5">호텔</dt>
-              <dd className="flex-1">
-                <textarea
-                  value={f.hotel}
-                  onChange={e => setF(p => ({ ...p, hotel: e.target.value }))}
-                  onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }}
-                  placeholder="미정"
-                  rows={2}
-                  className="w-full text-sm border border-slate-200 rounded px-2 py-1 resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-brand min-h-[52px]"
-                />
-              </dd>
-            </div>
             <ERow label="상품가">
               <div className="flex items-center gap-1.5">
                 <Input
@@ -324,6 +311,19 @@ export default function OverviewCard({
                 <span className="text-xs text-slate-400 shrink-0">원</span>
               </div>
             </ERow>
+            <div className="flex gap-2 py-1 border-b border-slate-50 last:border-0 items-start">
+              <dt className="w-28 shrink-0 text-xs text-slate-400 pt-1.5">비고</dt>
+              <dd className="flex-1">
+                <textarea
+                  value={f.hotel}
+                  onChange={e => setF(p => ({ ...p, hotel: e.target.value }))}
+                  onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }}
+                  placeholder="미정"
+                  rows={2}
+                  className="w-full text-sm border border-slate-200 rounded px-2 py-1 resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-brand min-h-[52px]"
+                />
+              </dd>
+            </div>
           </dl>
         </CardContent>
       </Card>
@@ -366,8 +366,8 @@ export default function OverviewCard({
           <Row label="크루즈"    value={voyage.ship_name} />
           <Row label="고객 수"   value={voyage.customer_count ? `${voyage.customer_count}명` : '-'} />
           <Row label="인솔자"    value={voyage.tour_leader} />
-          <Row label="호텔"      value={voyage.hotel ? <span className="whitespace-pre-wrap">{voyage.hotel}</span> : undefined} />
           <Row label="상품가"    value={voyage.product_price != null ? `${voyage.product_price.toLocaleString()}원` : '-'} />
+          <Row label="비고"      value={voyage.hotel ? <span className="whitespace-pre-wrap">{voyage.hotel}</span> : undefined} />
         </dl>
       </CardContent>
     </Card>

@@ -268,16 +268,6 @@ export default function BasicInfoSection() {
               <Input type="number" min={0} {...register('customer_count')} />
             </Field>
 
-            <Field label="호텔" error={errors.hotel?.message}>
-              <textarea
-                {...register('hotel')}
-                placeholder="미정"
-                rows={2}
-                onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }}
-                className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-brand min-h-[52px]"
-              />
-            </Field>
-
             <Field label="상품가 (원)" error={errors.product_price?.message}>
               <div className="flex items-center gap-1.5">
                 <Controller
@@ -298,6 +288,16 @@ export default function BasicInfoSection() {
                 />
                 <span className="text-sm text-slate-400 shrink-0">원</span>
               </div>
+            </Field>
+
+            <Field label="비고" error={errors.hotel?.message}>
+              <textarea
+                {...register('hotel')}
+                placeholder="미정"
+                rows={2}
+                onInput={e => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' }}
+                className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-brand min-h-[52px]"
+              />
             </Field>
           </div>
         </CardContent>
