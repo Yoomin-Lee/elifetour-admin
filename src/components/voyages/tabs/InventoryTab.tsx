@@ -871,17 +871,13 @@ export default function InventoryTab() {
                     <td className="px-3 py-2">
                       <div className="flex flex-col gap-0.5">
                         <StatusBadge status={v.status} />
-                        {isCancelled ? (
-                          <span className="line-through text-slate-400">{voyageTitle(v)}</span>
-                        ) : (
-                          <button
-                            onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
-                            className="group flex items-center gap-1 font-medium text-slate-800 hover:text-brand transition text-left"
-                          >
-                            <span className="truncate">{voyageTitle(v)}</span>
-                            <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition flex-shrink-0" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
+                          className={`group flex items-center gap-1 transition text-left ${isCancelled ? 'line-through text-slate-400 hover:text-slate-500' : 'font-medium text-slate-800 hover:text-brand'}`}
+                        >
+                          <span className="truncate">{voyageTitle(v)}</span>
+                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-60 transition flex-shrink-0" />
+                        </button>
                       </div>
                     </td>
 
