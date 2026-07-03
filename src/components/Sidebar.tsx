@@ -186,7 +186,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       </nav>
 
       <div className="px-5 py-4 border-t border-white/10">
-        <p className="text-xs text-white/40">© 2025 이라이프투어</p>
+        <p className="text-xs text-white/40">© 2014 이라이프투어</p>
       </div>
     </aside>
   )
