@@ -45,18 +45,18 @@ export function FieldSelect({ value, options, onChange, placeholder, className, 
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-20 mt-1 min-w-full max-h-52 overflow-y-auto scrollbar-navy rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <div className="absolute left-0 top-full z-20 mt-1 w-max min-w-full max-h-52 overflow-y-auto scrollbar-navy rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
             {normalized.map(o => (
               <button
                 key={o.value}
                 type="button"
                 onClick={() => { onChange(o.value); setOpen(false) }}
-                className="flex w-full items-center justify-between px-3 py-1.5 text-left text-sm transition hover:bg-slate-50"
+                className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-50"
               >
-                <span className={cn(o.value === value ? 'font-semibold text-brand' : 'text-slate-700')}>
+                <span className={cn('whitespace-nowrap', o.value === value ? 'font-semibold text-brand' : 'text-slate-700')}>
                   {o.label ?? o.value}
                 </span>
-                {o.value === value && <Check className="h-3.5 w-3.5 text-brand" />}
+                {o.value === value && <Check className="h-3.5 w-3.5 shrink-0 text-brand" />}
               </button>
             ))}
           </div>
