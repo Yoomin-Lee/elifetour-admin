@@ -144,6 +144,16 @@ function CurrencySelect({ value, onChange }: { value: string; onChange: (v: stri
   )
 }
 
+function OccupancySelect({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
+  return (
+    <select value={value ?? ''} onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+      className="w-full px-1 py-0.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand bg-white">
+      <option value="">—</option>
+      {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}인실</option>)}
+    </select>
+  )
+}
+
 // ── Draft 타입 ───────────────────────────────────────────────────────────────
 type DraftGrade = CabinGrade & { _isNew?: true }
 type DraftHotel = Hotel      & { _isNew?: true }
@@ -199,6 +209,7 @@ function InventoryPanel({
         draftGrades.map((g, i) => ({
           ...(g._isNew ? {} : { id: g.id }),
           grade: g.grade,
+          occupancy: g.occupancy,
           total: g.total,
           reserved: g.reserved,
           price_per_person: g.price_per_person,
@@ -376,9 +387,10 @@ function InventoryPanel({
           <p className="text-xs text-slate-400">등록된 캐빈 등급이 없습니다</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs" style={{ minWidth: editMode ? 780 : 520 }}>
+            <table className="w-full text-xs" style={{ minWidth: editMode ? 830 : 580 }}>
               <thead>
                 <tr className="text-[10px] text-slate-400 border-b border-slate-100">
+                  <th className="text-left pb-1.5 w-16 font-medium">n인실</th>
                   <th className="text-left pb-1.5 w-20 font-medium">등급</th>
                   <th className="text-right pb-1.5 w-14 font-medium">보유</th>
                   <th className="text-right pb-1.5 w-14 font-medium">예약</th>
@@ -398,6 +410,11 @@ function InventoryPanel({
                   const remaining = g.total - g.reserved
                   return (
                     <tr key={g.id} className={editMode ? 'align-middle' : 'hover:bg-white/60 transition-colors'}>
+                      <td className="py-1.5 pr-1">
+                        {editMode
+                          ? <OccupancySelect value={g.occupancy} onChange={v => setGrade(idx, { occupancy: v })} />
+                          : <span className="text-slate-500">{g.occupancy ? `${g.occupancy}인실` : '—'}</span>}
+                      </td>
                       <td className="py-1.5 pr-1">
                         {editMode
                           ? <TxtInput value={g.grade} onChange={v => setGrade(idx, { grade: v })} placeholder="등급명" />
@@ -470,6 +487,7 @@ function InventoryPanel({
                 {/* 합계 행 (뷰 모드 다중 등급일 때) */}
                 {!editMode && initGrades.length > 1 && (
                   <tr className="border-t border-slate-200 bg-slate-100/60">
+                    <td className="py-1.5" />
                     <td className="py-1.5 text-[10px] text-slate-400 font-medium">합계</td>
                     <td className="py-1.5 text-right font-semibold text-slate-700">{initGrades.reduce((s, g) => s + g.total, 0)}</td>
                     <td className="py-1.5 text-right font-semibold text-slate-700">{initGrades.reduce((s, g) => s + g.reserved, 0)}</td>
