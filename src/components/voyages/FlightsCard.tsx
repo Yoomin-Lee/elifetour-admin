@@ -462,7 +462,6 @@ export default function FlightsCard({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['flights', voyageId] })
       qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
-      qc.invalidateQueries({ queryKey: ['voyage-flights', voyageId] })
       setEditing(false)
       setDraft([])
       toast.success('저장됐습니다')

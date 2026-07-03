@@ -83,20 +83,22 @@ export default function HotelCard({
     mutationFn: async () => {
       await Promise.all([
         ...deletedIds.map(id => deleteHotel(id)),
-        ...drafts.filter(d => d._isNew).map((d, i) => addHotel(voyageId, {
-          hotel_name: d.hotel_name,
-          stay_date:  d.stay_date,
-          room_rate:  d.room_rate,
-          currency:   d.currency,
-          sort_order: i,
-        })),
-        ...drafts.filter(d => !d._isNew).map((d, i) => updateHotel(d.id, {
-          hotel_name: d.hotel_name,
-          stay_date:  d.stay_date,
-          room_rate:  d.room_rate,
-          currency:   d.currency,
-          sort_order: i,
-        })),
+        ...drafts.map((d, i) => d._isNew
+          ? addHotel(voyageId, {
+              hotel_name: d.hotel_name,
+              stay_date:  d.stay_date,
+              room_rate:  d.room_rate,
+              currency:   d.currency,
+              sort_order: i,
+            })
+          : updateHotel(d.id, {
+              hotel_name: d.hotel_name,
+              stay_date:  d.stay_date,
+              room_rate:  d.room_rate,
+              currency:   d.currency,
+              sort_order: i,
+            }),
+        ),
       ])
     },
     onSuccess: () => {

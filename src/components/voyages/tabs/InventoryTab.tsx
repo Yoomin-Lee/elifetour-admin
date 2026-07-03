@@ -176,11 +176,6 @@ type DraftHotel = Hotel      & { _isNew?: true }
 // 항공편은 항차 상세(FlightsCard)에서 편명·구간·일시를 편집하고,
 // 여기선 좌석·운임만 수정한다. 수정 시 연결된 flights 행(source_flight_id)에도
 // 반영한 뒤 재동기화해, 항차 상세 저장 때 자동 동기화가 이 수정을 덮어쓰지 않게 한다.
-type DraftFlight = VoyageFlight
-
-function toDraftFlight(f: VoyageFlight): DraftFlight {
-  return { ...f }
-}
 
 // ── 보유 현황 서브 패널 ──────────────────────────────────────────────────────
 function InventoryPanel({
@@ -200,7 +195,7 @@ function InventoryPanel({
   const [editMode, setEditMode]       = useState(false)
   const [draftGrades, setDraftGrades] = useState<DraftGrade[]>([])
   const [delGradeIds, setDelGradeIds] = useState<string[]>([])
-  const [draftFlights, setDraftFlights] = useState<DraftFlight[]>([])
+  const [draftFlights, setDraftFlights] = useState<VoyageFlight[]>([])
   const [delFlightIds, setDelFlightIds] = useState<string[]>([])
   const [draftHotels, setDraftHotels]   = useState<DraftHotel[]>([])
   const [delHotelIds, setDelHotelIds]   = useState<string[]>([])
@@ -208,7 +203,7 @@ function InventoryPanel({
   function startEdit() {
     setDraftGrades(initGrades.map(g => ({ ...g })))
     setDelGradeIds([])
-    setDraftFlights(initFlights.map(toDraftFlight))
+    setDraftFlights(initFlights.map(f => ({ ...f })))
     setDelFlightIds([])
     setDraftHotels(initHotels.map(h => ({ ...h })))
     setDelHotelIds([])
@@ -275,8 +270,17 @@ function InventoryPanel({
           || orig.fare_base !== f.fare_base || orig.fare_fuel !== f.fare_fuel || orig.fare_tax !== f.fare_tax
       })
       if (flightsChanged) {
+        // 구간이 여러 개인 항공편은 voyage_flights 행이 source_flight_id를 공유한다.
+        // 같은 source_flight_id를 중복 반영/삭제하지 않도록 한 번씩만 처리한다.
+        const seenSourceIds = new Set<string>()
+        const dedupedUpdates = draftFlights.filter(f => !delFlightIds.includes(f.id)).filter(f => {
+          if (!f.source_flight_id) return true
+          if (seenSourceIds.has(f.source_flight_id)) return false
+          seenSourceIds.add(f.source_flight_id)
+          return true
+        })
         await Promise.all([
-          ...draftFlights.filter(f => !delFlightIds.includes(f.id)).map(f =>
+          ...dedupedUpdates.map(f =>
             f.source_flight_id
               ? updateFlightSeatsAndFare(f.source_flight_id, {
                   seats_group: f.seats_group, seats_indivi: f.seats_indivi, seats_business: f.seats_business,
@@ -287,12 +291,20 @@ function InventoryPanel({
                   fare_base: f.fare_base, fare_fuel: f.fare_fuel, fare_tax: f.fare_tax,
                 }),
           ),
-          // 삭제된 항공편 → 연결된 flights 행도 삭제 (링크 없으면 voyage_flights만 삭제)
-          ...delFlightIds.map(id => {
+          // 삭제된 항공편 → 연결된 flights 행도 삭제. 단, 같은 flights 행에서 나온 다른
+          // 구간이 남아있으면(다중 구간 항공편의 일부만 삭제 시도) 전체를 지우면 안 되므로 건너뛴다
+          // — 이런 경우는 항차 상세에서 구간 단위로 정리해야 한다.
+          ...delFlightIds.flatMap(id => {
             const original = initFlights.find(f => f.id === id)
-            return original?.source_flight_id
-              ? deleteFlightRow(original.source_flight_id)
-              : deleteVoyageFlight(id)
+            if (!original?.source_flight_id) return deleteVoyageFlight(id)
+            const siblingRemains = initFlights.some(f =>
+              f.id !== id && f.source_flight_id === original.source_flight_id && !delFlightIds.includes(f.id),
+            )
+            if (siblingRemains) {
+              toast.error('다중 구간 항공편의 일부 구간은 여기서 삭제할 수 없습니다. 항차 상세에서 삭제해주세요.')
+              return []
+            }
+            return deleteFlightRow(original.source_flight_id)
           }),
         ])
         await resyncVoyageFlights(voyageId)
@@ -348,7 +360,7 @@ function InventoryPanel({
   }
 
   // ── 항공편 핸들러 ────────────────────────────────────────────────────────
-  function setFlight(idx: number, patch: Partial<DraftFlight>) {
+  function setFlight(idx: number, patch: Partial<VoyageFlight>) {
     setDraftFlights(prev => prev.map((f, i) => i === idx ? { ...f, ...patch } : f))
   }
   function removeFlightRow(idx: number) {

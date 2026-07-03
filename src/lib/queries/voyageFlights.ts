@@ -171,8 +171,18 @@ export async function deleteVoyageFlight(id: string): Promise<void> {
   if (error) throw error
 }
 
+/**
+ * flights에서 미러링된(source_flight_id가 있는) voyage_flights 행만 지운다.
+ * source_flight_id가 없는 행(다른 화면에서 flights와 무관하게 직접 추가된 항공편)은
+ * 재동기화 대상이 아니므로 보존한다 — resyncVoyageFlights가 이 데이터를 조용히
+ * 삭제하지 않도록 하는 안전장치.
+ */
 export async function deleteVoyageFlightsByVoyage(voyageId: string): Promise<void> {
-  const { error } = await sb().from('voyage_flights').delete().eq('voyage_id', voyageId)
+  const { error } = await sb()
+    .from('voyage_flights')
+    .delete()
+    .eq('voyage_id', voyageId)
+    .not('source_flight_id', 'is', null)
   if (error) throw error
 }
 

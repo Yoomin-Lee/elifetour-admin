@@ -45,7 +45,7 @@ function GradeRow({ index, onRemove }: { index: number; onRemove: () => void }) 
           <FieldSelect
             value={occupancy}
             options={OCCUPANCY_OPTIONS}
-            onChange={v => setValue(`cabin_grades.${index}.occupancy`, Number(v))}
+            onChange={v => setValue(`cabin_grades.${index}.occupancy`, v ? Number(v) : null)}
             placeholder="인실 선택"
           />
         </div>
