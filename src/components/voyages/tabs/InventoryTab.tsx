@@ -34,6 +34,8 @@ import { getAirportTimezone } from '@/lib/utils/flightCalc'
 import type { CabinGrade, Hotel } from '@/types/database'
 
 const CABIN_GRADES = ['4D', '2D', 'BA2', 'BR1', '3D(FIT)', '4U', 'BM1', 'VD', '1D', '3D', 'VC', 'VE']
+const AGENTS = ['TMK', 'COSTA', 'ONLINE', 'DONGBO', 'VASCO', 'FLORENCE']
+const CURRENCIES = ['KRW', 'USD', 'EUR', 'SGD', 'JPY']
 const OCCUPANCY_OPTIONS = [1, 2, 3, 4].map(n => ({ value: String(n), label: `${n}인실` }))
 
 // ── 날짜/가격 헬퍼 ───────────────────────────────────────────────────────────
@@ -141,10 +143,13 @@ function NumInput({ value, onChange, className = '' }: {
 
 function CurrencySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <select value={value} onChange={e => onChange(e.target.value)}
-      className="w-full px-1 py-0.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-brand bg-white">
-      {['USD', 'KRW', 'EUR', 'SGD', 'JPY'].map(c => <option key={c}>{c}</option>)}
-    </select>
+    <FieldSelect
+      value={value}
+      options={CURRENCIES}
+      onChange={onChange}
+      placeholder="통화"
+      className="h-7 px-1.5 text-xs"
+    />
   )
 }
 
@@ -448,7 +453,7 @@ function InventoryPanel({
                       </td>
                       <td className="py-1.5 pl-2 pr-1">
                         {editMode
-                          ? <TxtInput value={g.agent} onChange={v => setGrade(idx, { agent: v || null })} placeholder="에이전트" />
+                          ? <SelectOrInput value={g.agent ?? ''} options={AGENTS} onChange={v => setGrade(idx, { agent: v || null })} placeholder="에이전트" className="h-7 px-1.5 text-xs" />
                           : <span className="text-slate-500">{g.agent ?? '—'}</span>}
                       </td>
                       <td className="py-1.5 pr-1 text-right">
