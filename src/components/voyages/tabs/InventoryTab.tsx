@@ -877,13 +877,13 @@ export default function InventoryTab() {
               >
                 <div className="flex items-center gap-1">출발일 <SortIcon col="departure_date" sortCol={sortCol} sortDir={sortDir} /></div>
               </th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-48">
                 <div className="flex items-center gap-1"><Ship className="h-3 w-3 text-blue-400" />크루즈</div>
               </th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-32">
                 <div className="flex items-center gap-1"><Plane className="h-3 w-3 text-sky-400" />항공</div>
               </th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500">
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">
                 <div className="flex items-center gap-1"><Building2 className="h-3 w-3 text-amber-400" />호텔</div>
               </th>
               <th className="px-2 py-2.5 text-right font-semibold text-slate-500 w-14 whitespace-nowrap">보유캐빈</th>
@@ -935,28 +935,16 @@ export default function InventoryTab() {
 
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
 
-                    {/* 크루즈 + n인실별·등급별 잔여 뱃지 */}
+                    {/* 크루즈 + n인실별 잔여 뱃지 */}
                     <td className="px-3 py-2">
                       <div className="text-slate-600 truncate">{v.ship_name ?? v.cruise_line ?? '—'}</div>
                       {occGroups.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
+                        <div className="flex flex-nowrap gap-1 mt-1 overflow-x-auto scrollbar-navy">
                           {occGroups.map(o => (
-                            <span key={o.occupancy} className={`text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight ${o.remaining === 0 && o.total > 0 ? 'bg-red-50 text-red-500 border-red-200' : 'bg-brand/5 text-brand border-brand/20'}`}>
+                            <span key={o.occupancy} className={`shrink-0 whitespace-nowrap text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight ${o.remaining === 0 && o.total > 0 ? 'bg-red-50 text-red-500 border-red-200' : 'bg-brand/5 text-brand border-brand/20'}`}>
                               {o.occupancy}인실 {o.remaining}
                             </span>
                           ))}
-                        </div>
-                      )}
-                      {grades.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {grades.map(g => {
-                            const rem = g.total - g.reserved
-                            return (
-                              <span key={g.id} className={`text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight ${rem === 0 && g.total > 0 ? 'bg-red-50 text-red-500 border-red-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
-                                {g.grade} {rem}
-                              </span>
-                            )
-                          })}
                         </div>
                       )}
                     </td>
@@ -965,9 +953,9 @@ export default function InventoryTab() {
                     <td className="px-3 py-2">
                       <div className="text-slate-600 truncate">{airlineLabel ?? '—'}</div>
                       {flights.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
+                        <div className="flex flex-nowrap gap-1 mt-1 overflow-x-auto scrollbar-navy">
                           {flights.map(f => (
-                            <span key={f.id} className="text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight bg-sky-50 text-sky-600 border-sky-200">
+                            <span key={f.id} className="shrink-0 whitespace-nowrap text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight bg-sky-50 text-sky-600 border-sky-200">
                               {f.flight_num}
                             </span>
                           ))}
