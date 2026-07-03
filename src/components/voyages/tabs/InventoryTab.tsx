@@ -911,7 +911,19 @@ export default function InventoryTab() {
                       )}
                     </td>
 
-                    <td className="px-3 py-2 text-slate-600 truncate">{airlineLabel ?? '—'}</td>
+                    {/* 항공사 + 편명 뱃지 */}
+                    <td className="px-3 py-2">
+                      <div className="text-slate-600 truncate">{airlineLabel ?? '—'}</div>
+                      {flights.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {flights.map(f => (
+                            <span key={f.id} className="text-[10px] font-medium px-1.5 py-px rounded-full border leading-tight bg-sky-50 text-sky-600 border-sky-200">
+                              {f.flight_num}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-slate-600 truncate">{hotelDisplay ?? '—'}</td>
                     <td className="px-2 py-2 text-right text-slate-700">{totalCabin || '—'}</td>
 
