@@ -10,6 +10,7 @@ export interface VoyageFlight {
   id: string
   voyage_id: string
   pnr: string | null
+  source_flight_id: string | null
   flight_num: string
   dep_airport: string
   arr_airport: string
@@ -32,6 +33,7 @@ export interface VoyageFlight {
 export interface VoyageFlightInput {
   voyage_id: string
   pnr?: string
+  source_flight_id?: string | null
   flight_num: string
   dep_airport: string
   arr_airport: string
@@ -90,6 +92,7 @@ export async function insertVoyageFlight(input: VoyageFlightInput): Promise<Voya
     .insert({
       voyage_id: input.voyage_id,
       pnr: input.pnr ?? null,
+      source_flight_id: input.source_flight_id ?? null,
       flight_num: input.flight_num,
       dep_airport: input.dep_airport.toUpperCase(),
       arr_airport: input.arr_airport.toUpperCase(),

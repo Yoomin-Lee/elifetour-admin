@@ -173,6 +173,7 @@ type MirrorableSegment = {
 }
 
 type MirrorableFlight = {
+  id?: string
   segments: MirrorableSegment[]
   flight_no?: string | null
   origin?: string | null
@@ -215,6 +216,7 @@ async function mirrorFlightsToVoyageFlights(
       try {
         await insertVoyageFlight({
           voyage_id:      voyageId,
+          source_flight_id: f.id ?? null,
           flight_num:     seg.flight_no     || '',
           dep_airport:    dep,
           arr_airport:    arr,
@@ -262,8 +264,8 @@ export async function createVoyageWithChildren(values: VoyageFormValues): Promis
       .from('flights')
       .insert(flights.map((f, i) => ({ ...f, voyage_id: id, sort_order: i + 1 })))
     if (error) throw error
-    // voyage_flights 테이블에도 미러링 (항공 탭 연동)
-    await mirrorFlightsToVoyageFlights(id, flights)
+    // voyage_flights 테이블에도 미러링 (항공 탭 연동) — 방금 insert된 flights 기준으로 재구성
+    await resyncVoyageFlights(id)
   }
 
   if (itinerary.length > 0) {
@@ -448,6 +450,22 @@ export async function saveFlight(
     .single()
   if (error) throw error
   return row as Flight
+}
+
+/** 보유 현황에서 좌석/운임만 수정했을 때, 연결된 flights 행에 그대로 반영 */
+export async function updateFlightSeatsAndFare(
+  flightId: string,
+  patch: {
+    seats_group?: number
+    seats_indivi?: number
+    seats_business?: number
+    fare_base?: number
+    fare_fuel?: number
+    fare_tax?: number
+  },
+): Promise<void> {
+  const { error } = await sb().from('flights').update(patch).eq('id', flightId)
+  if (error) throw error
 }
 
 export async function deleteFlightRow(id: string): Promise<void> {
