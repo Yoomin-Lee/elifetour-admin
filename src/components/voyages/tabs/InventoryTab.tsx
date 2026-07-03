@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import {
   Search, ChevronDown, ChevronRight, ExternalLink,
   Ship, Plane, ArrowUp, ArrowDown, ArrowUpDown,
-  Pencil, Plus, Save, X, Loader2, Trash2,
+  Pencil, Plus, Save, X, Loader2, Trash2, RefreshCw,
 } from 'lucide-react'
 import { Building2 } from 'lucide-react'
 import { YearSelect } from '@/components/ui/year-select'
@@ -19,6 +19,7 @@ import {
   updateHotel,
   addHotel,
   deleteHotel,
+  resyncVoyageFlights,
 } from '@/lib/queries/voyages'
 import {
   fetchAllVoyageFlights,
@@ -210,6 +211,20 @@ function InventoryPanel({
     qc.invalidateQueries({ queryKey: ['all-voyage-flights'] })
     qc.invalidateQueries({ queryKey: ['all-hotels'] })
     qc.invalidateQueries({ queryKey: ['voyages'] })
+  }
+
+  const resyncFlightsMut = useMutation({
+    mutationFn: () => resyncVoyageFlights(voyageId),
+    onSuccess: () => {
+      invalidateAll()
+      toast.success('항차 상세 기준으로 항공 정보를 다시 불러왔습니다')
+    },
+    onError: () => toast.error('항공 정보를 불러오는데 실패했습니다'),
+  })
+
+  function handleResyncFlights() {
+    if (!window.confirm('현재 보유 현황의 항공 좌석 정보를 모두 지우고,\n항차 상세에 등록된 항공편 기준으로 새로 채웁니다.\n계속할까요?')) return
+    resyncFlightsMut.mutate()
   }
 
   const saveMut = useMutation({
@@ -518,9 +533,25 @@ function InventoryPanel({
 
       {/* ── 항공 좌석 ── */}
       <div className="px-5 py-3">
-        <div className="flex items-center gap-2 mb-2.5">
-          <Plane className="h-3.5 w-3.5 text-sky-500" />
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">항공 좌석</span>
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-2">
+            <Plane className="h-3.5 w-3.5 text-sky-500" />
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">항공 좌석</span>
+          </div>
+          {!editMode && (
+            <button
+              type="button"
+              onClick={handleResyncFlights}
+              disabled={resyncFlightsMut.isPending}
+              className="flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-brand transition disabled:opacity-40"
+              title="항차 상세의 항공편 정보로 다시 불러오기"
+            >
+              {resyncFlightsMut.isPending
+                ? <Loader2 className="h-3 w-3 animate-spin" />
+                : <RefreshCw className="h-3 w-3" />}
+              항차 상세에서 불러오기
+            </button>
+          )}
         </div>
 
         {flights.length === 0 ? (

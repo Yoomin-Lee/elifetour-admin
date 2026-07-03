@@ -168,6 +168,11 @@ export async function deleteVoyageFlight(id: string): Promise<void> {
   if (error) throw error
 }
 
+export async function deleteVoyageFlightsByVoyage(voyageId: string): Promise<void> {
+  const { error } = await sb().from('voyage_flights').delete().eq('voyage_id', voyageId)
+  if (error) throw error
+}
+
 export async function restoreVoyageFlight(snapshot: VoyageFlight): Promise<void> {
   const { error } = await sb()
     .from('voyage_flights')

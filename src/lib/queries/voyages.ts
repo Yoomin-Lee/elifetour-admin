@@ -1,7 +1,7 @@
 import { supabase } from '../supabase'
 import type { Voyage, Flight, ItineraryDay, CancellationPolicy, HistoryLog, FeedbackLog, Hotel, CabinGrade, PaymentSchedule } from '../../types/database'
 import type { VoyageFormValues } from '../schemas/voyage'
-import { insertVoyageFlight } from './voyageFlights'
+import { insertVoyageFlight, deleteVoyageFlightsByVoyage } from './voyageFlights'
 
 type VoyageRef = Pick<Voyage, 'region' | 'departure_date' | 'boarding_date'>
 type FeedbackVoyageRef = Pick<Voyage, 'region' | 'departure_date' | 'ship_name'>
@@ -162,13 +162,40 @@ function extractIata(str: string | null | undefined): string {
   return m ? m[1] : str.trim().toUpperCase().slice(0, 3)
 }
 
+type MirrorableSegment = {
+  flight_no?: string | null
+  origin?: string | null
+  destination?: string | null
+  departure_date?: string | null
+  departure_time?: string | null
+  arrival_date?: string | null
+  arrival_time?: string | null
+}
+
+type MirrorableFlight = {
+  segments: MirrorableSegment[]
+  flight_no?: string | null
+  origin?: string | null
+  destination?: string | null
+  departure_date?: string | null
+  departure_time?: string | null
+  arrival_date?: string | null
+  arrival_time?: string | null
+  seats_group?: number | null
+  seats_indivi?: number | null
+  seats_business?: number | null
+  fare_base?: number | null
+  fare_fuel?: number | null
+  fare_tax?: number | null
+}
+
 /**
  * flights 테이블 데이터를 voyage_flights 테이블에 미러링.
  * IATA 코드 추출 실패 or 날짜 누락 시 해당 구간만 스킵 (main save 영향 없음).
  */
 async function mirrorFlightsToVoyageFlights(
   voyageId: string,
-  flights: VoyageFormValues['flights'],
+  flights: MirrorableFlight[],
 ) {
   let order = 0
   for (const f of flights) {
@@ -206,6 +233,16 @@ async function mirrorFlightsToVoyageFlights(
       } catch { /* 미러링 실패는 무시 */ }
     }
   }
+}
+
+/**
+ * 항차 상세(flights 테이블)의 현재 상태를 기준으로 보유 현황의 voyage_flights를 다시 채운다.
+ * 기존 voyage_flights 행은 전부 삭제 후 재생성 (항차 상세와 항상 동일하게 유지).
+ */
+export async function resyncVoyageFlights(voyageId: string): Promise<void> {
+  const flights = await fetchFlights(voyageId)
+  await deleteVoyageFlightsByVoyage(voyageId)
+  await mirrorFlightsToVoyageFlights(voyageId, flights)
 }
 
 export async function createVoyageWithChildren(values: VoyageFormValues): Promise<Voyage> {
