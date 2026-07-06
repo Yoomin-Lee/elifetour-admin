@@ -739,8 +739,8 @@ export default function FlightsCard({
                       if (!alwaysShow && subtotal === 0) return null
                       return (
                         <div key={title}>
-                          <p className="text-[11px] font-semibold text-slate-400">{title}</p>
-                          <div className="flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-none whitespace-nowrap text-sm">
+                          <p className="text-xs font-semibold text-slate-400">{title}</p>
+                          <div className="flex flex-nowrap items-center gap-2.5 overflow-x-auto scrollbar-none whitespace-nowrap text-base">
                             <span className="text-slate-400 shrink-0">운임 <span className="font-semibold text-slate-700">{(Number(f[baseF]) || 0).toLocaleString('ko-KR')}</span></span>
                             <span className="text-slate-300 shrink-0">+</span>
                             <span className="text-slate-400 shrink-0">유류할증 <span className="font-semibold text-slate-700">{(Number(f[fuelF]) || 0).toLocaleString('ko-KR')}</span></span>
