@@ -170,9 +170,9 @@ export default function Sidebar({
             </div>
             {!expanded && (
               <img
-                src="/elifetour-admin/logo.png"
+                src="/elifetour-admin/favicon.png"
                 alt="이라이프투어"
-                className="hidden h-8 w-8 object-contain brightness-0 invert lg:block"
+                className="hidden h-8 w-8 rounded-md object-contain lg:block"
               />
             )}
             <button
