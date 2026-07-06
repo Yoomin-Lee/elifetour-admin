@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -7,12 +7,12 @@ import { Search, Plus, Eye, Copy, Pencil, Check, X, ExternalLink, ChevronDown } 
 import { fetchVoyages, duplicateVoyage, updateVoyage } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import type { Voyage, VoyageStatus } from '@/types/database'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
-import { useClickOutside } from '@/hooks/useClickOutside'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 /** 여러 개 선택 가능한 드롭다운 — 선택 없음(빈 배열)은 "전체"를 의미 */
 function MultiSelectDropdown({
@@ -25,8 +25,6 @@ function MultiSelectDropdown({
   formatOption?: (opt: string) => string
 }) {
   const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
-  useClickOutside(rootRef, open, () => setOpen(false))
 
   function toggle(opt: string) {
     onChange(selected.includes(opt) ? selected.filter(o => o !== opt) : [...selected, opt])
@@ -40,42 +38,49 @@ function MultiSelectDropdown({
       : `${fmt(selected[0])} 외 ${selected.length - 1}`
 
   return (
-    <div className="relative" ref={rootRef}>
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:border-brand/50 hover:bg-brand/5 focus:outline-none focus:ring-1 focus:ring-brand"
-      >
-        <span className="min-w-[52px] whitespace-nowrap text-center font-medium">{buttonLabel}</span>
-        <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full z-20 mt-1 min-w-[140px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-          <button
-            type="button"
-            onClick={() => { onChange([]); setOpen(false) }}
-            className={`w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50 ${selected.length === 0 ? 'font-semibold text-brand' : 'text-slate-700'}`}
-          >
-            {allLabel}
-          </button>
-          <div className="my-1 border-t border-slate-100" />
-          {options.map(opt => (
-            <label
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn('h-9 gap-1.5 font-medium', selected.length > 0 ? 'border-brand/40 text-brand bg-brand/5' : 'text-slate-700')}
+        >
+          <span className="whitespace-nowrap">{buttonLabel}</span>
+          <ChevronDown className={cn('h-3.5 w-3.5 text-slate-400 transition-transform', open && 'rotate-180')} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-40 py-1">
+        <button
+          type="button"
+          onClick={() => onChange([])}
+          className={cn(
+            'flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-50',
+            selected.length === 0 ? 'font-semibold text-brand' : 'text-slate-700',
+          )}
+        >
+          <Check className={cn('h-3.5 w-3.5 shrink-0', selected.length === 0 ? 'opacity-100' : 'opacity-0')} />
+          {allLabel}
+        </button>
+        <div className="my-1 border-t border-slate-100" />
+        {options.map(opt => {
+          const checked = selected.includes(opt)
+          return (
+            <button
               key={opt}
-              className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50"
+              type="button"
+              onClick={() => toggle(opt)}
+              className={cn(
+                'flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition hover:bg-slate-50',
+                checked ? 'font-semibold text-brand' : 'text-slate-700',
+              )}
             >
-              <input
-                type="checkbox"
-                checked={selected.includes(opt)}
-                onChange={() => toggle(opt)}
-                className="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"
-              />
-              <span className={selected.includes(opt) ? 'font-semibold text-brand' : ''}>{fmt(opt)}</span>
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
+              <Check className={cn('h-3.5 w-3.5 shrink-0', checked ? 'opacity-100' : 'opacity-0')} />
+              {fmt(opt)}
+            </button>
+          )
+        })}
+      </PopoverContent>
+    </Popover>
   )
 }
 
