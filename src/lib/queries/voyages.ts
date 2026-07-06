@@ -188,6 +188,12 @@ type MirrorableFlight = {
   fare_base?: number | null
   fare_fuel?: number | null
   fare_tax?: number | null
+  fare_base_indivi?: number | null
+  fare_fuel_indivi?: number | null
+  fare_tax_indivi?: number | null
+  fare_base_business?: number | null
+  fare_fuel_business?: number | null
+  fare_tax_business?: number | null
 }
 
 /**
@@ -228,9 +234,11 @@ async function mirrorFlightsToVoyageFlights(
           seats_group:    f.seats_group    ?? 0,
           seats_indivi:   f.seats_indivi   ?? 0,
           seats_business: f.seats_business ?? 0,
-          fare_base:      f.fare_base      ?? 0,
-          fare_fuel:      f.fare_fuel      ?? 0,
-          fare_tax:       f.fare_tax       ?? 0,
+          // 좌석 등급별(그룹/인디비/비즈니스) 요금을 합산 — voyage_flights는 등급 구분 없이
+          // 항공편 전체 요금만 보관하므로, 보유현황의 항공료 합계가 항차상세와 항상 같도록 한다
+          fare_base:      (f.fare_base ?? 0) + (f.fare_base_indivi ?? 0) + (f.fare_base_business ?? 0),
+          fare_fuel:      (f.fare_fuel ?? 0) + (f.fare_fuel_indivi ?? 0) + (f.fare_fuel_business ?? 0),
+          fare_tax:       (f.fare_tax  ?? 0) + (f.fare_tax_indivi  ?? 0) + (f.fare_tax_business  ?? 0),
         })
       } catch { /* 미러링 실패는 무시 */ }
     }

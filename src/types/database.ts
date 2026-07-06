@@ -39,6 +39,7 @@ export type FlightSegment = {
 export interface Flight {
   id: string
   voyage_id: string
+  label: string | null
   flight_no: string | null
   origin: string | null
   destination: string | null
@@ -55,6 +56,12 @@ export interface Flight {
   fare_base: number
   fare_fuel: number
   fare_tax: number
+  fare_base_indivi: number
+  fare_fuel_indivi: number
+  fare_tax_indivi: number
+  fare_base_business: number
+  fare_fuel_business: number
+  fare_tax_business: number
   segments: FlightSegment[]
   created_at: string
 }

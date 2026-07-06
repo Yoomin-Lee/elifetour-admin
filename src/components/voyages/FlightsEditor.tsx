@@ -10,12 +10,15 @@ import { useFlightCalc } from '@/hooks/useFlightCalc'
 import type { VoyageFormValues } from '@/lib/schemas/voyage'
 
 const EMPTY_FLIGHT = {
+  label: '',
   flight_no: '', origin: '', destination: '',
   departure_date: '', arrival_date: '',
   departure_time: '', arrival_time: '',
   duration: '', fare: undefined, sort_order: 0,
   seats_group: undefined, seats_indivi: undefined, seats_business: undefined,
   fare_base: 0, fare_fuel: 0, fare_tax: 0,
+  fare_base_indivi: 0, fare_fuel_indivi: 0, fare_tax_indivi: 0,
+  fare_base_business: 0, fare_fuel_business: 0, fare_tax_business: 0,
   segments: [],
 }
 
@@ -166,11 +169,56 @@ function SegmentRow({
   )
 }
 
+// ── 좌석 등급별 운임 소블록 (그룹석은 fare_base 등 기존 필드, 인디비·비즈니스는 접미사 필드) ──
+function FareTierBlock({ index, suffix, title }: { index: number; suffix: '' | '_indivi' | '_business'; title: string }) {
+  const { register, control } = useFormContext<VoyageFormValues>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const base = `flights.${index}` as any
+
+  const [fb, ff, ft] = useWatch({
+    control,
+    name: [`${base}.fare_base${suffix}`, `${base}.fare_fuel${suffix}`, `${base}.fare_tax${suffix}`] as any,
+  }).map((v: unknown) => Number(v) || 0)
+  const subtotal = fb + ff + ft
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-semibold text-slate-500">{title}</p>
+      <div className="flex flex-wrap gap-2 items-end">
+        <div>
+          <label className="label">운임 (원)</label>
+          <Input {...register(`${base}.fare_base${suffix}` as any, { valueAsNumber: true })}
+            type="number" min={0} placeholder="0" className="w-28 text-right" />
+        </div>
+        <span className="text-slate-400 text-sm pb-2">+</span>
+        <div>
+          <label className="label">유류할증료 (원)</label>
+          <Input {...register(`${base}.fare_fuel${suffix}` as any, { valueAsNumber: true })}
+            type="number" min={0} placeholder="0" className="w-28 text-right" />
+        </div>
+        <span className="text-slate-400 text-sm pb-2">+</span>
+        <div>
+          <label className="label">발권피 (원)</label>
+          <Input {...register(`${base}.fare_tax${suffix}` as any, { valueAsNumber: true })}
+            type="number" min={0} placeholder="0" className="w-28 text-right" />
+        </div>
+        <span className="text-slate-400 text-sm pb-2">=</span>
+        <div>
+          <label className="label text-brand">소계</label>
+          <div className="h-9 flex items-center rounded-md border border-brand/20 bg-brand/5 px-3 text-sm font-semibold text-brand min-w-[100px]">
+            {subtotal.toLocaleString('ko-KR')}원
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── 메인(좌석/운임) 한 블록 — 그룹 안에 여러 개 나열될 수 있음 ──────────────────
 function FlightMainOnly({ index, onRemove }: { index: number; onRemove: () => void }) {
   const { register, control } = useFormContext<VoyageFormValues>()
 
-  const [sg, si, sb, fb, ff, ft] = useWatch({
+  const [sg, si, sb, fb, ff, ft, fbi, ffi, fti, fbb, ffb, ftb] = useWatch({
     control,
     name: [
       `flights.${index}.seats_group`,
@@ -179,10 +227,16 @@ function FlightMainOnly({ index, onRemove }: { index: number; onRemove: () => vo
       `flights.${index}.fare_base`,
       `flights.${index}.fare_fuel`,
       `flights.${index}.fare_tax`,
+      `flights.${index}.fare_base_indivi`,
+      `flights.${index}.fare_fuel_indivi`,
+      `flights.${index}.fare_tax_indivi`,
+      `flights.${index}.fare_base_business`,
+      `flights.${index}.fare_fuel_business`,
+      `flights.${index}.fare_tax_business`,
     ],
   }).map(v => Number(v) || 0)
   const totalSeats = sg + si + sb
-  const totalFare  = fb + ff + ft
+  const totalFare  = fb + ff + ft + fbi + ffi + fti + fbb + ffb + ftb
 
   return (
     <div className="relative rounded-lg border border-slate-100 bg-white p-4 space-y-3">
@@ -219,29 +273,14 @@ function FlightMainOnly({ index, onRemove }: { index: number; onRemove: () => vo
         </div>
       </div>
 
-      {/* ── 항공료 수식 (메인) ── */}
-      <div className="flex flex-wrap gap-2 items-end pt-2 border-t border-slate-100">
-        <div>
-          <label className="label">운임 (원)</label>
-          <Input {...register(`flights.${index}.fare_base`, { valueAsNumber: true })}
-            type="number" min={0} placeholder="0" className="w-28 text-right" />
-        </div>
-        <span className="text-slate-400 text-sm pb-2">+</span>
-        <div>
-          <label className="label">유류할증료 (원)</label>
-          <Input {...register(`flights.${index}.fare_fuel`, { valueAsNumber: true })}
-            type="number" min={0} placeholder="0" className="w-28 text-right" />
-        </div>
-        <span className="text-slate-400 text-sm pb-2">+</span>
-        <div>
-          <label className="label">발권피 (원)</label>
-          <Input {...register(`flights.${index}.fare_tax`, { valueAsNumber: true })}
-            type="number" min={0} placeholder="0" className="w-28 text-right" />
-        </div>
-        <span className="text-slate-400 text-sm pb-2">=</span>
-        <div>
-          <label className="label text-brand">항공료</label>
-          <div className="h-9 flex items-center rounded-md border border-brand/20 bg-brand/5 px-3 text-sm font-semibold text-brand min-w-[100px]">
+      {/* ── 항공료 수식 (좌석 등급별) ── */}
+      <div className="space-y-3 pt-2 border-t border-slate-100">
+        <FareTierBlock index={index} suffix=""          title="그룹석" />
+        <FareTierBlock index={index} suffix="_indivi"   title="인디비 석" />
+        <FareTierBlock index={index} suffix="_business" title="비즈니스 석" />
+        <div className="flex items-center gap-2 pt-1">
+          <span className="label text-brand">항공료 합계</span>
+          <div className="h-8 flex items-center rounded-md border border-brand/20 bg-brand/5 px-3 text-sm font-semibold text-brand">
             {totalFare.toLocaleString('ko-KR')}원
           </div>
         </div>

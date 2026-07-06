@@ -15,6 +15,7 @@ export const segmentSchema = z.object({
 export type FlightSegment = z.infer<typeof segmentSchema>
 
 export const flightSchema = z.object({
+  label:          z.string().optional(),
   flight_no:      z.string().optional(),
   origin:         z.string().optional(),
   destination:    z.string().optional(),
@@ -31,6 +32,12 @@ export const flightSchema = z.object({
   fare_base:      z.coerce.number().min(0).default(0),
   fare_fuel:      z.coerce.number().min(0).default(0),
   fare_tax:       z.coerce.number().min(0).default(0),
+  fare_base_indivi:   z.coerce.number().min(0).default(0),
+  fare_fuel_indivi:   z.coerce.number().min(0).default(0),
+  fare_tax_indivi:    z.coerce.number().min(0).default(0),
+  fare_base_business: z.coerce.number().min(0).default(0),
+  fare_fuel_business: z.coerce.number().min(0).default(0),
+  fare_tax_business:  z.coerce.number().min(0).default(0),
   segments:       z.array(segmentSchema).default([]),
 })
 

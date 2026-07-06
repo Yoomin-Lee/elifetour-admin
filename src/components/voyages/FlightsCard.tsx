@@ -45,6 +45,7 @@ type DraftFlight = {
   _isNew:       boolean
   _deleted:     boolean
   id:           string
+  label:        string
   fare:         string
   sort_order:   number
   seats_group:  string
@@ -53,6 +54,12 @@ type DraftFlight = {
   fare_base:    string
   fare_fuel:    string
   fare_tax:     string
+  fare_base_indivi:   string
+  fare_fuel_indivi:   string
+  fare_tax_indivi:    string
+  fare_base_business: string
+  fare_fuel_business: string
+  fare_tax_business:  string
   segments:     SegmentDraft[]
 }
 
@@ -93,6 +100,7 @@ function toDraft(f: Flight): DraftFlight {
 
   return {
     _key: f.id, _groupKey: segmentsKey(segments) || f.id, _isNew: false, _deleted: false, id: f.id,
+    label:          f.label ?? '',
     fare:           f.fare != null ? String(f.fare) : '',
     sort_order:     f.sort_order,
     seats_group:    String(f.seats_group    ?? 0),
@@ -101,21 +109,30 @@ function toDraft(f: Flight): DraftFlight {
     fare_base:      String(f.fare_base      ?? 0),
     fare_fuel:      String(f.fare_fuel      ?? 0),
     fare_tax:       String(f.fare_tax       ?? 0),
+    fare_base_indivi:   String(f.fare_base_indivi   ?? 0),
+    fare_fuel_indivi:   String(f.fare_fuel_indivi   ?? 0),
+    fare_tax_indivi:    String(f.fare_tax_indivi    ?? 0),
+    fare_base_business: String(f.fare_base_business ?? 0),
+    fare_fuel_business: String(f.fare_fuel_business ?? 0),
+    fare_tax_business:  String(f.fare_tax_business  ?? 0),
     segments,
   }
 }
 
 const EMPTY: Omit<DraftFlight, '_key' | '_groupKey'> = {
   _isNew: true, _deleted: false, id: '',
-  fare: '', sort_order: 0,
+  label: '', fare: '', sort_order: 0,
   seats_group: '0', seats_indivi: '0', seats_business: '0',
   fare_base: '0', fare_fuel: '0', fare_tax: '0',
+  fare_base_indivi: '0', fare_fuel_indivi: '0', fare_tax_indivi: '0',
+  fare_base_business: '0', fare_fuel_business: '0', fare_tax_business: '0',
   segments: [],
 }
 
 function toInput(r: DraftFlight, _voyageId: string, idx: number) {
   const first = r.segments[0]
   return {
+    label:          r.label.trim() || null,
     // 첫 구간을 flat 컬럼에도 미러링 (하위 호환)
     flight_no:      first?.flight_no      || null,
     origin:         first?.origin         || null,
@@ -133,6 +150,12 @@ function toInput(r: DraftFlight, _voyageId: string, idx: number) {
     fare_base:      Number(r.fare_base)      || 0,
     fare_fuel:      Number(r.fare_fuel)      || 0,
     fare_tax:       Number(r.fare_tax)       || 0,
+    fare_base_indivi:   Number(r.fare_base_indivi)   || 0,
+    fare_fuel_indivi:   Number(r.fare_fuel_indivi)   || 0,
+    fare_tax_indivi:    Number(r.fare_tax_indivi)    || 0,
+    fare_base_business: Number(r.fare_base_business) || 0,
+    fare_fuel_business: Number(r.fare_fuel_business) || 0,
+    fare_tax_business:  Number(r.fare_tax_business)  || 0,
     segments:       r.segments.map(s => ({
       flight_no:      s.flight_no      || null,
       origin:         s.origin         || null,
@@ -245,6 +268,54 @@ function SegmentDraftRow({
   )
 }
 
+// ── 좌석 등급별 운임 소블록 (그룹석은 fare_base 등 기존 필드, 인디비·비즈니스는 접미사 필드) ──
+function FareTierRow({
+  r, suffix, title, onUpdate,
+}: {
+  r: DraftFlight
+  suffix: '' | '_indivi' | '_business'
+  title: string
+  onUpdate: (field: keyof DraftFlight, value: string) => void
+}) {
+  const baseField = `fare_base${suffix}` as keyof DraftFlight
+  const fuelField = `fare_fuel${suffix}` as keyof DraftFlight
+  const taxField  = `fare_tax${suffix}`  as keyof DraftFlight
+  const subtotal = (Number(r[baseField]) || 0) + (Number(r[fuelField]) || 0) + (Number(r[taxField]) || 0)
+
+  return (
+    <div className="space-y-1">
+      <p className="text-[11px] font-semibold text-slate-500">{title}</p>
+      <div className="flex flex-wrap gap-2 items-end">
+        {([
+          [baseField, '운임'],
+          [fuelField, '유류할증료'],
+          [taxField,  '발권피'],
+        ] as [keyof DraftFlight, string][]).map(([field, label], idx) => (
+          <Fragment key={field}>
+            <div>
+              <label className="label">{label} (원)</label>
+              <Input
+                value={r[field] as string}
+                onChange={e => onUpdate(field, e.target.value)}
+                type="number" min={0} placeholder="0"
+                className="h-7 text-sm w-28 text-right"
+              />
+            </div>
+            {idx < 2 && <span className="text-slate-400 text-sm pb-1.5">+</span>}
+          </Fragment>
+        ))}
+        <span className="text-slate-400 text-sm pb-1.5">=</span>
+        <div>
+          <label className="label text-brand">소계</label>
+          <div className="h-7 flex items-center rounded-md border border-brand/20 bg-brand/5 px-2 text-sm font-semibold text-brand min-w-[96px]">
+            {subtotal.toLocaleString('ko-KR')}원
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── 메인(좌석/운임) 한 블록 — 그룹 안에 여러 개 나열될 수 있음 ──────────────────
 function MainFareBlock({
   r, index, onRemove, onUpdate,
@@ -255,7 +326,10 @@ function MainFareBlock({
   onUpdate: (updater: (prev: DraftFlight) => DraftFlight) => void
 }) {
   const totalSeats = (Number(r.seats_group) || 0) + (Number(r.seats_indivi) || 0) + (Number(r.seats_business) || 0)
-  const totalFare  = (Number(r.fare_base) || 0) + (Number(r.fare_fuel) || 0) + (Number(r.fare_tax) || 0)
+  const totalFare  =
+    (Number(r.fare_base) || 0) + (Number(r.fare_fuel) || 0) + (Number(r.fare_tax) || 0) +
+    (Number(r.fare_base_indivi) || 0) + (Number(r.fare_fuel_indivi) || 0) + (Number(r.fare_tax_indivi) || 0) +
+    (Number(r.fare_base_business) || 0) + (Number(r.fare_fuel_business) || 0) + (Number(r.fare_tax_business) || 0)
 
   function updMain(field: keyof DraftFlight, value: string) {
     onUpdate(prev => ({ ...prev, [field]: value }))
@@ -267,7 +341,12 @@ function MainFareBlock({
         className="absolute right-2 top-2 rounded p-1 text-slate-400 hover:text-red-500 transition">
         <Trash2 className="h-3.5 w-3.5" />
       </button>
-      <span className="block text-xs font-medium text-slate-400">{index + 1}편</span>
+      <Input
+        value={r.label}
+        onChange={e => updMain('label', e.target.value)}
+        placeholder={`${index + 1}편`}
+        className="h-6 w-40 border-none bg-transparent px-0 text-xs font-medium text-slate-400 focus:border-b focus:border-brand/40 focus:bg-white focus:px-1"
+      />
 
       {/* ── 좌석 수식 (메인) ── */}
       <div className="flex flex-wrap gap-2 items-end">
@@ -298,30 +377,14 @@ function MainFareBlock({
         </div>
       </div>
 
-      {/* ── 항공료 수식 (메인) ── */}
-      <div className="flex flex-wrap gap-2 items-end pt-2 border-t border-slate-100">
-        {([
-          ['fare_base', '운임'],
-          ['fare_fuel', '유류할증료'],
-          ['fare_tax', '발권피'],
-        ] as [keyof DraftFlight, string][]).map(([field, label], idx) => (
-          <Fragment key={field}>
-            <div>
-              <label className="label">{label} (원)</label>
-              <Input
-                value={r[field] as string}
-                onChange={e => updMain(field, e.target.value)}
-                type="number" min={0} placeholder="0"
-                className="h-7 text-sm w-28 text-right"
-              />
-            </div>
-            {idx < 2 && <span className="text-slate-400 text-sm pb-1.5">+</span>}
-          </Fragment>
-        ))}
-        <span className="text-slate-400 text-sm pb-1.5">=</span>
-        <div>
-          <label className="label text-brand">항공료</label>
-          <div className="h-7 flex items-center rounded-md border border-brand/20 bg-brand/5 px-2 text-sm font-semibold text-brand min-w-[96px]">
+      {/* ── 항공료 수식 (좌석 등급별) ── */}
+      <div className="space-y-2 pt-2 border-t border-slate-100">
+        <FareTierRow r={r} suffix=""          title="그룹석"    onUpdate={updMain} />
+        <FareTierRow r={r} suffix="_indivi"   title="인디비 석"  onUpdate={updMain} />
+        <FareTierRow r={r} suffix="_business" title="비즈니스 석" onUpdate={updMain} />
+        <div className="flex items-center gap-2 pt-1">
+          <span className="label text-brand">항공료 합계</span>
+          <div className="h-7 flex items-center rounded-md border border-brand/20 bg-brand/5 px-2 text-sm font-semibold text-brand">
             {totalFare.toLocaleString('ko-KR')}원
           </div>
         </div>
@@ -613,7 +676,10 @@ export default function FlightsCard({
           <div className="space-y-2">
             {flights.map((f, i) => {
               const totalSeats = (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0)
-              const totalFare  = (f.fare_base ?? 0) + (f.fare_fuel ?? 0) + (f.fare_tax ?? 0)
+              const totalFare  =
+                (f.fare_base ?? 0) + (f.fare_fuel ?? 0) + (f.fare_tax ?? 0) +
+                (f.fare_base_indivi ?? 0) + (f.fare_fuel_indivi ?? 0) + (f.fare_tax_indivi ?? 0) +
+                (f.fare_base_business ?? 0) + (f.fare_fuel_business ?? 0) + (f.fare_tax_business ?? 0)
 
               // 구간 목록 (없으면 flat 필드로 레거시 표시)
               // 기존 segments JSONB에 arrival_date/time 없으면 flat 컬럼 폴백 (첫 구간만)
@@ -631,7 +697,7 @@ export default function FlightsCard({
 
               return (
                 <div key={f.id} className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
-                  <span className="block text-sm font-medium text-slate-400">{i + 1}편</span>
+                  <span className="block text-sm font-medium text-slate-400">{f.label?.trim() || `${i + 1}편`}</span>
 
                   {/* 좌석 수식 */}
                   <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -648,19 +714,31 @@ export default function FlightsCard({
                     <span className="text-slate-400">총 <span className="font-semibold text-brand">{totalSeats.toLocaleString('ko-KR')}</span>석</span>
                   </div>
 
-                  {/* 항공료 수식 */}
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    {(['fare_base', 'fare_fuel', 'fare_tax'] as const).map((field, idx) => (
-                      <Fragment key={field}>
-                        <span className="text-slate-400">
-                          {field === 'fare_base' ? '운임' : field === 'fare_fuel' ? '유류할증료' : '발권피'}
-                          {' '}<span className="font-semibold text-slate-700">{formatKrw(f[field] ?? 0)}</span>
-                        </span>
-                        {idx < 2 && <span className="text-slate-300">+</span>}
-                      </Fragment>
-                    ))}
-                    <span className="text-slate-300">=</span>
-                    <span className="font-semibold text-brand">{formatKrw(totalFare)}</span>
+                  {/* 항공료 수식 (좌석 등급별) */}
+                  <div className="space-y-1.5 pt-1">
+                    {([
+                      ['그룹석',     'fare_base',            'fare_fuel',            'fare_tax'],
+                      ['인디비 석',  'fare_base_indivi',     'fare_fuel_indivi',     'fare_tax_indivi'],
+                      ['비즈니스 석', 'fare_base_business',   'fare_fuel_business',   'fare_tax_business'],
+                    ] as [string, keyof Flight, keyof Flight, keyof Flight][]).map(([title, baseF, fuelF, taxF]) => {
+                      const subtotal = (Number(f[baseF]) || 0) + (Number(f[fuelF]) || 0) + (Number(f[taxF]) || 0)
+                      return (
+                        <div key={title} className="flex flex-wrap items-center gap-2 text-sm">
+                          <span className="w-16 shrink-0 text-[11px] font-semibold text-slate-400">{title}</span>
+                          <span className="text-slate-400">운임 <span className="font-semibold text-slate-700">{formatKrw(Number(f[baseF]) || 0)}</span></span>
+                          <span className="text-slate-300">+</span>
+                          <span className="text-slate-400">유류할증료 <span className="font-semibold text-slate-700">{formatKrw(Number(f[fuelF]) || 0)}</span></span>
+                          <span className="text-slate-300">+</span>
+                          <span className="text-slate-400">발권피 <span className="font-semibold text-slate-700">{formatKrw(Number(f[taxF]) || 0)}</span></span>
+                          <span className="text-slate-300">=</span>
+                          <span className="font-semibold text-brand">{formatKrw(subtotal)}</span>
+                        </div>
+                      )
+                    })}
+                    <div className="flex items-center gap-2 text-sm pt-0.5">
+                      <span className="text-slate-400">항공료 합계</span>
+                      <span className="font-semibold text-brand">{formatKrw(totalFare)}</span>
+                    </div>
                   </div>
 
                   {/* 구간 목록 — 꺽새 토글 */}
