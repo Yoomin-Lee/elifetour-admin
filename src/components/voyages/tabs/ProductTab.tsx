@@ -3,23 +3,42 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
-import { Search, Plus, Eye, Copy, Pencil, Check, X, ExternalLink } from 'lucide-react'
+import { Search, Plus, Eye, Copy, Pencil, Check, X, ExternalLink, ChevronDown } from 'lucide-react'
 import { fetchVoyages, duplicateVoyage, updateVoyage } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import type { Voyage, VoyageStatus } from '@/types/database'
 import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
 import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
 import { useClickOutside } from '@/hooks/useClickOutside'
 
-function StatusSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+/** 여러 개 선택 가능한 드롭다운 — 선택 없음(빈 배열)은 "전체"를 의미 */
+function MultiSelectDropdown({
+  allLabel, options, selected, onChange, formatOption,
+}: {
+  allLabel: string
+  options: readonly string[]
+  selected: string[]
+  onChange: (next: string[]) => void
+  formatOption?: (opt: string) => string
+}) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   useClickOutside(rootRef, open, () => setOpen(false))
-  const options = ['ALL', '미오픈', '판매중', '마감', '출발완료', '취소'] as const
+
+  function toggle(opt: string) {
+    onChange(selected.includes(opt) ? selected.filter(o => o !== opt) : [...selected, opt])
+  }
+
+  const fmt = (opt: string) => formatOption ? formatOption(opt) : opt
+  const buttonLabel = selected.length === 0
+    ? allLabel
+    : selected.length === 1
+      ? fmt(selected[0])
+      : `${fmt(selected[0])} 외 ${selected.length - 1}`
+
   return (
     <div className="relative" ref={rootRef}>
       <button
@@ -27,22 +46,32 @@ function StatusSelect({ value, onChange }: { value: string; onChange: (v: string
         onClick={() => setOpen(v => !v)}
         className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:border-brand/50 hover:bg-brand/5 focus:outline-none focus:ring-1 focus:ring-brand"
       >
-        <span className="min-w-[52px] text-center font-medium">
-          {value === 'ALL' ? '전체 상태' : value}
-        </span>
-        <svg className={`h-3.5 w-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+        <span className="min-w-[52px] whitespace-nowrap text-center font-medium">{buttonLabel}</span>
+        <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-20 mt-1 min-w-[100px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute right-0 top-full z-20 mt-1 min-w-[140px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <button
+            type="button"
+            onClick={() => { onChange([]); setOpen(false) }}
+            className={`w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50 ${selected.length === 0 ? 'font-semibold text-brand' : 'text-slate-700'}`}
+          >
+            {allLabel}
+          </button>
+          <div className="my-1 border-t border-slate-100" />
           {options.map(opt => (
-            <button
+            <label
               key={opt}
-              type="button"
-              onClick={() => { onChange(opt); setOpen(false) }}
-              className={`w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50 ${value === opt ? 'font-semibold text-brand' : 'text-slate-700'}`}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50"
             >
-              {opt === 'ALL' ? '전체 상태' : opt}
-            </button>
+              <input
+                type="checkbox"
+                checked={selected.includes(opt)}
+                onChange={() => toggle(opt)}
+                className="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"
+              />
+              <span className={selected.includes(opt) ? 'font-semibold text-brand' : ''}>{fmt(opt)}</span>
+            </label>
           ))}
         </div>
       )}
@@ -94,8 +123,8 @@ export default function ProductTab() {
   const initMonthFilter = searchParams.get('filter') === 'this-month'
 
   const [filter, setFilter] = useState('')
-  const [yearFilter, setYearFilter] = useState<string>('ALL')
-  const [statusFilter, setStatusFilter] = useState<string>(initStatus)
+  const [yearFilter, setYearFilter] = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState<string[]>(initStatus === 'ALL' ? [] : [initStatus])
   const [monthFilter, setMonthFilter] = useState<boolean>(initMonthFilter)
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -161,8 +190,8 @@ export default function ProductTab() {
 
   const filtered = voyages.filter(v => {
     if (monthFilter && !v.departure_date?.startsWith(thisMonth)) return false
-    if (!monthFilter && yearFilter !== 'ALL' && !v.departure_date?.startsWith(yearFilter)) return false
-    if (statusFilter !== 'ALL' && v.status !== statusFilter) return false
+    if (!monthFilter && yearFilter.length > 0 && !yearFilter.some(y => v.departure_date?.startsWith(y))) return false
+    if (statusFilter.length > 0 && !statusFilter.includes(v.status)) return false
     return !filter || voyageTitle(v).toLowerCase().includes(filter.toLowerCase()) ||
       (v.region ?? '').includes(filter) ||
       (v.cruise_line ?? '').toLowerCase().includes(filter.toLowerCase()) ||
@@ -190,20 +219,32 @@ export default function ProductTab() {
                 <span className="ml-0.5 opacity-60">✕</span>
               </button>
             )}
-            {statusFilter !== 'ALL' && (
+            {statusFilter.map(s => (
               <button
-                onClick={() => setStatusFilter('ALL')}
+                key={s}
+                onClick={() => setStatusFilter(prev => prev.filter(x => x !== s))}
                 className="flex items-center gap-1 rounded-full bg-brand/10 text-brand px-2 py-0.5 text-xs font-medium hover:bg-brand/20 transition"
               >
-                {statusFilter}
+                {s}
                 <span className="ml-0.5 opacity-60">✕</span>
               </button>
-            )}
+            ))}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <YearSelect value={monthFilter ? 'ALL' : yearFilter} years={years} onChange={v => { setYearFilter(v); setMonthFilter(false) }} />
-          <StatusSelect value={statusFilter} onChange={setStatusFilter} />
+          <MultiSelectDropdown
+            allLabel="전체 연도"
+            options={years}
+            selected={monthFilter ? [] : yearFilter}
+            onChange={v => { setYearFilter(v); setMonthFilter(false) }}
+            formatOption={y => `${y}년`}
+          />
+          <MultiSelectDropdown
+            allLabel="전체 상태"
+            options={STATUSES}
+            selected={statusFilter}
+            onChange={setStatusFilter}
+          />
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input
