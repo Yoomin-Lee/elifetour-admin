@@ -5,7 +5,7 @@ import TopBar from './TopBar'
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar.collapsed') === 'true')
+  const [pinned, setPinned] = useState(() => localStorage.getItem('sidebar.pinned') === 'true')
   const mainRef = useRef<HTMLElement>(null)
   const { pathname, search } = useLocation()
 
@@ -13,10 +13,10 @@ export default function Layout() {
     mainRef.current?.scrollTo(0, 0)
   }, [pathname, search])
 
-  function toggleCollapsed() {
-    setCollapsed(prev => {
+  function togglePinned() {
+    setPinned(prev => {
       const next = !prev
-      localStorage.setItem('sidebar.collapsed', String(next))
+      localStorage.setItem('sidebar.pinned', String(next))
       return next
     })
   }
@@ -32,8 +32,8 @@ export default function Layout() {
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        collapsed={collapsed}
-        onToggleCollapsed={toggleCollapsed}
+        pinned={pinned}
+        onTogglePinned={togglePinned}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
