@@ -80,17 +80,16 @@ function groupByOccupancy(grades: CabinGrade[]): { occupancy: number; total: num
     .map(([occupancy, { total, reserved }]) => ({ occupancy, total, remaining: total - reserved }))
 }
 
-// ── 항공사별 그룹핑 (왕복 항공료·좌석 수는 항공사당 한 번만 집계) ────────────────
-function airlineCode(flightNum: string): string {
-  return flightNum.match(/^[A-Za-z]+/)?.[0] ?? flightNum
-}
-
-function groupFlightsByAirline<T extends { flight_num: string }>(flights: T[]): T[][] {
+// ── 항공편 그룹핑 (같은 source_flight_id에서 미러링된 구간 = 같은 좌석·운임 상품) ──
+// 편명 앞 항공사 코드만으로 묶으면, 같은 편명을 그룹석/인디비석처럼 서로 다른
+// 좌석·운임 블록으로 나눠 입력한 경우 편명이 겹쳐 보이고 한쪽 좌석 수가 화면에서
+// 사라지는 문제가 있어, 항차상세의 원본 항공편(source_flight_id) 기준으로 묶는다.
+function groupFlightSegments<T extends { id: string; source_flight_id?: string | null }>(flights: T[]): T[][] {
   const map = new Map<string, T[]>()
   flights.forEach(f => {
-    const code = airlineCode(f.flight_num)
-    if (!map.has(code)) map.set(code, [])
-    map.get(code)!.push(f)
+    const key = f.source_flight_id ?? f.id
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(f)
   })
   return Array.from(map.values())
 }
@@ -375,7 +374,7 @@ function InventoryPanel({
     setDraftGrades(p => p.filter((_, i) => i !== idx))
   }
 
-  // ── 항공편 핸들러 (항공사 그룹 단위로 좌석·운임을 함께 수정) ────────────────
+  // ── 항공편 핸들러 (같은 원본 항공편 그룹 단위로 좌석·운임을 함께 수정) ────────
   function setFlightGroup(ids: string[], patch: Partial<VoyageFlight>) {
     setDraftFlights(prev => prev.map(f => ids.includes(f.id) ? { ...f, ...patch } : f))
   }
@@ -637,9 +636,9 @@ function InventoryPanel({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {editMode ? (
-                  groupFlightsByAirline(flights).map(group => {
-                    // 항공사(왕복 편) 단위로 한 행에서 편집 — 좌석·운임은 그룹 내 모든
-                    // 구간에 동일하게 반영된다 (왕복 항공료·좌석은 항공사당 하나이므로)
+                  groupFlightSegments(flights).map(group => {
+                    // 같은 원본 항공편(source_flight_id) 단위로 한 행에서 편집 — 좌석·운임은
+                    // 그룹 내 모든 구간에 동일하게 반영된다 (왕복 구간은 원본이 하나라 값도 하나)
                     const lead = group[0]
                     const ids  = group.map(f => f.id)
                     const totalSeats = (lead.seats_group ?? 0) + (lead.seats_indivi ?? 0) + (lead.seats_business ?? 0)
@@ -689,9 +688,9 @@ function InventoryPanel({
                     )
                   })
                 ) : (
-                  groupFlightsByAirline(flights).map(group => {
-                    // 왕복(같은 항공사) 항공편은 좌석·운임이 항공사당 한 번만 존재하므로
-                    // 대표(첫 구간) 값 하나만 보여준다 — 각 구간마다 중복 합산하지 않음
+                  groupFlightSegments(flights).map(group => {
+                    // 같은 원본 항공편(source_flight_id)의 구간들은 좌석·운임이 동일하게
+                    // 미러링되어 있으므로 대표(첫 구간) 값 하나만 보여준다 — 중복 합산 방지
                     const rep = group[0]
                     const totalSeats = (rep.seats_group ?? 0) + (rep.seats_indivi ?? 0) + (rep.seats_business ?? 0)
                     const totalFare  = (rep.fare_base ?? 0) + (rep.fare_fuel ?? 0) + (rep.fare_tax ?? 0)
@@ -725,8 +724,8 @@ function InventoryPanel({
                     )
                   })
                 )}
-                {!editMode && groupFlightsByAirline(initFlights).length > 1 && (() => {
-                  const groups = groupFlightsByAirline(initFlights)
+                {!editMode && groupFlightSegments(initFlights).length > 1 && (() => {
+                  const groups = groupFlightSegments(initFlights)
                   const sum = (key: 'seats_group' | 'seats_indivi' | 'seats_business') =>
                     groups.reduce((s, g) => s + (g[0][key] ?? 0), 0)
                   const totalSeats = sum('seats_group') + sum('seats_indivi') + sum('seats_business')
@@ -858,7 +857,7 @@ export default function InventoryTab() {
     const hotels  = hotelMap[v.id]  ?? []
     const totalCabin     = grades.length > 0 ? grades.reduce((s, g) => s + g.total, 0) : (v.cabin_total ?? 0)
     const remainingCabin = grades.length > 0 ? grades.reduce((s, g) => s + (g.total - g.reserved), 0) : (v.cabin_remaining ?? 0)
-    const totalSeats     = groupFlightsByAirline(flights).reduce((s, group) => {
+    const totalSeats     = groupFlightSegments(flights).reduce((s, group) => {
       const rep = group[0]
       return s + (rep.seats_group ?? 0) + (rep.seats_indivi ?? 0) + (rep.seats_business ?? 0)
     }, 0)
@@ -1027,13 +1026,13 @@ export default function InventoryTab() {
                       )}
                     </td>
 
-                    {/* 항공사 + 편명 뱃지 (항공사가 다르면 항공사별로, 같은 항공사면 출발/도착편 두 줄) */}
+                    {/* 항공사 + 편명 뱃지 (원본 항공편이 여러 개면 그룹별로, 하나면 출발/도착편 두 줄) */}
                     <td className="px-3 py-2">
                       <div className="text-slate-600 truncate">{airlineLabel ?? '—'}</div>
                       {flights.length > 0 && (() => {
-                        const byAirline = groupFlightsByAirline(flights)
-                        const rows = byAirline.length > 1
-                          ? byAirline
+                        const bySource = groupFlightSegments(flights)
+                        const rows = bySource.length > 1
+                          ? bySource
                           : (() => {
                               const half = Math.ceil(flights.length / 2)
                               return flights.length <= 2 ? [flights] : [flights.slice(0, half), flights.slice(half)]
