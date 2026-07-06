@@ -331,6 +331,11 @@ function MainFareBlock({
     (Number(r.fare_base_indivi) || 0) + (Number(r.fare_fuel_indivi) || 0) + (Number(r.fare_tax_indivi) || 0) +
     (Number(r.fare_base_business) || 0) + (Number(r.fare_fuel_business) || 0) + (Number(r.fare_tax_business) || 0)
 
+  const hasIndiviFare   = (Number(r.fare_base_indivi)   || 0) + (Number(r.fare_fuel_indivi)   || 0) + (Number(r.fare_tax_indivi)   || 0) > 0
+  const hasBusinessFare = (Number(r.fare_base_business) || 0) + (Number(r.fare_fuel_business) || 0) + (Number(r.fare_tax_business) || 0) > 0
+  const [showIndivi, setShowIndivi]     = useState(hasIndiviFare)
+  const [showBusiness, setShowBusiness] = useState(hasBusinessFare)
+
   function updMain(field: keyof DraftFlight, value: string) {
     onUpdate(prev => ({ ...prev, [field]: value }))
   }
@@ -379,9 +384,26 @@ function MainFareBlock({
 
       {/* ── 항공료 수식 (좌석 등급별) ── */}
       <div className="space-y-2 pt-2 border-t border-slate-100">
-        <FareTierRow r={r} suffix=""          title="그룹석"    onUpdate={updMain} />
-        <FareTierRow r={r} suffix="_indivi"   title="인디비 석"  onUpdate={updMain} />
-        <FareTierRow r={r} suffix="_business" title="비즈니스 석" onUpdate={updMain} />
+        <FareTierRow r={r} suffix="" title="그룹석" onUpdate={updMain} />
+
+        {showIndivi ? (
+          <FareTierRow r={r} suffix="_indivi" title="인디비 석" onUpdate={updMain} />
+        ) : (
+          <button type="button" onClick={() => setShowIndivi(true)}
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition">
+            <Plus className="h-3 w-3" /> 인디비 석 요금 추가
+          </button>
+        )}
+
+        {showBusiness ? (
+          <FareTierRow r={r} suffix="_business" title="비즈니스 석" onUpdate={updMain} />
+        ) : (
+          <button type="button" onClick={() => setShowBusiness(true)}
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition">
+            <Plus className="h-3 w-3" /> 비즈니스 석 요금 추가
+          </button>
+        )}
+
         <div className="flex items-center gap-2 pt-1">
           <span className="label text-brand">항공료 합계</span>
           <div className="h-7 flex items-center rounded-md border border-brand/20 bg-brand/5 px-2 text-sm font-semibold text-brand">
@@ -404,7 +426,8 @@ function FlightGroupCard({
   onUpdateGroupSegments: (updater: (segments: SegmentDraft[]) => SegmentDraft[]) => void
   onAddMain: () => void
 }) {
-  const [detailOpen, setDetailOpen] = useState(false)
+  // 새로 추가한 항공편은 편명·구간 상세를 바로 펼쳐서 보여주고, 기존에 저장된 항공편은 접어둔다
+  const [detailOpen, setDetailOpen] = useState(rows[0]._isNew)
   const [focusTarget, setFocusTarget] = useState<number | null>(null)
   const segments = rows[0].segments
 
@@ -539,7 +562,7 @@ export default function FlightsCard({
 
   function addRow() {
     const key = `new-${Date.now()}`
-    setDraft(d => [...d, { ...EMPTY, _key: key, _groupKey: key }])
+    setDraft(d => [...d, { ...EMPTY, _key: key, _groupKey: key, segments: [{ ...EMPTY_SEGMENT }] }])
   }
 
   /** 같은 그룹(구간 공유)의 메인을 하나 더 추가 — 편명·구간·일시는 복제, 좌석·운임만 새로 입력 */
@@ -717,11 +740,12 @@ export default function FlightsCard({
                   {/* 항공료 수식 (좌석 등급별) */}
                   <div className="space-y-1.5 pt-1">
                     {([
-                      ['그룹석',     'fare_base',            'fare_fuel',            'fare_tax'],
-                      ['인디비 석',  'fare_base_indivi',     'fare_fuel_indivi',     'fare_tax_indivi'],
-                      ['비즈니스 석', 'fare_base_business',   'fare_fuel_business',   'fare_tax_business'],
-                    ] as [string, keyof Flight, keyof Flight, keyof Flight][]).map(([title, baseF, fuelF, taxF]) => {
+                      ['그룹석',     'fare_base',            'fare_fuel',            'fare_tax',            true],
+                      ['인디비 석',  'fare_base_indivi',     'fare_fuel_indivi',     'fare_tax_indivi',     false],
+                      ['비즈니스 석', 'fare_base_business',   'fare_fuel_business',   'fare_tax_business',   false],
+                    ] as [string, keyof Flight, keyof Flight, keyof Flight, boolean][]).map(([title, baseF, fuelF, taxF, alwaysShow]) => {
                       const subtotal = (Number(f[baseF]) || 0) + (Number(f[fuelF]) || 0) + (Number(f[taxF]) || 0)
+                      if (!alwaysShow && subtotal === 0) return null
                       return (
                         <div key={title} className="flex flex-wrap items-center gap-2 text-sm">
                           <span className="w-16 shrink-0 text-[11px] font-semibold text-slate-400">{title}</span>

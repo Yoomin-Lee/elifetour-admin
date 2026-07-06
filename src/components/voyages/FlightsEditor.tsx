@@ -237,6 +237,8 @@ function FlightMainOnly({ index, onRemove }: { index: number; onRemove: () => vo
   }).map(v => Number(v) || 0)
   const totalSeats = sg + si + sb
   const totalFare  = fb + ff + ft + fbi + ffi + fti + fbb + ffb + ftb
+  const [showIndivi, setShowIndivi]     = useState(fbi + ffi + fti > 0)
+  const [showBusiness, setShowBusiness] = useState(fbb + ffb + ftb > 0)
 
   return (
     <div className="relative rounded-lg border border-slate-100 bg-white p-4 space-y-3">
@@ -275,9 +277,26 @@ function FlightMainOnly({ index, onRemove }: { index: number; onRemove: () => vo
 
       {/* ── 항공료 수식 (좌석 등급별) ── */}
       <div className="space-y-3 pt-2 border-t border-slate-100">
-        <FareTierBlock index={index} suffix=""          title="그룹석" />
-        <FareTierBlock index={index} suffix="_indivi"   title="인디비 석" />
-        <FareTierBlock index={index} suffix="_business" title="비즈니스 석" />
+        <FareTierBlock index={index} suffix="" title="그룹석" />
+
+        {showIndivi ? (
+          <FareTierBlock index={index} suffix="_indivi" title="인디비 석" />
+        ) : (
+          <button type="button" onClick={() => setShowIndivi(true)}
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition">
+            <Plus className="h-3 w-3" /> 인디비 석 요금 추가
+          </button>
+        )}
+
+        {showBusiness ? (
+          <FareTierBlock index={index} suffix="_business" title="비즈니스 석" />
+        ) : (
+          <button type="button" onClick={() => setShowBusiness(true)}
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand transition">
+            <Plus className="h-3 w-3" /> 비즈니스 석 요금 추가
+          </button>
+        )}
+
         <div className="flex items-center gap-2 pt-1">
           <span className="label text-brand">항공료 합계</span>
           <div className="h-8 flex items-center rounded-md border border-brand/20 bg-brand/5 px-3 text-sm font-semibold text-brand">
@@ -299,7 +318,8 @@ function FlightGroupBlock({
 }) {
   const { control, setValue } = useFormContext<VoyageFormValues>()
   const leadIndex = indices[0]
-  const [detailOpen, setDetailOpen] = useState(false)
+  // 새 행사 등록 폼은 항상 처음부터 입력하는 것이라, 편명·구간 상세를 접어두지 않고 바로 펼쳐서 보여준다
+  const [detailOpen, setDetailOpen] = useState(true)
   const [newSegIdx, setNewSegIdx] = useState<number | null>(null)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -398,7 +418,7 @@ export default function FlightsEditor() {
       <CardHeader>
         <CardTitle>항공</CardTitle>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => append(EMPTY_FLIGHT)}>
+          <Button type="button" variant="outline" size="sm" onClick={() => append({ ...EMPTY_FLIGHT, segments: [{ ...EMPTY_SEGMENT }] })}>
             <Plus className="h-4 w-4" /> 직접 입력
           </Button>
         </div>
