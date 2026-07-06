@@ -1,7 +1,7 @@
-import { useState, Fragment } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Plus, ChevronsRight, ChevronsLeft } from 'lucide-react'
+import { Plus, SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 import SearchTab      from '@/components/voyages/tabs/SearchTab'
@@ -40,9 +40,10 @@ const TABS = [
 type TabKey = typeof TABS[number]['key']
 
 // 기본적으로 탭 바에서 숨기는 항목 — 데이터/라우팅은 그대로 두고 노출만 접는다.
-// "숨긴 탭 보기" 토글로 언제든 같은 위치·순서로 다시 펼칠 수 있다.
+// 오른쪽 "탭 편집" 버튼에서 개별적으로 다시 불러올 수 있고, 불러온 탭은
+// 원래 자리(TABS 배열 순서)에 그대로 나타난다.
 const HIDDEN_TAB_KEYS: readonly TabKey[] = ['크루즈', '항공', '호텔', '취소료', '지상']
-const SHOW_HIDDEN_TABS_KEY = 'voyageMaster.showHiddenTabs'
+const VISIBLE_HIDDEN_TABS_KEY = 'voyageMaster.visibleHiddenTabs'
 
 function tabContent(tab: TabKey) {
   switch (tab) {
@@ -67,9 +68,25 @@ function VoyageMasterInner() {
   const { canWrite } = useAuth() as { canWrite: boolean }
   const activeTab = (searchParams.get('tab') as TabKey) ?? '상품등록'
   const { connected } = useRealtimeSync()
-  const [showHiddenTabs, setShowHiddenTabs] = useState(
-    () => localStorage.getItem(SHOW_HIDDEN_TABS_KEY) === 'true',
-  )
+  const [visibleHidden, setVisibleHidden] = useState<Set<TabKey>>(() => {
+    try {
+      const raw = localStorage.getItem(VISIBLE_HIDDEN_TABS_KEY)
+      return new Set(raw ? JSON.parse(raw) : [])
+    } catch {
+      return new Set()
+    }
+  })
+  const [editOpen, setEditOpen] = useState(false)
+  const editRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!editOpen) return
+    function onDocClick(e: MouseEvent) {
+      if (editRef.current && !editRef.current.contains(e.target as Node)) setEditOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [editOpen])
 
   function switchTab(key: TabKey) {
     setSearchParams(prev => {
@@ -80,11 +97,16 @@ function VoyageMasterInner() {
     })
   }
 
-  function toggleHiddenTabs() {
-    setShowHiddenTabs(prev => {
-      const next = !prev
-      localStorage.setItem(SHOW_HIDDEN_TABS_KEY, String(next))
-      if (!next && HIDDEN_TAB_KEYS.includes(activeTab)) switchTab('상품등록')
+  function toggleTabVisibility(key: TabKey) {
+    setVisibleHidden(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+        if (activeTab === key) switchTab('상품등록')
+      } else {
+        next.add(key)
+      }
+      localStorage.setItem(VISIBLE_HIDDEN_TABS_KEY, JSON.stringify([...next]))
       return next
     })
   }
@@ -95,38 +117,62 @@ function VoyageMasterInner() {
       <div className="border-b border-slate-200 bg-white sticky top-0 z-10">
         <div className="flex items-center">
           <nav className="flex flex-1 overflow-x-auto scrollbar-none px-4" aria-label="항차 마스터 탭">
-            {TABS.map(t => (
-              <Fragment key={t.key}>
-                {t.key === HIDDEN_TAB_KEYS[0] && (
-                  <button
-                    type="button"
-                    onClick={toggleHiddenTabs}
-                    title={showHiddenTabs ? '숨긴 탭 접기' : '숨긴 탭 보기 (크루즈·항공·호텔·취소료·지상)'}
-                    className="flex-shrink-0 px-2 py-3 text-slate-300 hover:text-brand transition"
-                  >
-                    {showHiddenTabs ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
-                  </button>
-                )}
-                {(!HIDDEN_TAB_KEYS.includes(t.key) || showHiddenTabs) && (
-                  <button
-                    onClick={() => switchTab(t.key)}
-                    className={[
-                      'flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
-                      activeTab === t.key
-                        ? 'border-brand text-brand'
-                        : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300',
-                    ].join(' ')}
-                  >
-                    {t.label}
-                  </button>
-                )}
-              </Fragment>
-            ))}
+            {TABS
+              .filter(t => !HIDDEN_TAB_KEYS.includes(t.key) || visibleHidden.has(t.key))
+              .map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => switchTab(t.key)}
+                  className={[
+                    'flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
+                    activeTab === t.key
+                      ? 'border-brand text-brand'
+                      : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300',
+                  ].join(' ')}
+                >
+                  {t.label}
+                </button>
+              ))}
           </nav>
           {/* 실시간 연결 상태 */}
           <div className="shrink-0 flex items-center gap-1.5 px-3" title={connected ? '실시간 연결됨' : '연결 끊김'}>
             <span className={`w-1.5 h-1.5 rounded-full transition-colors ${connected ? 'bg-green-400 animate-pulse' : 'bg-slate-300'}`} />
             <span className="hidden sm:block text-[11px] text-slate-400">{connected ? '실시간' : '오프라인'}</span>
+          </div>
+
+          {/* 탭 편집 — 숨긴 탭을 개별적으로 다시 불러오기 */}
+          <div className="relative shrink-0 px-1" ref={editRef}>
+            <button
+              type="button"
+              onClick={() => setEditOpen(o => !o)}
+              title="탭 편집"
+              className={[
+                'flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition',
+                editOpen ? 'bg-slate-100 text-brand' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600',
+              ].join(' ')}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span className="hidden sm:block">탭 편집</span>
+            </button>
+            {editOpen && (
+              <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1.5 shadow-lg">
+                <p className="px-3 py-1 text-[11px] font-semibold text-slate-400">숨긴 탭 불러오기</p>
+                {HIDDEN_TAB_KEYS.map(key => {
+                  const label = TABS.find(t => t.key === key)?.label ?? key
+                  return (
+                    <label key={key} className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
+                      <input
+                        type="checkbox"
+                        checked={visibleHidden.has(key)}
+                        onChange={() => toggleTabVisibility(key)}
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"
+                      />
+                      {label}
+                    </label>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {canWrite && (
