@@ -374,14 +374,13 @@ function InventoryPanel({
     setDraftGrades(p => p.filter((_, i) => i !== idx))
   }
 
-  // ── 항공편 핸들러 ────────────────────────────────────────────────────────
-  function setFlight(idx: number, patch: Partial<VoyageFlight>) {
-    setDraftFlights(prev => prev.map((f, i) => i === idx ? { ...f, ...patch } : f))
+  // ── 항공편 핸들러 (항공사 그룹 단위로 좌석·운임을 함께 수정) ────────────────
+  function setFlightGroup(ids: string[], patch: Partial<VoyageFlight>) {
+    setDraftFlights(prev => prev.map(f => ids.includes(f.id) ? { ...f, ...patch } : f))
   }
-  function removeFlightRow(idx: number) {
-    const f = draftFlights[idx]
-    setDelFlightIds(p => [...p, f.id])
-    setDraftFlights(p => p.filter((_, i) => i !== idx))
+  function removeFlightGroup(ids: string[]) {
+    setDelFlightIds(p => [...p, ...ids])
+    setDraftFlights(p => p.filter(f => !ids.includes(f.id)))
   }
 
   // ── 호텔 핸들러 ──────────────────────────────────────────────────────────
@@ -637,45 +636,53 @@ function InventoryPanel({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {editMode ? (
-                  flights.map((f, idx) => {
-                    const totalSeats = (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0)
-                    const totalFare  = (f.fare_base ?? 0) + (f.fare_fuel ?? 0) + (f.fare_tax ?? 0)
-                    const depLocal   = localDt(f.dep_datetime, f.dep_airport)
-                    const arrLocal   = localDt(f.arr_datetime, f.arr_airport)
+                  groupFlightsByAirline(flights).map(group => {
+                    // 항공사(왕복 편) 단위로 한 행에서 편집 — 좌석·운임은 그룹 내 모든
+                    // 구간에 동일하게 반영된다 (왕복 항공료·좌석은 항공사당 하나이므로)
+                    const lead = group[0]
+                    const ids  = group.map(f => f.id)
+                    const totalSeats = (lead.seats_group ?? 0) + (lead.seats_indivi ?? 0) + (lead.seats_business ?? 0)
+                    const totalFare  = (lead.fare_base ?? 0) + (lead.fare_fuel ?? 0) + (lead.fare_tax ?? 0)
                     return (
-                      <tr key={f.id} className="align-middle">
-                        <td className="py-1.5 font-mono font-semibold text-slate-700">{f.flight_num}</td>
+                      <tr key={lead.id} className="align-middle">
+                        <td className="py-1.5 font-mono font-semibold text-slate-700">
+                          {group.map(f => f.flight_num).join('/')}
+                        </td>
                         <td className="py-1.5 text-slate-500 text-[10px]">
-                          <span className="font-medium text-slate-600">{f.dep_airport}</span>
-                          <span className="text-slate-300 mx-0.5">→</span>
-                          <span className="font-medium text-slate-600">{f.arr_airport}</span>
-                          <span className="ml-1 text-slate-300">{depLocal} ~ {arrLocal}</span>
+                          {group.map(f => (
+                            <div key={f.id}>
+                              <span className="font-medium text-slate-600">{f.dep_airport}</span>
+                              <span className="text-slate-300 mx-0.5">→</span>
+                              <span className="font-medium text-slate-600">{f.arr_airport}</span>
+                              <span className="ml-1 text-slate-300">{localDt(f.dep_datetime, f.dep_airport)} ~ {localDt(f.arr_datetime, f.arr_airport)}</span>
+                            </div>
+                          ))}
                         </td>
                         <td className="py-1.5 pr-1 text-right">
-                          <NumInput value={f.seats_group} onChange={v => setFlight(idx, { seats_group: v ?? 0 })} />
+                          <NumInput value={lead.seats_group} onChange={v => setFlightGroup(ids, { seats_group: v ?? 0 })} />
                         </td>
                         <td className="py-1.5 pr-1 text-right">
-                          <NumInput value={f.seats_indivi} onChange={v => setFlight(idx, { seats_indivi: v ?? 0 })} />
+                          <NumInput value={lead.seats_indivi} onChange={v => setFlightGroup(ids, { seats_indivi: v ?? 0 })} />
                         </td>
                         <td className="py-1.5 pr-1 text-right">
-                          <NumInput value={f.seats_business} onChange={v => setFlight(idx, { seats_business: v ?? 0 })} />
+                          <NumInput value={lead.seats_business} onChange={v => setFlightGroup(ids, { seats_business: v ?? 0 })} />
                         </td>
                         <td className="py-1.5 text-right font-semibold text-slate-700">{totalSeats || '—'}</td>
                         <td className="py-1.5 pr-1 text-right">
-                          <NumInput value={f.fare_base} onChange={v => setFlight(idx, { fare_base: v ?? 0 })} />
+                          <NumInput value={lead.fare_base} onChange={v => setFlightGroup(ids, { fare_base: v ?? 0 })} />
                         </td>
                         <td className="py-1.5 pr-1 text-right">
-                          <NumInput value={f.fare_fuel} onChange={v => setFlight(idx, { fare_fuel: v ?? 0 })} />
+                          <NumInput value={lead.fare_fuel} onChange={v => setFlightGroup(ids, { fare_fuel: v ?? 0 })} />
                         </td>
                         <td className="py-1.5 pr-1 text-right">
-                          <NumInput value={f.fare_tax} onChange={v => setFlight(idx, { fare_tax: v ?? 0 })} />
+                          <NumInput value={lead.fare_tax} onChange={v => setFlightGroup(ids, { fare_tax: v ?? 0 })} />
                         </td>
                         <td className="py-1.5 text-right font-semibold text-brand">
                           {totalFare > 0 ? totalFare.toLocaleString('ko-KR') + '원'
-                            : f.flight_fare ? formatPrice(f.flight_fare, f.currency_code) : '—'}
+                            : lead.flight_fare ? formatPrice(lead.flight_fare, lead.currency_code) : '—'}
                         </td>
                         <td className="py-1.5 text-center">
-                          <DelBtn onClick={() => removeFlightRow(idx)} />
+                          <DelBtn onClick={() => removeFlightGroup(ids)} />
                         </td>
                       </tr>
                     )
