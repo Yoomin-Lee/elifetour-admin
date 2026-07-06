@@ -184,28 +184,28 @@ function FareTierBlock({ index, suffix, title }: { index: number; suffix: '' | '
   return (
     <div className="space-y-1.5">
       <p className="text-xs font-semibold text-slate-500">{title}</p>
-      <div className="flex flex-wrap gap-2 items-end">
-        <div>
-          <label className="label">운임 (원)</label>
+      <div className="flex flex-nowrap items-end gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="shrink-0">
+          <label className="label whitespace-nowrap">운임 (원)</label>
           <Input {...register(`${base}.fare_base${suffix}` as any, { valueAsNumber: true })}
-            type="number" min={0} placeholder="0" className="w-28 text-right" />
+            type="number" min={0} placeholder="0" className="w-24 text-right" />
         </div>
-        <span className="text-slate-400 text-sm pb-2">+</span>
-        <div>
-          <label className="label">유류할증료 (원)</label>
+        <span className="text-slate-400 text-sm pb-2 shrink-0">+</span>
+        <div className="shrink-0">
+          <label className="label whitespace-nowrap">유류할증 (원)</label>
           <Input {...register(`${base}.fare_fuel${suffix}` as any, { valueAsNumber: true })}
-            type="number" min={0} placeholder="0" className="w-28 text-right" />
+            type="number" min={0} placeholder="0" className="w-24 text-right" />
         </div>
-        <span className="text-slate-400 text-sm pb-2">+</span>
-        <div>
-          <label className="label">발권피 (원)</label>
+        <span className="text-slate-400 text-sm pb-2 shrink-0">+</span>
+        <div className="shrink-0">
+          <label className="label whitespace-nowrap">발권피 (원)</label>
           <Input {...register(`${base}.fare_tax${suffix}` as any, { valueAsNumber: true })}
-            type="number" min={0} placeholder="0" className="w-28 text-right" />
+            type="number" min={0} placeholder="0" className="w-24 text-right" />
         </div>
-        <span className="text-slate-400 text-sm pb-2">=</span>
-        <div>
-          <label className="label text-brand">소계</label>
-          <div className="h-9 flex items-center rounded-md border border-brand/20 bg-brand/5 px-3 text-sm font-semibold text-brand min-w-[100px]">
+        <span className="text-slate-400 text-sm pb-2 shrink-0">=</span>
+        <div className="shrink-0">
+          <label className="label text-brand whitespace-nowrap">소계</label>
+          <div className="h-9 flex items-center whitespace-nowrap rounded-md border border-brand/20 bg-brand/5 px-3 text-sm font-semibold text-brand">
             {subtotal.toLocaleString('ko-KR')}원
           </div>
         </div>

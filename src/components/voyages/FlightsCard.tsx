@@ -285,29 +285,29 @@ function FareTierRow({
   return (
     <div className="space-y-1">
       <p className="text-[11px] font-semibold text-slate-500">{title}</p>
-      <div className="flex flex-wrap gap-2 items-end">
+      <div className="flex flex-nowrap items-end gap-1.5 overflow-x-auto scrollbar-none">
         {([
           [baseField, '운임'],
-          [fuelField, '유류할증료'],
+          [fuelField, '유류할증'],
           [taxField,  '발권피'],
         ] as [keyof DraftFlight, string][]).map(([field, label], idx) => (
           <Fragment key={field}>
-            <div>
-              <label className="label">{label} (원)</label>
+            <div className="shrink-0">
+              <label className="label whitespace-nowrap">{label} (원)</label>
               <Input
                 value={r[field] as string}
                 onChange={e => onUpdate(field, e.target.value)}
                 type="number" min={0} placeholder="0"
-                className="h-7 text-sm w-28 text-right"
+                className="h-7 text-sm w-24 text-right"
               />
             </div>
-            {idx < 2 && <span className="text-slate-400 text-sm pb-1.5">+</span>}
+            {idx < 2 && <span className="text-slate-400 text-sm pb-1.5 shrink-0">+</span>}
           </Fragment>
         ))}
-        <span className="text-slate-400 text-sm pb-1.5">=</span>
-        <div>
-          <label className="label text-brand">소계</label>
-          <div className="h-7 flex items-center rounded-md border border-brand/20 bg-brand/5 px-2 text-sm font-semibold text-brand min-w-[96px]">
+        <span className="text-slate-400 text-sm pb-1.5 shrink-0">=</span>
+        <div className="shrink-0">
+          <label className="label text-brand whitespace-nowrap">소계</label>
+          <div className="h-7 flex items-center whitespace-nowrap rounded-md border border-brand/20 bg-brand/5 px-2 text-sm font-semibold text-brand">
             {subtotal.toLocaleString('ko-KR')}원
           </div>
         </div>
@@ -555,14 +555,20 @@ export default function FlightsCard({
     onError: () => toast.error('저장에 실패했습니다'),
   })
 
+  function newFlightRow(): DraftFlight {
+    const key = `new-${Date.now()}`
+    return { ...EMPTY, _key: key, _groupKey: key, segments: [{ ...EMPTY_SEGMENT }] }
+  }
+
   function startEdit() {
-    setDraft(flights.map(toDraft))
+    const initial = flights.map(toDraft)
+    // 등록된 항공편이 없으면 행 추가 버튼을 누를 필요 없이 바로 입력하도록 기본 행 1개로 시작
+    setDraft(initial.length > 0 ? initial : [newFlightRow()])
     setEditing(true)
   }
 
   function addRow() {
-    const key = `new-${Date.now()}`
-    setDraft(d => [...d, { ...EMPTY, _key: key, _groupKey: key, segments: [{ ...EMPTY_SEGMENT }] }])
+    setDraft(d => [...d, newFlightRow()])
   }
 
   /** 같은 그룹(구간 공유)의 메인을 하나 더 추가 — 편명·구간·일시는 복제, 좌석·운임만 새로 입력 */
@@ -747,15 +753,17 @@ export default function FlightsCard({
                       const subtotal = (Number(f[baseF]) || 0) + (Number(f[fuelF]) || 0) + (Number(f[taxF]) || 0)
                       if (!alwaysShow && subtotal === 0) return null
                       return (
-                        <div key={title} className="flex flex-wrap items-center gap-2 text-sm">
-                          <span className="w-16 shrink-0 text-[11px] font-semibold text-slate-400">{title}</span>
-                          <span className="text-slate-400">운임 <span className="font-semibold text-slate-700">{formatKrw(Number(f[baseF]) || 0)}</span></span>
-                          <span className="text-slate-300">+</span>
-                          <span className="text-slate-400">유류할증료 <span className="font-semibold text-slate-700">{formatKrw(Number(f[fuelF]) || 0)}</span></span>
-                          <span className="text-slate-300">+</span>
-                          <span className="text-slate-400">발권피 <span className="font-semibold text-slate-700">{formatKrw(Number(f[taxF]) || 0)}</span></span>
-                          <span className="text-slate-300">=</span>
-                          <span className="font-semibold text-brand">{formatKrw(subtotal)}</span>
+                        <div key={title}>
+                          <p className="text-[11px] font-semibold text-slate-400">{title}</p>
+                          <div className="flex flex-nowrap items-center gap-1 overflow-x-auto scrollbar-none whitespace-nowrap text-xs">
+                            <span className="text-slate-400 shrink-0">운임 <span className="font-semibold text-slate-700">{(Number(f[baseF]) || 0).toLocaleString('ko-KR')}</span></span>
+                            <span className="text-slate-300 shrink-0">+</span>
+                            <span className="text-slate-400 shrink-0">유류할증 <span className="font-semibold text-slate-700">{(Number(f[fuelF]) || 0).toLocaleString('ko-KR')}</span></span>
+                            <span className="text-slate-300 shrink-0">+</span>
+                            <span className="text-slate-400 shrink-0">발권피 <span className="font-semibold text-slate-700">{(Number(f[taxF]) || 0).toLocaleString('ko-KR')}</span></span>
+                            <span className="text-slate-300 shrink-0">=</span>
+                            <span className="font-semibold text-brand shrink-0">{formatKrw(subtotal)}</span>
+                          </div>
                         </div>
                       )
                     })}
