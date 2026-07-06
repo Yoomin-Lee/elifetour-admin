@@ -80,6 +80,21 @@ function groupByOccupancy(grades: CabinGrade[]): { occupancy: number; total: num
     .map(([occupancy, { total, reserved }]) => ({ occupancy, total, remaining: total - reserved }))
 }
 
+// ── 항공사별 그룹핑 (왕복 항공료·좌석 수는 항공사당 한 번만 집계) ────────────────
+function airlineCode(flightNum: string): string {
+  return flightNum.match(/^[A-Za-z]+/)?.[0] ?? flightNum
+}
+
+function groupFlightsByAirline<T extends { flight_num: string }>(flights: T[]): T[][] {
+  const map = new Map<string, T[]>()
+  flights.forEach(f => {
+    const code = airlineCode(f.flight_num)
+    if (!map.has(code)) map.set(code, [])
+    map.get(code)!.push(f)
+  })
+  return Array.from(map.values())
+}
+
 // ── 잔여율 Progress Bar ──────────────────────────────────────────────────────
 function barColor(pct: number): string {
   if (pct >= 50) return 'bg-emerald-400'
@@ -621,76 +636,104 @@ function InventoryPanel({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {flights.map((f, idx) => {
-                  const totalSeats = (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0)
-                  const totalFare  = (f.fare_base ?? 0) + (f.fare_fuel ?? 0) + (f.fare_tax ?? 0)
-                  const depLocal   = localDt(f.dep_datetime, f.dep_airport)
-                  const arrLocal   = localDt(f.arr_datetime, f.arr_airport)
-                  return (
-                    <tr key={f.id} className={editMode ? 'align-middle' : 'hover:bg-white/60 transition-colors'}>
-                      <td className="py-1.5 font-mono font-semibold text-slate-700">{f.flight_num}</td>
-                      <td className="py-1.5 text-slate-500 text-[10px]">
-                        <span className="font-medium text-slate-600">{f.dep_airport}</span>
-                        <span className="text-slate-300 mx-0.5">→</span>
-                        <span className="font-medium text-slate-600">{f.arr_airport}</span>
-                        <span className="ml-1 text-slate-300">{depLocal} ~ {arrLocal}</span>
-                      </td>
-                      <td className="py-1.5 pr-1 text-right">
-                        {editMode
-                          ? <NumInput value={f.seats_group} onChange={v => setFlight(idx, { seats_group: v ?? 0 })} />
-                          : <span className="text-slate-600">{f.seats_group ?? 0}</span>}
-                      </td>
-                      <td className="py-1.5 pr-1 text-right">
-                        {editMode
-                          ? <NumInput value={f.seats_indivi} onChange={v => setFlight(idx, { seats_indivi: v ?? 0 })} />
-                          : <span className="text-slate-600">{f.seats_indivi ?? 0}</span>}
-                      </td>
-                      <td className="py-1.5 pr-1 text-right">
-                        {editMode
-                          ? <NumInput value={f.seats_business} onChange={v => setFlight(idx, { seats_business: v ?? 0 })} />
-                          : <span className="text-slate-600">{f.seats_business ?? 0}</span>}
-                      </td>
-                      <td className="py-1.5 text-right font-semibold text-slate-700">{totalSeats || '—'}</td>
-                      <td className="py-1.5 pr-1 text-right">
-                        {editMode
-                          ? <NumInput value={f.fare_base} onChange={v => setFlight(idx, { fare_base: v ?? 0 })} />
-                          : <span className="text-slate-500">{f.fare_base ? f.fare_base.toLocaleString('ko-KR') + '원' : '—'}</span>}
-                      </td>
-                      <td className="py-1.5 pr-1 text-right">
-                        {editMode
-                          ? <NumInput value={f.fare_fuel} onChange={v => setFlight(idx, { fare_fuel: v ?? 0 })} />
-                          : <span className="text-slate-500">{f.fare_fuel ? f.fare_fuel.toLocaleString('ko-KR') + '원' : '—'}</span>}
-                      </td>
-                      <td className="py-1.5 pr-1 text-right">
-                        {editMode
-                          ? <NumInput value={f.fare_tax} onChange={v => setFlight(idx, { fare_tax: v ?? 0 })} />
-                          : <span className="text-slate-500">{f.fare_tax ? f.fare_tax.toLocaleString('ko-KR') + '원' : '—'}</span>}
-                      </td>
-                      <td className="py-1.5 text-right font-semibold text-brand">
-                        {totalFare > 0 ? totalFare.toLocaleString('ko-KR') + '원'
-                          : f.flight_fare ? formatPrice(f.flight_fare, f.currency_code) : '—'}
-                      </td>
-                      {editMode && (
+                {editMode ? (
+                  flights.map((f, idx) => {
+                    const totalSeats = (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0)
+                    const totalFare  = (f.fare_base ?? 0) + (f.fare_fuel ?? 0) + (f.fare_tax ?? 0)
+                    const depLocal   = localDt(f.dep_datetime, f.dep_airport)
+                    const arrLocal   = localDt(f.arr_datetime, f.arr_airport)
+                    return (
+                      <tr key={f.id} className="align-middle">
+                        <td className="py-1.5 font-mono font-semibold text-slate-700">{f.flight_num}</td>
+                        <td className="py-1.5 text-slate-500 text-[10px]">
+                          <span className="font-medium text-slate-600">{f.dep_airport}</span>
+                          <span className="text-slate-300 mx-0.5">→</span>
+                          <span className="font-medium text-slate-600">{f.arr_airport}</span>
+                          <span className="ml-1 text-slate-300">{depLocal} ~ {arrLocal}</span>
+                        </td>
+                        <td className="py-1.5 pr-1 text-right">
+                          <NumInput value={f.seats_group} onChange={v => setFlight(idx, { seats_group: v ?? 0 })} />
+                        </td>
+                        <td className="py-1.5 pr-1 text-right">
+                          <NumInput value={f.seats_indivi} onChange={v => setFlight(idx, { seats_indivi: v ?? 0 })} />
+                        </td>
+                        <td className="py-1.5 pr-1 text-right">
+                          <NumInput value={f.seats_business} onChange={v => setFlight(idx, { seats_business: v ?? 0 })} />
+                        </td>
+                        <td className="py-1.5 text-right font-semibold text-slate-700">{totalSeats || '—'}</td>
+                        <td className="py-1.5 pr-1 text-right">
+                          <NumInput value={f.fare_base} onChange={v => setFlight(idx, { fare_base: v ?? 0 })} />
+                        </td>
+                        <td className="py-1.5 pr-1 text-right">
+                          <NumInput value={f.fare_fuel} onChange={v => setFlight(idx, { fare_fuel: v ?? 0 })} />
+                        </td>
+                        <td className="py-1.5 pr-1 text-right">
+                          <NumInput value={f.fare_tax} onChange={v => setFlight(idx, { fare_tax: v ?? 0 })} />
+                        </td>
+                        <td className="py-1.5 text-right font-semibold text-brand">
+                          {totalFare > 0 ? totalFare.toLocaleString('ko-KR') + '원'
+                            : f.flight_fare ? formatPrice(f.flight_fare, f.currency_code) : '—'}
+                        </td>
                         <td className="py-1.5 text-center">
                           <DelBtn onClick={() => removeFlightRow(idx)} />
                         </td>
-                      )}
+                      </tr>
+                    )
+                  })
+                ) : (
+                  groupFlightsByAirline(flights).map(group => {
+                    // 왕복(같은 항공사) 항공편은 좌석·운임이 항공사당 한 번만 존재하므로
+                    // 대표(첫 구간) 값 하나만 보여준다 — 각 구간마다 중복 합산하지 않음
+                    const rep = group[0]
+                    const totalSeats = (rep.seats_group ?? 0) + (rep.seats_indivi ?? 0) + (rep.seats_business ?? 0)
+                    const totalFare  = (rep.fare_base ?? 0) + (rep.fare_fuel ?? 0) + (rep.fare_tax ?? 0)
+                    return (
+                      <tr key={rep.id} className="hover:bg-white/60 transition-colors">
+                        <td className="py-1.5 font-mono font-semibold text-slate-700">
+                          {group.map(f => f.flight_num).join('/')}
+                        </td>
+                        <td className="py-1.5 text-slate-500 text-[10px]">
+                          {group.map(f => (
+                            <div key={f.id}>
+                              <span className="font-medium text-slate-600">{f.dep_airport}</span>
+                              <span className="text-slate-300 mx-0.5">→</span>
+                              <span className="font-medium text-slate-600">{f.arr_airport}</span>
+                              <span className="ml-1 text-slate-300">{localDt(f.dep_datetime, f.dep_airport)} ~ {localDt(f.arr_datetime, f.arr_airport)}</span>
+                            </div>
+                          ))}
+                        </td>
+                        <td className="py-1.5 pr-1 text-right text-slate-600">{rep.seats_group ?? 0}</td>
+                        <td className="py-1.5 pr-1 text-right text-slate-600">{rep.seats_indivi ?? 0}</td>
+                        <td className="py-1.5 pr-1 text-right text-slate-600">{rep.seats_business ?? 0}</td>
+                        <td className="py-1.5 text-right font-semibold text-slate-700">{totalSeats || '—'}</td>
+                        <td className="py-1.5 pr-1 text-right text-slate-500">{rep.fare_base ? rep.fare_base.toLocaleString('ko-KR') + '원' : '—'}</td>
+                        <td className="py-1.5 pr-1 text-right text-slate-500">{rep.fare_fuel ? rep.fare_fuel.toLocaleString('ko-KR') + '원' : '—'}</td>
+                        <td className="py-1.5 pr-1 text-right text-slate-500">{rep.fare_tax ? rep.fare_tax.toLocaleString('ko-KR') + '원' : '—'}</td>
+                        <td className="py-1.5 text-right font-semibold text-brand">
+                          {totalFare > 0 ? totalFare.toLocaleString('ko-KR') + '원'
+                            : rep.flight_fare ? formatPrice(rep.flight_fare, rep.currency_code) : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+                {!editMode && groupFlightsByAirline(initFlights).length > 1 && (() => {
+                  const groups = groupFlightsByAirline(initFlights)
+                  const sum = (key: 'seats_group' | 'seats_indivi' | 'seats_business') =>
+                    groups.reduce((s, g) => s + (g[0][key] ?? 0), 0)
+                  const totalSeats = sum('seats_group') + sum('seats_indivi') + sum('seats_business')
+                  return (
+                    <tr className="border-t border-slate-200 bg-slate-100/60">
+                      <td className="py-1.5 text-[10px] text-slate-400 font-medium">합계</td>
+                      <td className="py-1.5" />
+                      <td className="py-1.5 text-right font-semibold text-slate-700">{sum('seats_group')}</td>
+                      <td className="py-1.5 text-right font-semibold text-slate-700">{sum('seats_indivi')}</td>
+                      <td className="py-1.5 text-right font-semibold text-slate-700">{sum('seats_business')}</td>
+                      <td className="py-1.5 text-right font-semibold text-brand">{totalSeats || '—'}</td>
+                      <td colSpan={4} />
                     </tr>
                   )
-                })}
-                {!editMode && initFlights.length > 1 && (
-                  <tr className="border-t border-slate-200 bg-slate-100/60">
-                    <td className="py-1.5 text-[10px] text-slate-400 font-medium">합계</td>
-                    <td className="py-1.5" />
-                    <td className="py-1.5 text-right font-semibold text-slate-700">{initFlights.reduce((s, f) => s + (f.seats_group ?? 0), 0)}</td>
-                    <td className="py-1.5 text-right font-semibold text-slate-700">{initFlights.reduce((s, f) => s + (f.seats_indivi ?? 0), 0)}</td>
-                    <td className="py-1.5 text-right font-semibold text-slate-700">{initFlights.reduce((s, f) => s + (f.seats_business ?? 0), 0)}</td>
-                    <td className="py-1.5 text-right font-semibold text-brand">
-                      {initFlights.reduce((s, f) => s + (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0), 0) || '—'}
-                    </td>
-                    <td colSpan={4} />
-                  </tr>
-                )}
+                })()}
               </tbody>
             </table>
           </div>
@@ -807,7 +850,10 @@ export default function InventoryTab() {
     const hotels  = hotelMap[v.id]  ?? []
     const totalCabin     = grades.length > 0 ? grades.reduce((s, g) => s + g.total, 0) : (v.cabin_total ?? 0)
     const remainingCabin = grades.length > 0 ? grades.reduce((s, g) => s + (g.total - g.reserved), 0) : (v.cabin_remaining ?? 0)
-    const totalSeats     = flights.reduce((s, f) => s + (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0), 0)
+    const totalSeats     = groupFlightsByAirline(flights).reduce((s, group) => {
+      const rep = group[0]
+      return s + (rep.seats_group ?? 0) + (rep.seats_indivi ?? 0) + (rep.seats_business ?? 0)
+    }, 0)
     const occGroups      = groupByOccupancy(grades)
     return { v, grades, flights, hotels, totalCabin, remainingCabin, totalSeats, occGroups }
   }), [voyages, gradeMap, flightMap, hotelMap])
@@ -977,14 +1023,9 @@ export default function InventoryTab() {
                     <td className="px-3 py-2">
                       <div className="text-slate-600 truncate">{airlineLabel ?? '—'}</div>
                       {flights.length > 0 && (() => {
-                        const byAirline = new Map<string, typeof flights>()
-                        flights.forEach(f => {
-                          const code = f.flight_num.match(/^[A-Za-z]+/)?.[0] ?? f.flight_num
-                          if (!byAirline.has(code)) byAirline.set(code, [])
-                          byAirline.get(code)!.push(f)
-                        })
-                        const rows = byAirline.size > 1
-                          ? Array.from(byAirline.values())
+                        const byAirline = groupFlightsByAirline(flights)
+                        const rows = byAirline.length > 1
+                          ? byAirline
                           : (() => {
                               const half = Math.ceil(flights.length / 2)
                               return flights.length <= 2 ? [flights] : [flights.slice(0, half), flights.slice(half)]
