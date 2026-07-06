@@ -835,7 +835,13 @@ export default function InventoryTab() {
 
   const flightMap = useMemo(() => {
     const map: Record<string, VoyageFlight[]> = {}
-    allFlights.forEach(f => { if (!map[f.voyage_id]) map[f.voyage_id] = []; map[f.voyage_id].push(f) })
+    allFlights.forEach(f => {
+      // "항공" 탭(FlightsTab)에서 flights 테이블과 무관하게 직접 추가한 행(source_flight_id 없음)은
+      // 항차상세와 어긋난 별도 데이터이므로 보유현황에서는 제외 — 항차상세에서 온 항공편만 반영한다.
+      if (!f.source_flight_id) return
+      if (!map[f.voyage_id]) map[f.voyage_id] = []
+      map[f.voyage_id].push(f)
+    })
     return map
   }, [allFlights])
 
