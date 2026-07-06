@@ -1,6 +1,7 @@
+import { useState, Fragment } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Plus, ChevronsRight, ChevronsLeft } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 import SearchTab      from '@/components/voyages/tabs/SearchTab'
@@ -38,6 +39,11 @@ const TABS = [
 
 type TabKey = typeof TABS[number]['key']
 
+// 기본적으로 탭 바에서 숨기는 항목 — 데이터/라우팅은 그대로 두고 노출만 접는다.
+// "숨긴 탭 보기" 토글로 언제든 같은 위치·순서로 다시 펼칠 수 있다.
+const HIDDEN_TAB_KEYS: readonly TabKey[] = ['크루즈', '항공', '호텔', '취소료', '지상']
+const SHOW_HIDDEN_TABS_KEY = 'voyageMaster.showHiddenTabs'
+
 function tabContent(tab: TabKey) {
   switch (tab) {
     case '항차검색': return <SearchTab />
@@ -61,12 +67,24 @@ function VoyageMasterInner() {
   const { canWrite } = useAuth() as { canWrite: boolean }
   const activeTab = (searchParams.get('tab') as TabKey) ?? '상품등록'
   const { connected } = useRealtimeSync()
+  const [showHiddenTabs, setShowHiddenTabs] = useState(
+    () => localStorage.getItem(SHOW_HIDDEN_TABS_KEY) === 'true',
+  )
 
   function switchTab(key: TabKey) {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
       next.set('tab', key)
       if (key !== '항차검색' && key !== '결제') next.delete('voyage')
+      return next
+    })
+  }
+
+  function toggleHiddenTabs() {
+    setShowHiddenTabs(prev => {
+      const next = !prev
+      localStorage.setItem(SHOW_HIDDEN_TABS_KEY, String(next))
+      if (!next && HIDDEN_TAB_KEYS.includes(activeTab)) switchTab('상품등록')
       return next
     })
   }
@@ -78,18 +96,31 @@ function VoyageMasterInner() {
         <div className="flex items-center">
           <nav className="flex flex-1 overflow-x-auto scrollbar-none px-4" aria-label="항차 마스터 탭">
             {TABS.map(t => (
-              <button
-                key={t.key}
-                onClick={() => switchTab(t.key)}
-                className={[
-                  'flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
-                  activeTab === t.key
-                    ? 'border-brand text-brand'
-                    : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300',
-                ].join(' ')}
-              >
-                {t.label}
-              </button>
+              <Fragment key={t.key}>
+                {t.key === HIDDEN_TAB_KEYS[0] && (
+                  <button
+                    type="button"
+                    onClick={toggleHiddenTabs}
+                    title={showHiddenTabs ? '숨긴 탭 접기' : '숨긴 탭 보기 (크루즈·항공·호텔·취소료·지상)'}
+                    className="flex-shrink-0 px-2 py-3 text-slate-300 hover:text-brand transition"
+                  >
+                    {showHiddenTabs ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
+                  </button>
+                )}
+                {(!HIDDEN_TAB_KEYS.includes(t.key) || showHiddenTabs) && (
+                  <button
+                    onClick={() => switchTab(t.key)}
+                    className={[
+                      'flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
+                      activeTab === t.key
+                        ? 'border-brand text-brand'
+                        : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300',
+                    ].join(' ')}
+                  >
+                    {t.label}
+                  </button>
+                )}
+              </Fragment>
             ))}
           </nav>
           {/* 실시간 연결 상태 */}
