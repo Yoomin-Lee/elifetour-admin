@@ -326,10 +326,6 @@ function MainFareBlock({
   onUpdate: (updater: (prev: DraftFlight) => DraftFlight) => void
 }) {
   const totalSeats = (Number(r.seats_group) || 0) + (Number(r.seats_indivi) || 0) + (Number(r.seats_business) || 0)
-  const totalFare  =
-    (Number(r.fare_base) || 0) + (Number(r.fare_fuel) || 0) + (Number(r.fare_tax) || 0) +
-    (Number(r.fare_base_indivi) || 0) + (Number(r.fare_fuel_indivi) || 0) + (Number(r.fare_tax_indivi) || 0) +
-    (Number(r.fare_base_business) || 0) + (Number(r.fare_fuel_business) || 0) + (Number(r.fare_tax_business) || 0)
 
   const hasIndiviFare   = (Number(r.fare_base_indivi)   || 0) + (Number(r.fare_fuel_indivi)   || 0) + (Number(r.fare_tax_indivi)   || 0) > 0
   const hasBusinessFare = (Number(r.fare_base_business) || 0) + (Number(r.fare_fuel_business) || 0) + (Number(r.fare_tax_business) || 0) > 0
@@ -403,13 +399,6 @@ function MainFareBlock({
             <Plus className="h-3 w-3" /> 비즈니스 석 요금 추가
           </button>
         )}
-
-        <div className="flex items-center gap-2 pt-1">
-          <span className="label text-brand">항공료 합계</span>
-          <div className="h-7 flex items-center rounded-md border border-brand/20 bg-brand/5 px-2 text-sm font-semibold text-brand">
-            {totalFare.toLocaleString('ko-KR')}원
-          </div>
-        </div>
       </div>
     </div>
   )
@@ -705,10 +694,6 @@ export default function FlightsCard({
           <div className="space-y-2">
             {flights.map((f, i) => {
               const totalSeats = (f.seats_group ?? 0) + (f.seats_indivi ?? 0) + (f.seats_business ?? 0)
-              const totalFare  =
-                (f.fare_base ?? 0) + (f.fare_fuel ?? 0) + (f.fare_tax ?? 0) +
-                (f.fare_base_indivi ?? 0) + (f.fare_fuel_indivi ?? 0) + (f.fare_tax_indivi ?? 0) +
-                (f.fare_base_business ?? 0) + (f.fare_fuel_business ?? 0) + (f.fare_tax_business ?? 0)
 
               // 구간 목록 (없으면 flat 필드로 레거시 표시)
               // 기존 segments JSONB에 arrival_date/time 없으면 flat 컬럼 폴백 (첫 구간만)
@@ -767,10 +752,6 @@ export default function FlightsCard({
                         </div>
                       )
                     })}
-                    <div className="flex items-center gap-2 text-sm pt-0.5">
-                      <span className="text-slate-400">항공료 합계</span>
-                      <span className="font-semibold text-brand">{formatKrw(totalFare)}</span>
-                    </div>
                   </div>
 
                   {/* 구간 목록 — 꺽새 토글 */}

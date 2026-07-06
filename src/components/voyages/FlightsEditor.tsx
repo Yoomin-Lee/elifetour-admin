@@ -218,15 +218,12 @@ function FareTierBlock({ index, suffix, title }: { index: number; suffix: '' | '
 function FlightMainOnly({ index, onRemove }: { index: number; onRemove: () => void }) {
   const { register, control } = useFormContext<VoyageFormValues>()
 
-  const [sg, si, sb, fb, ff, ft, fbi, ffi, fti, fbb, ffb, ftb] = useWatch({
+  const [sg, si, sb, fbi, ffi, fti, fbb, ffb, ftb] = useWatch({
     control,
     name: [
       `flights.${index}.seats_group`,
       `flights.${index}.seats_indivi`,
       `flights.${index}.seats_business`,
-      `flights.${index}.fare_base`,
-      `flights.${index}.fare_fuel`,
-      `flights.${index}.fare_tax`,
       `flights.${index}.fare_base_indivi`,
       `flights.${index}.fare_fuel_indivi`,
       `flights.${index}.fare_tax_indivi`,
@@ -236,7 +233,6 @@ function FlightMainOnly({ index, onRemove }: { index: number; onRemove: () => vo
     ],
   }).map(v => Number(v) || 0)
   const totalSeats = sg + si + sb
-  const totalFare  = fb + ff + ft + fbi + ffi + fti + fbb + ffb + ftb
   const [showIndivi, setShowIndivi]     = useState(fbi + ffi + fti > 0)
   const [showBusiness, setShowBusiness] = useState(fbb + ffb + ftb > 0)
 
@@ -296,13 +292,6 @@ function FlightMainOnly({ index, onRemove }: { index: number; onRemove: () => vo
             <Plus className="h-3 w-3" /> 비즈니스 석 요금 추가
           </button>
         )}
-
-        <div className="flex items-center gap-2 pt-1">
-          <span className="label text-brand">항공료 합계</span>
-          <div className="h-8 flex items-center rounded-md border border-brand/20 bg-brand/5 px-3 text-sm font-semibold text-brand">
-            {totalFare.toLocaleString('ko-KR')}원
-          </div>
-        </div>
       </div>
     </div>
   )
