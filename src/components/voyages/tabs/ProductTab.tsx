@@ -269,18 +269,18 @@ export default function ProductTab() {
 
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[1120px] w-full text-xs">
+        <table className="min-w-[1160px] w-full table-fixed text-xs">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500">행사명</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">출발일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">귀국일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">선사</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">크루즈</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24 whitespace-nowrap">항공</th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-18">상태</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">크루즈</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28 whitespace-nowrap">항공</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-20">상태</th>
               <th className="px-3 py-2.5 text-center font-semibold text-slate-500 w-24">상품가</th>
-              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-18">고객</th>
+              <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-16">고객</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">인솔자</th>
               <th className="px-3 py-2.5 text-right font-semibold text-slate-500 w-16">D-DAY</th>
               <th className="px-3 py-2.5 w-20" />
@@ -322,22 +322,22 @@ export default function ProductTab() {
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(v.departure_date)}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{v.return_date ? formatDate(v.return_date) : '—'}</td>
                     <td className="px-3 py-2"><CruiseLineBadge value={v.cruise_line} /></td>
-                    <td className="px-3 py-2 text-slate-600">{v.ship_name ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">{v.ship_name ?? '—'}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">
                       {v.airline && v.airline_return
                         ? `${v.airline} / ${v.airline_return}`
                         : (v.airline ?? v.airline_return ?? '—')}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 whitespace-nowrap">
                       <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_COLORS[v.status] ?? 'bg-slate-100 text-slate-600'}`}>
                         {v.status}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-center text-slate-700">
+                    <td className="px-3 py-2 text-center text-slate-700 whitespace-nowrap">
                       {v.product_price ? `${v.product_price.toLocaleString()}원` : '—'}
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-700 font-medium">{v.customer_count}</td>
-                    <td className="px-3 py-2 text-slate-600">{v.tour_leader ?? '—'}</td>
+                    <td className="px-3 py-2 text-right text-slate-700 font-medium whitespace-nowrap">{v.customer_count}</td>
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap overflow-hidden text-ellipsis">{v.tour_leader ?? '—'}</td>
                     <td className="px-3 py-2 text-right">
                       <span className={[
                         'font-mono text-[11px]',
