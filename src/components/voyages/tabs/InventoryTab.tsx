@@ -151,15 +151,6 @@ function TxtInput({ value, onChange, placeholder = '', className = '' }: {
   )
 }
 
-function TxtArea({ value, onChange, placeholder = '', className = '' }: {
-  value: string | null | undefined; onChange: (v: string) => void; placeholder?: string; className?: string
-}) {
-  return (
-    <textarea value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={2}
-      className={`w-full px-1.5 py-0.5 border border-slate-200 rounded text-xs resize-none focus:outline-none focus:ring-1 focus:ring-brand ${className}`} />
-  )
-}
-
 function NumInput({ value, onChange, className = '' }: {
   value: number | null | undefined; onChange: (v: number | null) => void; className?: string
 }) {
@@ -353,7 +344,6 @@ function InventoryPanel({
             stay_date:  h.stay_date,
             room_rate:  h.room_rate,
             currency:   h.currency,
-            memo:       h.memo,
           }),
         ),
       ])
@@ -769,14 +759,13 @@ function InventoryPanel({
           <p className="text-xs text-slate-400">등록된 호텔이 없습니다</p>
         ) : (
           <div>
-            <table className="w-full text-xs" style={{ minWidth: editMode ? 640 : 480 }}>
+            <table className="w-full text-xs" style={{ minWidth: editMode ? 480 : 380 }}>
               <thead>
                 <tr className="text-[10px] text-slate-400 border-b border-slate-100">
                   <th className="text-left pb-1.5 font-medium">호텔명</th>
                   <th className="text-left pb-1.5 w-28 font-medium">투숙일</th>
                   {editMode && <th className="text-left pb-1.5 w-16 font-medium">통화</th>}
                   <th className="text-right pb-1.5 w-28 font-medium">요금</th>
-                  <th className="text-left pb-1.5 pl-2 w-40 font-medium">메모</th>
                   {editMode && <th className="pb-1.5 w-8" />}
                 </tr>
               </thead>
@@ -802,11 +791,6 @@ function InventoryPanel({
                       {editMode
                         ? <NumInput value={h.room_rate} onChange={v => setHotel(idx, { room_rate: v })} />
                         : <span className="text-slate-600">{formatPrice(h.room_rate, h.currency)}</span>}
-                    </td>
-                    <td className="py-1.5 pl-2 pr-1">
-                      {editMode
-                        ? <TxtArea value={h.memo} onChange={v => setHotel(idx, { memo: v || null })} placeholder="특이사항 (선택)" />
-                        : <span className="text-slate-500 whitespace-pre-wrap">{h.memo ?? '—'}</span>}
                     </td>
                     {editMode && (
                       <td className="py-1.5 text-center">
