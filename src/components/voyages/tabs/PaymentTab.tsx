@@ -606,7 +606,7 @@ export default function PaymentTab() {
     })() : null
 
     return (
-      <div className={`rounded-xl border p-3 min-h-[80px] transition-all ${
+      <div className={`rounded-xl border p-3 min-h-[80px] max-w-[240px] transition-all ${
         isEdit
           ? 'border-brand/40 bg-brand/5 shadow-sm'
           : (cell.due_date || calcBalance || (pt === 'TOTAL' && cell.amount))
@@ -646,8 +646,10 @@ export default function PaymentTab() {
             {pt !== 'TOTAL' && (
               <div>
                 <label className="label">메모</label>
-                <AutoTextarea value={cell.memo} onChange={e => updateCell(key, { memo: e.target.value })}
-                  placeholder="메모 (선택)" />
+                <div className="overflow-x-auto scrollbar-none">
+                  <AutoTextarea value={cell.memo} onChange={e => updateCell(key, { memo: e.target.value })}
+                    placeholder="메모 (선택)" />
+                </div>
               </div>
             )}
             <div className="flex gap-1.5 pt-1">
@@ -705,7 +707,11 @@ export default function PaymentTab() {
                 {section === 'REFUND' ? '환불' : '마감'} {cell.due_date}
               </p>
             )}
-            {cell.memo && <p className="text-xs font-medium text-red-600 whitespace-pre">{cell.memo}</p>}
+            {cell.memo && (
+              <div className="overflow-x-auto scrollbar-none">
+                <p className="text-xs font-medium text-red-600 whitespace-pre">{cell.memo}</p>
+              </div>
+            )}
             <div className="flex gap-1 pt-0.5">
               <button type="button" onClick={() => setEditing(key)}
                 className="flex-1 text-center text-[11px] opacity-50 hover:opacity-100 py-0.5 rounded hover:bg-black/5 transition">
@@ -803,10 +809,10 @@ export default function PaymentTab() {
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">결제</h3>
               <div className="overflow-x-auto scrollbar-navy">
-                <table className="border-collapse" style={{ minWidth: `${112 + columns.length * 200}px` }}>
+                <table className="w-max border-collapse" style={{ minWidth: `${112 + columns.length * 200}px` }}>
                   <thead>
                     <tr>
-                      <th className="w-28 pb-3" />
+                      <th className="sticky left-0 z-10 w-28 bg-slate-50 pb-3" />
                       <SortableContext items={colIds} strategy={horizontalListSortingStrategy}>
                         {columns.map(col => (
                           <SortableColumnHeader
@@ -826,11 +832,11 @@ export default function PaymentTab() {
                   <tbody>
                     {/* 총 금액 행 */}
                     <tr className="border-b-2 border-slate-300">
-                      <td className="pr-3 py-3 align-top">
+                      <td className="sticky left-0 z-10 bg-slate-50 pr-3 py-3 align-top">
                         <span className="text-xs font-bold text-slate-700 leading-none">총 금액</span>
                       </td>
                       {columns.map(col => (
-                        <td key={col.colId} className="px-2 py-3 align-top w-[200px]">
+                        <td key={col.colId} className="px-2 py-3 align-top min-w-[200px] max-w-[260px]">
                           {renderCell('PAYMENT', col, 'TOTAL', [])}
                         </td>
                       ))}
@@ -839,13 +845,13 @@ export default function PaymentTab() {
                     {/* 데포짓/잔금 행 */}
                     {paymentTypes.map((pt, ptIdx) => (
                       <tr key={pt} className={ptIdx < paymentTypes.length - 1 ? 'border-b border-slate-100' : ''}>
-                        <td className="pr-3 py-3 align-top">
+                        <td className="sticky left-0 z-10 bg-slate-50 pr-3 py-3 align-top">
                           <span className="text-xs font-semibold text-slate-500 leading-none">
                             {paymentTypeLabel(pt)}
                           </span>
                         </td>
                         {columns.map(col => (
-                          <td key={col.colId} className="px-2 py-3 align-top w-[200px]">
+                          <td key={col.colId} className="px-2 py-3 align-top min-w-[200px] max-w-[260px]">
                             {renderCell('PAYMENT', col, pt, paymentTypes)}
                           </td>
                         ))}
@@ -868,10 +874,10 @@ export default function PaymentTab() {
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-2">환불</h3>
               <div className="overflow-x-auto scrollbar-navy">
-                <table className="border-collapse" style={{ minWidth: `${112 + columns.length * 200}px` }}>
+                <table className="w-max border-collapse" style={{ minWidth: `${112 + columns.length * 200}px` }}>
                   <thead>
                     <tr>
-                      <th className="w-28 pb-3" />
+                      <th className="sticky left-0 z-10 w-28 bg-slate-50 pb-3" />
                       {columns.map(col => (
                         <th key={col.colId} className="pb-3 px-2 text-center">
                           <span className={`inline-block text-xs font-bold rounded-full px-3 py-1 border ${CATEGORY_STYLE[col.baseCategory].header}`}>
@@ -884,7 +890,7 @@ export default function PaymentTab() {
                   <tbody>
                     {/* 총 환불 행 */}
                     <tr className="border-b-2 border-slate-300">
-                      <td className="pr-3 py-3 align-middle">
+                      <td className="sticky left-0 z-10 bg-slate-50 pr-3 py-3 align-middle">
                         <span className="text-xs font-bold text-slate-700 leading-none">총 환불</span>
                       </td>
                       {columns.map(col => {
@@ -898,7 +904,7 @@ export default function PaymentTab() {
                         }
                         const totals = Object.entries(byCurrency)
                         return (
-                          <td key={col.colId} className="px-2 py-3 align-middle w-[200px]">
+                          <td key={col.colId} className="px-2 py-3 align-middle min-w-[200px] max-w-[260px]">
                             <div className={`rounded-xl border p-3 min-h-[60px] flex flex-col justify-center ${
                               totals.length > 0
                                 ? `${CATEGORY_STYLE[col.baseCategory].card} border-2`
@@ -923,12 +929,12 @@ export default function PaymentTab() {
 
                     {/* 환불 카드 행 */}
                     <tr>
-                      <td className="w-28" />
+                      <td className="sticky left-0 z-10 w-28 bg-slate-50" />
                       {columns.map(col => {
                         const refKey = `${col.baseCategory}::${col.agentId}`
                         const rCount = refundCardCounts[refKey] ?? 0
                         return (
-                          <td key={col.colId} className="px-2 py-3 align-top w-[200px]">
+                          <td key={col.colId} className="px-2 py-3 align-top min-w-[200px] max-w-[260px]">
                             <div className="space-y-2">
                               {Array.from({ length: rCount }, (_, i) => {
                                 const pt   = `REFUND_${i + 1}`
