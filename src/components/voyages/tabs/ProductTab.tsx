@@ -14,6 +14,7 @@ import { FieldSelect } from '@/components/ui/field-select'
 import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
 import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const STATUS_COLORS: Record<string, string> = {
   '미오픈':   'bg-slate-100 text-slate-600',
@@ -260,11 +261,10 @@ export default function ProductTab() {
             <tr>
               {selectionMode && (
                 <th className="px-2 py-2.5 w-8">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={ordered.length > 0 && ordered.every(v => selectedIds.has(v.id))}
                     onChange={toggleSelectAll}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"
+                    aria-label="전체 선택"
                   />
                 </th>
               )}
@@ -307,11 +307,10 @@ export default function ProductTab() {
                   >
                     {selectionMode && (
                       <td className="px-2 py-2">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={selectedIds.has(v.id)}
                           onChange={() => toggleSelect(v.id)}
-                          className="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"
+                          aria-label={`${voyageTitle(v)} 선택`}
                         />
                       </td>
                     )}
