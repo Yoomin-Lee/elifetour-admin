@@ -171,20 +171,6 @@ function title(v: { region: string; departure_date: string } | null | undefined)
   return v ? voyageTitle(v) : ''
 }
 
-// 한글은 2글자 폭, 그 외(영문·숫자·기호)는 1글자 폭으로 계산
-function strWidth(v: string): number {
-  let w = 0
-  for (const ch of v) {
-    const code = ch.codePointAt(0) ?? 0
-    const isHangul =
-      (code >= 0xac00 && code <= 0xd7a3) || // 완성형 음절
-      (code >= 0x1100 && code <= 0x11ff) || // 자모
-      (code >= 0x3130 && code <= 0x318f)    // 호환 자모
-    w += isHangul ? 2 : 1
-  }
-  return w
-}
-
 function colLetter(n: number): string {
   let s = ''
   while (n > 0) {
@@ -211,7 +197,22 @@ function parseDateTime(v: unknown): Date | null {
 }
 
 type ColType = 'text' | 'number' | 'krw' | 'date' | 'datetime'
-interface ColSpec { header: string; key: string; type: ColType }
+interface ColSpec { header: string; key: string; type: ColType; width: number }
+
+// 컬럼 특성별 권장 너비(문자 단위) — AutoFit 대신 고정 사용.
+// 텍스트는 역할별 상한(짧은 코드/중간 라벨/고유명사/자유서술), 날짜·일시는 각각
+// 타입 내에서 통일, 숫자는 좁게, 원화 금액은 ₩ 기호를 감안해 살짝 더 넓게.
+const W = {
+  short: 8,     // 3~4자 코드(공항코드, 통화, 인실 등)
+  code: 10,     // 상태·구분·태그 등 짧은 분류값
+  label: 14,    // 인솔자·작성자·에이전트 등 중간 길이 텍스트
+  title: 22,    // 행사명·크루즈·호텔명 등 고유명사
+  long: 30,     // 내용·메모·비고 등 자유서술형 — 과도한 확장 방지용 상한
+  date: 12,     // date 타입 전부 공통
+  datetime: 17, // datetime 타입 전부 공통
+  num: 9,       // 순수 숫자(좌석수·인실·보유/예약 등)
+  krw: 12,      // 원화 금액(₩ 기호 포함 고려)
+} as const
 
 const FONT_NAME = '맑은 고딕'
 const NUMBER_FMT = '#,##0'
@@ -240,21 +241,6 @@ const THIN_BORDER: Partial<ExcelJS.Borders> = {
   right:  { style: 'thin', color: { argb: BORDER_COLOR } },
 }
 
-function displayWidth(v: unknown, type: ColType): number {
-  if (v instanceof Date) return type === 'datetime' ? 16 : 10
-  return strWidth(v == null ? '' : String(v))
-}
-
-// 헤더·전체 데이터 값 중 가장 긴 폭 + 여유 4, 최소 10 / 최대 55로 클램프
-function colWidth(col: ColSpec, rows: Record<string, unknown>[]): number {
-  let max = strWidth(col.header)
-  for (const row of rows) {
-    const w = displayWidth(row[col.key], col.type)
-    if (w > max) max = w
-  }
-  return Math.min(55, Math.max(10, max + 4))
-}
-
 function addStyledSheet(
   wb: ExcelJS.Workbook,
   name: string,
@@ -264,7 +250,7 @@ function addStyledSheet(
 ) {
   const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', ySplit: 1 }] })
 
-  ws.columns = columns.map(c => ({ header: c.header, key: c.key, width: colWidth(c, rows) }))
+  ws.columns = columns.map(c => ({ header: c.header, key: c.key, width: c.width }))
   if (rows.length > 0) ws.addRows(rows)
 
   const headerRow = ws.getRow(1)
@@ -391,22 +377,22 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   const wb = new ExcelJS.Workbook()
 
   if (includeSheets.has('voyages')) addStyledSheet(wb, '항차', [
-    { header: '행사명',     key: 'region',         type: 'text'   },
-    { header: '상태',       key: 'status',         type: 'text'   },
-    { header: '출발일',     key: 'departure_date', type: 'date'   },
-    { header: '귀국일',     key: 'return_date',    type: 'date'   },
-    { header: '승선일',     key: 'boarding_date',  type: 'date'   },
-    { header: '기간',       key: 'duration',       type: 'text'   },
-    { header: '선사',       key: 'cruise_line',    type: 'text'   },
-    { header: '크루즈',     key: 'ship_name',      type: 'text'   },
-    { header: '항공사_출발', key: 'airline',        type: 'text'   },
-    { header: '항공사_귀국', key: 'airline_return', type: 'text'   },
-    { header: '고객수',     key: 'customer_count', type: 'number' },
-    { header: '인솔자',     key: 'tour_leader',    type: 'text'   },
-    { header: '상품가',     key: 'product_price',  type: 'krw'    },
-    { header: '캐빈보유',   key: 'cabin_total',     type: 'number' },
-    { header: '캐빈잔여',   key: 'cabin_remaining', type: 'number' },
-    { header: '비고',       key: 'note',           type: 'text'   },
+    { header: '행사명',     key: 'region',         type: 'text',   width: W.title },
+    { header: '상태',       key: 'status',         type: 'text',   width: W.code  },
+    { header: '출발일',     key: 'departure_date', type: 'date',   width: W.date  },
+    { header: '귀국일',     key: 'return_date',    type: 'date',   width: W.date  },
+    { header: '승선일',     key: 'boarding_date',  type: 'date',   width: W.date  },
+    { header: '기간',       key: 'duration',       type: 'text',   width: W.code  },
+    { header: '선사',       key: 'cruise_line',    type: 'text',   width: W.label },
+    { header: '크루즈',     key: 'ship_name',      type: 'text',   width: W.title },
+    { header: '항공사_출발', key: 'airline',        type: 'text',   width: W.label },
+    { header: '항공사_귀국', key: 'airline_return', type: 'text',   width: W.label },
+    { header: '고객수',     key: 'customer_count', type: 'number', width: W.num   },
+    { header: '인솔자',     key: 'tour_leader',    type: 'text',   width: W.label },
+    { header: '상품가',     key: 'product_price',  type: 'krw',    width: W.krw   },
+    { header: '캐빈보유',   key: 'cabin_total',     type: 'number', width: W.num   },
+    { header: '캐빈잔여',   key: 'cabin_remaining', type: 'number', width: W.num   },
+    { header: '비고',       key: 'note',           type: 'text',   width: W.long  },
   ], voyages.map(v => ({
     region: v.region,
     status: v.status,
@@ -427,30 +413,30 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   })), 'status')
 
   if (includeSheets.has('flights')) addStyledSheet(wb, '항공(마스터)', [
-    { header: '행사명',       key: 'voyage_title',        type: 'text'   },
-    { header: '이름',         key: 'label',               type: 'text'   },
-    { header: '편명',         key: 'flight_no',           type: 'text'   },
-    { header: '출발지',       key: 'origin',              type: 'text'   },
-    { header: '도착지',       key: 'destination',         type: 'text'   },
-    { header: '출발일',       key: 'departure_date',      type: 'date'   },
-    { header: '도착일',       key: 'arrival_date',        type: 'date'   },
-    { header: '출발시간',     key: 'departure_time',      type: 'text'   },
-    { header: '도착시간',     key: 'arrival_time',        type: 'text'   },
-    { header: '소요시간',     key: 'duration',            type: 'text'   },
-    { header: '항공료',       key: 'fare',                type: 'number' },
-    { header: '그룹좌석',     key: 'seats_group',         type: 'number' },
-    { header: '인디비좌석',   key: 'seats_indivi',        type: 'number' },
-    { header: '비즈니스좌석', key: 'seats_business',      type: 'number' },
-    { header: '운임_그룹',    key: 'fare_base',           type: 'krw'    },
-    { header: '유류할증_그룹', key: 'fare_fuel',           type: 'krw'    },
-    { header: '발권피_그룹',  key: 'fare_tax',            type: 'krw'    },
-    { header: '운임_인디비',  key: 'fare_base_indivi',    type: 'krw'    },
-    { header: '유류할증_인디비', key: 'fare_fuel_indivi',  type: 'krw'    },
-    { header: '발권피_인디비', key: 'fare_tax_indivi',     type: 'krw'    },
-    { header: '운임_비즈니스', key: 'fare_base_business',  type: 'krw'    },
-    { header: '유류할증_비즈니스', key: 'fare_fuel_business', type: 'krw'    },
-    { header: '발권피_비즈니스', key: 'fare_tax_business',  type: 'krw'    },
-    { header: '구간정보_JSON', key: 'segments_json',      type: 'text'   },
+    { header: '행사명',       key: 'voyage_title',        type: 'text',   width: W.title    },
+    { header: '이름',         key: 'label',               type: 'text',   width: W.label    },
+    { header: '편명',         key: 'flight_no',           type: 'text',   width: W.code     },
+    { header: '출발지',       key: 'origin',              type: 'text',   width: W.label    },
+    { header: '도착지',       key: 'destination',         type: 'text',   width: W.label    },
+    { header: '출발일',       key: 'departure_date',      type: 'date',   width: W.date     },
+    { header: '도착일',       key: 'arrival_date',        type: 'date',   width: W.date     },
+    { header: '출발시간',     key: 'departure_time',      type: 'text',   width: W.code     },
+    { header: '도착시간',     key: 'arrival_time',        type: 'text',   width: W.code     },
+    { header: '소요시간',     key: 'duration',            type: 'text',   width: W.label    },
+    { header: '항공료',       key: 'fare',                type: 'number', width: W.krw      },
+    { header: '그룹좌석',     key: 'seats_group',         type: 'number', width: W.num      },
+    { header: '인디비좌석',   key: 'seats_indivi',        type: 'number', width: W.num      },
+    { header: '비즈니스좌석', key: 'seats_business',      type: 'number', width: W.num      },
+    { header: '운임_그룹',    key: 'fare_base',           type: 'krw',    width: W.krw      },
+    { header: '유류할증_그룹', key: 'fare_fuel',           type: 'krw',    width: W.krw      },
+    { header: '발권피_그룹',  key: 'fare_tax',            type: 'krw',    width: W.krw      },
+    { header: '운임_인디비',  key: 'fare_base_indivi',    type: 'krw',    width: W.krw      },
+    { header: '유류할증_인디비', key: 'fare_fuel_indivi',  type: 'krw',    width: W.krw      },
+    { header: '발권피_인디비', key: 'fare_tax_indivi',     type: 'krw',    width: W.krw      },
+    { header: '운임_비즈니스', key: 'fare_base_business',  type: 'krw',    width: W.krw      },
+    { header: '유류할증_비즈니스', key: 'fare_fuel_business', type: 'krw',  width: W.krw      },
+    { header: '발권피_비즈니스', key: 'fare_tax_business',  type: 'krw',    width: W.krw      },
+    { header: '구간정보_JSON', key: 'segments_json',      type: 'text',   width: W.long     },
   ], flights.map(f => ({
     voyage_title: title(f.voyages),
     label: f.label,
@@ -479,22 +465,22 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   })))
 
   if (includeSheets.has('voyageFlights')) addStyledSheet(wb, '항공좌석(보유현황)', [
-    { header: '행사명',       key: 'voyage_title',    type: 'text'     },
-    { header: '편명',         key: 'flight_num',      type: 'text'     },
-    { header: 'PNR',          key: 'pnr',             type: 'text'     },
-    { header: '출발공항',     key: 'dep_airport',     type: 'text'     },
-    { header: '도착공항',     key: 'arr_airport',     type: 'text'     },
-    { header: '출발일시_UTC', key: 'dep_datetime',    type: 'datetime' },
-    { header: '도착일시_UTC', key: 'arr_datetime',    type: 'datetime' },
-    { header: '소요시간',     key: 'flight_duration', type: 'text'     },
-    { header: '항공료',       key: 'flight_fare',     type: 'number'   },
-    { header: '통화',         key: 'currency_code',   type: 'text'     },
-    { header: '그룹좌석',     key: 'seats_group',     type: 'number'   },
-    { header: '인디비좌석',   key: 'seats_indivi',    type: 'number'   },
-    { header: '비즈니스좌석', key: 'seats_business',  type: 'number'   },
-    { header: '운임',         key: 'fare_base',       type: 'krw'      },
-    { header: '유류할증',     key: 'fare_fuel',       type: 'krw'      },
-    { header: '발권피',       key: 'fare_tax',        type: 'krw'      },
+    { header: '행사명',       key: 'voyage_title',    type: 'text',     width: W.title    },
+    { header: '편명',         key: 'flight_num',      type: 'text',     width: W.code     },
+    { header: 'PNR',          key: 'pnr',             type: 'text',     width: W.code     },
+    { header: '출발공항',     key: 'dep_airport',     type: 'text',     width: W.short    },
+    { header: '도착공항',     key: 'arr_airport',     type: 'text',     width: W.short    },
+    { header: '출발일시_UTC', key: 'dep_datetime',    type: 'datetime', width: W.datetime },
+    { header: '도착일시_UTC', key: 'arr_datetime',    type: 'datetime', width: W.datetime },
+    { header: '소요시간',     key: 'flight_duration', type: 'text',     width: W.label    },
+    { header: '항공료',       key: 'flight_fare',     type: 'number',   width: W.krw      },
+    { header: '통화',         key: 'currency_code',   type: 'text',     width: W.short    },
+    { header: '그룹좌석',     key: 'seats_group',     type: 'number',   width: W.num      },
+    { header: '인디비좌석',   key: 'seats_indivi',    type: 'number',   width: W.num      },
+    { header: '비즈니스좌석', key: 'seats_business',  type: 'number',   width: W.num      },
+    { header: '운임',         key: 'fare_base',       type: 'krw',      width: W.krw      },
+    { header: '유류할증',     key: 'fare_fuel',       type: 'krw',      width: W.krw      },
+    { header: '발권피',       key: 'fare_tax',        type: 'krw',      width: W.krw      },
   ], voyageFlights.map(vf => ({
     voyage_title: title(vf.voyages),
     flight_num: vf.flight_num,
@@ -515,15 +501,15 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   })))
 
   if (includeSheets.has('itinerary')) addStyledSheet(wb, '기항지', [
-    { header: '행사명',   key: 'voyage_title',    type: 'text'   },
-    { header: '날짜',     key: 'date',            type: 'date'   },
-    { header: '기항지',   key: 'port',            type: 'text'   },
-    { header: '입항',     key: 'arrival_time',    type: 'text'   },
-    { header: '출항',     key: 'departure_time',  type: 'text'   },
-    { header: '구분',     key: 'category',        type: 'text'   },
-    { header: '비용',     key: 'cost',            type: 'number' },
-    { header: '비용통화', key: 'cost_currency',   type: 'text'   },
-    { header: '비고',     key: 'summary',         type: 'text'   },
+    { header: '행사명',   key: 'voyage_title',    type: 'text',   width: W.title },
+    { header: '날짜',     key: 'date',            type: 'date',   width: W.date  },
+    { header: '기항지',   key: 'port',            type: 'text',   width: W.title },
+    { header: '입항',     key: 'arrival_time',    type: 'text',   width: W.code  },
+    { header: '출항',     key: 'departure_time',  type: 'text',   width: W.code  },
+    { header: '구분',     key: 'category',        type: 'text',   width: W.code  },
+    { header: '비용',     key: 'cost',            type: 'number', width: W.krw   },
+    { header: '비용통화', key: 'cost_currency',   type: 'text',   width: W.short },
+    { header: '비고',     key: 'summary',         type: 'text',   width: W.long  },
   ], itinerary.map(d => ({
     voyage_title: title(d.voyages),
     date: parseDateOnly(d.date),
@@ -537,18 +523,18 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   })))
 
   if (includeSheets.has('cancellations')) addStyledSheet(wb, '취소료', [
-    { header: '행사명',       key: 'voyage_title',      type: 'text'   },
-    { header: '구분',         key: 'category',          type: 'text'   },
-    { header: '기준일_시작', key: 'start_d_minus',      type: 'number' },
-    { header: '기준일_종료', key: 'end_d_minus',        type: 'number' },
-    { header: '시작일',       key: 'start_date',        type: 'date'   },
-    { header: '종료일',       key: 'end_date',          type: 'date'   },
-    { header: '기준일자',     key: 'reference_date',    type: 'date'   },
-    { header: '취소료_설명', key: 'fee_description',    type: 'text'   },
-    { header: '취소료_유형', key: 'fee_type',           type: 'text'   },
-    { header: '취소료_값',   key: 'fee_value',          type: 'number' },
-    { header: '취소료_단위', key: 'fee_unit',           type: 'text'   },
-    { header: '비고',         key: 'note',              type: 'text'   },
+    { header: '행사명',       key: 'voyage_title',      type: 'text',   width: W.title },
+    { header: '구분',         key: 'category',          type: 'text',   width: W.code  },
+    { header: '기준일_시작', key: 'start_d_minus',      type: 'number', width: W.num   },
+    { header: '기준일_종료', key: 'end_d_minus',        type: 'number', width: W.num   },
+    { header: '시작일',       key: 'start_date',        type: 'date',   width: W.date  },
+    { header: '종료일',       key: 'end_date',          type: 'date',   width: W.date  },
+    { header: '기준일자',     key: 'reference_date',    type: 'date',   width: W.date  },
+    { header: '취소료_설명', key: 'fee_description',    type: 'text',   width: W.label },
+    { header: '취소료_유형', key: 'fee_type',           type: 'text',   width: W.code  },
+    { header: '취소료_값',   key: 'fee_value',          type: 'number', width: W.num   },
+    { header: '취소료_단위', key: 'fee_unit',           type: 'text',   width: W.short },
+    { header: '비고',         key: 'note',              type: 'text',   width: W.long  },
   ], cancellations.map(c => ({
     voyage_title: title(c.voyages),
     category: c.category,
@@ -565,10 +551,10 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   })))
 
   if (includeSheets.has('history')) addStyledSheet(wb, '히스토리', [
-    { header: '행사명', key: 'voyage_title', type: 'text'     },
-    { header: '일시',   key: 'logged_at',    type: 'datetime' },
-    { header: '작성자', key: 'author',       type: 'text'     },
-    { header: '내용',   key: 'content',      type: 'text'     },
+    { header: '행사명', key: 'voyage_title', type: 'text',     width: W.title    },
+    { header: '일시',   key: 'logged_at',    type: 'datetime', width: W.datetime },
+    { header: '작성자', key: 'author',       type: 'text',     width: W.label    },
+    { header: '내용',   key: 'content',      type: 'text',     width: W.long     },
   ], history.map(h => ({
     voyage_title: title(h.voyages),
     logged_at: parseDateTime(h.logged_at),
@@ -577,11 +563,11 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   })))
 
   if (includeSheets.has('feedback')) addStyledSheet(wb, '피드백', [
-    { header: '행사명', key: 'voyage_title', type: 'text'     },
-    { header: '일시',   key: 'logged_at',    type: 'datetime' },
-    { header: '작성자', key: 'author',       type: 'text'     },
-    { header: '태그',   key: 'tag',          type: 'text'     },
-    { header: '내용',   key: 'content',      type: 'text'     },
+    { header: '행사명', key: 'voyage_title', type: 'text',     width: W.title    },
+    { header: '일시',   key: 'logged_at',    type: 'datetime', width: W.datetime },
+    { header: '작성자', key: 'author',       type: 'text',     width: W.label    },
+    { header: '태그',   key: 'tag',          type: 'text',     width: W.short    },
+    { header: '내용',   key: 'content',      type: 'text',     width: W.long     },
   ], feedback.map(f => ({
     voyage_title: title(f.voyages),
     logged_at: parseDateTime(f.logged_at),
@@ -591,12 +577,12 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   })))
 
   if (includeSheets.has('hotels')) addStyledSheet(wb, '호텔', [
-    { header: '행사명',   key: 'voyage_title', type: 'text'   },
-    { header: '투숙일',   key: 'stay_date',    type: 'date'   },
-    { header: '호텔명',   key: 'hotel_name',   type: 'text'   },
-    { header: '객실요금', key: 'room_rate',    type: 'number' },
-    { header: '통화',     key: 'currency',     type: 'text'   },
-    { header: '메모',     key: 'memo',         type: 'text'   },
+    { header: '행사명',   key: 'voyage_title', type: 'text',   width: W.title },
+    { header: '투숙일',   key: 'stay_date',    type: 'date',   width: W.date  },
+    { header: '호텔명',   key: 'hotel_name',   type: 'text',   width: W.title },
+    { header: '객실요금', key: 'room_rate',    type: 'number', width: W.krw   },
+    { header: '통화',     key: 'currency',     type: 'text',   width: W.short },
+    { header: '메모',     key: 'memo',         type: 'text',   width: W.long  },
   ], hotels.map(h => ({
     voyage_title: title(h.voyages),
     stay_date: parseDateOnly(h.stay_date),
@@ -607,18 +593,18 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   })))
 
   if (includeSheets.has('cabinGrades')) addStyledSheet(wb, '캐빈등급(보유현황)', [
-    { header: '행사명',   key: 'voyage_title',      type: 'text'   },
-    { header: '등급',     key: 'grade',             type: 'text'   },
-    { header: '인실',     key: 'occupancy',         type: 'number' },
-    { header: '보유',     key: 'total',             type: 'number' },
-    { header: '예약',     key: 'reserved',          type: 'number' },
-    { header: '인당가격', key: 'price_per_person',  type: 'number' },
-    { header: 'CCF',      key: 'ccf',               type: 'number' },
-    { header: 'NCCF',     key: 'nccf',              type: 'number' },
-    { header: 'TAX',      key: 'tax',               type: 'number' },
-    { header: 'TIP',      key: 'tip',               type: 'number' },
-    { header: '통화',     key: 'currency',          type: 'text'   },
-    { header: '에이전트', key: 'agent',             type: 'text'   },
+    { header: '행사명',   key: 'voyage_title',      type: 'text',   width: W.title },
+    { header: '등급',     key: 'grade',             type: 'text',   width: W.code  },
+    { header: '인실',     key: 'occupancy',         type: 'number', width: W.short },
+    { header: '보유',     key: 'total',             type: 'number', width: W.short },
+    { header: '예약',     key: 'reserved',          type: 'number', width: W.short },
+    { header: '인당가격', key: 'price_per_person',  type: 'number', width: W.krw   },
+    { header: 'CCF',      key: 'ccf',               type: 'number', width: W.short },
+    { header: 'NCCF',     key: 'nccf',              type: 'number', width: W.short },
+    { header: 'TAX',      key: 'tax',               type: 'number', width: W.short },
+    { header: 'TIP',      key: 'tip',               type: 'number', width: W.short },
+    { header: '통화',     key: 'currency',          type: 'text',   width: W.short },
+    { header: '에이전트', key: 'agent',             type: 'text',   width: W.label },
   ], cabinGrades.map(g => ({
     voyage_title: voyageTitleMap.get(g.voyage_id) ?? '',
     grade: g.grade,
@@ -635,16 +621,16 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   })))
 
   if (includeSheets.has('payments')) addStyledSheet(wb, '결제스케줄', [
-    { header: '행사명',     key: 'voyage_title',  type: 'text'   },
-    { header: '구분',       key: 'category',      type: 'text'   },
-    { header: '결제유형',   key: 'payment_type',  type: 'text'   },
-    { header: '섹션',       key: 'section',       type: 'text'   },
-    { header: '에이전트ID', key: 'agent_id',      type: 'text'   },
-    { header: '금액',       key: 'amount',        type: 'number' },
-    { header: '통화',       key: 'currency',      type: 'text'   },
-    { header: '마감일',     key: 'due_date',      type: 'date'   },
-    { header: '완료여부',   key: 'is_completed',  type: 'text'   },
-    { header: '메모',       key: 'memo',          type: 'text'   },
+    { header: '행사명',     key: 'voyage_title',  type: 'text',   width: W.title },
+    { header: '구분',       key: 'category',      type: 'text',   width: W.code  },
+    { header: '결제유형',   key: 'payment_type',  type: 'text',   width: W.label },
+    { header: '섹션',       key: 'section',       type: 'text',   width: W.code  },
+    { header: '에이전트ID', key: 'agent_id',      type: 'text',   width: W.label },
+    { header: '금액',       key: 'amount',        type: 'number', width: W.krw   },
+    { header: '통화',       key: 'currency',      type: 'text',   width: W.short },
+    { header: '마감일',     key: 'due_date',      type: 'date',   width: W.date  },
+    { header: '완료여부',   key: 'is_completed',  type: 'text',   width: W.code  },
+    { header: '메모',       key: 'memo',          type: 'text',   width: W.long  },
   ], payments.map(p => ({
     voyage_title: title(p.voyages),
     category: p.category,
