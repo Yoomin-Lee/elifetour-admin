@@ -33,9 +33,9 @@ const STATUSES: VoyageStatus[] = ['미오픈', '판매중', '마감', '출발완
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex gap-2 py-1.5 border-b border-slate-50 last:border-0">
-      <dt className="w-28 shrink-0 text-xs text-slate-400 pt-0.5">{label}</dt>
-      <dd className="text-sm text-slate-800 font-medium flex-1">{value ?? '-'}</dd>
+    <div>
+      <dt className="text-xs text-slate-400 mb-1">{label}</dt>
+      <dd className="text-sm text-slate-800 font-medium">{value ?? '-'}</dd>
     </div>
   )
 }
@@ -354,7 +354,7 @@ export default function OverviewCard({
         </div>
       </CardHeader>
       <CardContent>
-        <dl>
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Row label="행사명"    value={voyageTitle(voyage)} />
           <Row label="출발일"    value={formatDate(voyage.departure_date)} />
           <Row label="승선일"    value={voyage.boarding_date ? formatDate(voyage.boarding_date) : '-'} />
