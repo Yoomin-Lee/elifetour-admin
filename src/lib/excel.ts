@@ -166,8 +166,38 @@ function title(v: { region: string; departure_date: string } | null | undefined)
   return v ? voyageTitle(v) : ''
 }
 
+// 한글은 2글자 폭, 그 외(영문·숫자·기호)는 1글자 폭으로 계산
+function strWidth(v: unknown): number {
+  const s = v == null ? '' : String(v)
+  let w = 0
+  for (const ch of s) {
+    const code = ch.codePointAt(0) ?? 0
+    const isHangul =
+      (code >= 0xac00 && code <= 0xd7a3) || // 완성형 음절
+      (code >= 0x1100 && code <= 0x11ff) || // 자모
+      (code >= 0x3130 && code <= 0x318f)    // 호환 자모
+    w += isHangul ? 2 : 1
+  }
+  return w
+}
+
+// 헤더·전체 데이터 값 중 가장 긴 폭 + 여유 2, 최소 8 / 최대 50으로 클램프
+function calcColWidths(rows: Record<string, unknown>[]): { wch: number }[] {
+  if (rows.length === 0) return []
+  const keys = Object.keys(rows[0])
+  return keys.map(key => {
+    let max = strWidth(key)
+    for (const row of rows) {
+      const w = strWidth(row[key])
+      if (w > max) max = w
+    }
+    return { wch: Math.min(50, Math.max(8, max + 2)) }
+  })
+}
+
 function addSheet(wb: XLSX.WorkBook, name: string, rows: Record<string, unknown>[]) {
   const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{}])
+  ws['!cols'] = calcColWidths(rows)
   XLSX.utils.book_append_sheet(wb, ws, name)
 }
 
