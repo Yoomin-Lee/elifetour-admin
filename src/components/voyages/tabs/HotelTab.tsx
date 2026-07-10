@@ -279,7 +279,7 @@ export default function HotelTab() {
       {/* 테이블 */}
       {(data.length > 0 || isLoading) && (
         <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="w-[700px] table-fixed text-xs">
+          <table className="w-[950px] table-fixed text-xs">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
@@ -312,7 +312,7 @@ export default function HotelTab() {
                         ) : '—'}
                       </td>
                       <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(r.stay_date)}</td>
-                      <td className="px-3 py-2 text-slate-700 font-medium whitespace-nowrap overflow-hidden text-ellipsis">{r.hotel_name}</td>
+                      <td className="px-3 py-2 text-slate-700 font-medium whitespace-nowrap">{r.hotel_name}</td>
                       <td className="px-3 py-2 text-right text-slate-700 whitespace-nowrap">
                         {formatRate(r.room_rate, r.currency)}
                       </td>
