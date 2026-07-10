@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import {
   fetchVoyages,
   fetchAllFlights,
@@ -162,15 +163,18 @@ export function downloadItineraryTemplate() {
 }
 
 // ── 전체 데이터 백업 내보내기 ───────────────────────────────────────────────
+// 관리·백업용 데이터 시트 스타일: 헤더 강조, 지브라 줄무늬, 얇은 테두리,
+// 열너비 자동조정, 첫 행 고정, 자동 필터, 타입별 정렬·서식.
+// (community xlsx 패키지는 셀 스타일 작성을 지원하지 않아 이 부분만 exceljs 사용)
+
 function title(v: { region: string; departure_date: string } | null | undefined): string {
   return v ? voyageTitle(v) : ''
 }
 
 // 한글은 2글자 폭, 그 외(영문·숫자·기호)는 1글자 폭으로 계산
-function strWidth(v: unknown): number {
-  const s = v == null ? '' : String(v)
+function strWidth(v: string): number {
   let w = 0
-  for (const ch of s) {
+  for (const ch of v) {
     const code = ch.codePointAt(0) ?? 0
     const isHangul =
       (code >= 0xac00 && code <= 0xd7a3) || // 완성형 음절
@@ -181,24 +185,116 @@ function strWidth(v: unknown): number {
   return w
 }
 
-// 헤더·전체 데이터 값 중 가장 긴 폭 + 여유 2, 최소 8 / 최대 50으로 클램프
-function calcColWidths(rows: Record<string, unknown>[]): { wch: number }[] {
-  if (rows.length === 0) return []
-  const keys = Object.keys(rows[0])
-  return keys.map(key => {
-    let max = strWidth(key)
-    for (const row of rows) {
-      const w = strWidth(row[key])
-      if (w > max) max = w
-    }
-    return { wch: Math.min(50, Math.max(8, max + 2)) }
-  })
+function colLetter(n: number): string {
+  let s = ''
+  while (n > 0) {
+    const rem = (n - 1) % 26
+    s = String.fromCharCode(65 + rem) + s
+    n = Math.floor((n - 1) / 26)
+  }
+  return s
 }
 
-function addSheet(wb: XLSX.WorkBook, name: string, rows: Record<string, unknown>[]) {
-  const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{}])
-  ws['!cols'] = calcColWidths(rows)
-  XLSX.utils.book_append_sheet(wb, ws, name)
+// 'YYYY-MM-DD...' 문자열을 로컬 날짜(시각 없음)로 파싱 — UTC 파싱 시 생기는 하루 밀림 방지
+function parseDateOnly(v: unknown): Date | null {
+  if (typeof v !== 'string') return null
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v)
+  if (!m) return null
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+}
+
+// 타임존 포함 ISO 타임스탬프 문자열을 그대로 파싱 (값 자체는 원본과 동일한 시점)
+function parseDateTime(v: unknown): Date | null {
+  if (typeof v !== 'string' || !v) return null
+  const d = new Date(v)
+  return isNaN(d.getTime()) ? null : d
+}
+
+type ColType = 'text' | 'number' | 'date' | 'datetime'
+interface ColSpec { header: string; key: string; type: ColType }
+
+const NUMBER_FMT = '#,##0'
+const DATE_FMT = 'yyyy-mm-dd'
+const DATETIME_FMT = 'yyyy-mm-dd hh:mm'
+
+const HEADER_FILL = 'FF0F2849'   // 브랜드 네이비
+const HEADER_FONT = 'FFFFFFFF'
+const BORDER_COLOR = 'FFE2E8F0' // slate-200
+const BAND_FILL = 'FFF8FAFC'    // slate-50
+
+const THIN_BORDER: Partial<ExcelJS.Borders> = {
+  top:    { style: 'thin', color: { argb: BORDER_COLOR } },
+  left:   { style: 'thin', color: { argb: BORDER_COLOR } },
+  bottom: { style: 'thin', color: { argb: BORDER_COLOR } },
+  right:  { style: 'thin', color: { argb: BORDER_COLOR } },
+}
+
+function displayWidth(v: unknown, type: ColType): number {
+  if (v instanceof Date) return type === 'datetime' ? 16 : 10
+  return strWidth(v == null ? '' : String(v))
+}
+
+// 헤더·전체 데이터 값 중 가장 긴 폭 + 여유 2, 최소 8 / 최대 50으로 클램프
+function colWidth(col: ColSpec, rows: Record<string, unknown>[]): number {
+  let max = strWidth(col.header)
+  for (const row of rows) {
+    const w = displayWidth(row[col.key], col.type)
+    if (w > max) max = w
+  }
+  return Math.min(50, Math.max(8, max + 2))
+}
+
+function addStyledSheet(
+  wb: ExcelJS.Workbook,
+  name: string,
+  columns: ColSpec[],
+  rows: Record<string, unknown>[],
+) {
+  const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', ySplit: 1 }] })
+
+  ws.columns = columns.map(c => ({ header: c.header, key: c.key, width: colWidth(c, rows) }))
+  if (rows.length > 0) ws.addRows(rows)
+
+  const headerRow = ws.getRow(1)
+  headerRow.height = 22
+  headerRow.eachCell(cell => {
+    cell.font = { bold: true, color: { argb: HEADER_FONT } }
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HEADER_FILL } }
+    cell.alignment = { vertical: 'middle', horizontal: 'center' }
+    cell.border = THIN_BORDER
+  })
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = ws.getRow(i + 2)
+    row.height = 18
+    const isBanded = i % 2 === 1
+    columns.forEach((c, colIdx) => {
+      const cell = row.getCell(colIdx + 1)
+      cell.border = THIN_BORDER
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: c.type === 'text' ? 'left' : c.type === 'number' ? 'right' : 'center',
+      }
+      if (c.type === 'number') cell.numFmt = NUMBER_FMT
+      else if (c.type === 'date') cell.numFmt = DATE_FMT
+      else if (c.type === 'datetime') cell.numFmt = DATETIME_FMT
+      if (isBanded) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BAND_FILL } }
+    })
+  }
+
+  if (columns.length > 0) ws.autoFilter = `A1:${colLetter(columns.length)}1`
+}
+
+function downloadWorkbook(wb: ExcelJS.Workbook, filename: string): Promise<void> {
+  return wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  })
 }
 
 export interface ExportResult {
@@ -269,157 +365,281 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
   const voyageTitleMap = new Map<string, string>()
   allVoyages.forEach(v => voyageTitleMap.set(v.id, voyageTitle(v)))
 
-  const wb = XLSX.utils.book_new()
+  const wb = new ExcelJS.Workbook()
 
-  if (includeSheets.has('voyages')) addSheet(wb, '항차', voyages.map(v => ({
-    행사명: v.region,
-    상태: v.status,
-    출발일: v.departure_date,
-    귀국일: v.return_date,
-    승선일: v.boarding_date,
-    기간: v.duration,
-    선사: v.cruise_line,
-    크루즈: v.ship_name,
-    항공사_출발: v.airline,
-    항공사_귀국: v.airline_return,
-    고객수: v.customer_count,
-    인솔자: v.tour_leader,
-    상품가: v.product_price,
-    캐빈보유: v.cabin_total,
-    캐빈잔여: v.cabin_remaining,
-    비고: v.hotel,
+  if (includeSheets.has('voyages')) addStyledSheet(wb, '항차', [
+    { header: '행사명',     key: 'region',         type: 'text'   },
+    { header: '상태',       key: 'status',         type: 'text'   },
+    { header: '출발일',     key: 'departure_date', type: 'date'   },
+    { header: '귀국일',     key: 'return_date',    type: 'date'   },
+    { header: '승선일',     key: 'boarding_date',  type: 'date'   },
+    { header: '기간',       key: 'duration',       type: 'text'   },
+    { header: '선사',       key: 'cruise_line',    type: 'text'   },
+    { header: '크루즈',     key: 'ship_name',      type: 'text'   },
+    { header: '항공사_출발', key: 'airline',        type: 'text'   },
+    { header: '항공사_귀국', key: 'airline_return', type: 'text'   },
+    { header: '고객수',     key: 'customer_count', type: 'number' },
+    { header: '인솔자',     key: 'tour_leader',    type: 'text'   },
+    { header: '상품가',     key: 'product_price',  type: 'number' },
+    { header: '캐빈보유',   key: 'cabin_total',     type: 'number' },
+    { header: '캐빈잔여',   key: 'cabin_remaining', type: 'number' },
+    { header: '비고',       key: 'note',           type: 'text'   },
+  ], voyages.map(v => ({
+    region: v.region,
+    status: v.status,
+    departure_date: parseDateOnly(v.departure_date),
+    return_date: parseDateOnly(v.return_date),
+    boarding_date: parseDateOnly(v.boarding_date),
+    duration: v.duration,
+    cruise_line: v.cruise_line,
+    ship_name: v.ship_name,
+    airline: v.airline,
+    airline_return: v.airline_return,
+    customer_count: v.customer_count,
+    tour_leader: v.tour_leader,
+    product_price: v.product_price,
+    cabin_total: v.cabin_total,
+    cabin_remaining: v.cabin_remaining,
+    note: v.hotel,
   })))
 
-  if (includeSheets.has('flights')) addSheet(wb, '항공(마스터)', flights.map(f => ({
-    행사명: title(f.voyages),
-    이름: f.label,
-    편명: f.flight_no,
-    출발지: f.origin,
-    도착지: f.destination,
-    출발일: f.departure_date,
-    도착일: f.arrival_date,
-    출발시간: f.departure_time,
-    도착시간: f.arrival_time,
-    소요시간: f.duration,
-    항공료: f.fare,
-    그룹좌석: f.seats_group,
-    인디비좌석: f.seats_indivi,
-    비즈니스좌석: f.seats_business,
-    운임_그룹: f.fare_base,
-    유류할증_그룹: f.fare_fuel,
-    발권피_그룹: f.fare_tax,
-    운임_인디비: f.fare_base_indivi,
-    유류할증_인디비: f.fare_fuel_indivi,
-    발권피_인디비: f.fare_tax_indivi,
-    운임_비즈니스: f.fare_base_business,
-    유류할증_비즈니스: f.fare_fuel_business,
-    발권피_비즈니스: f.fare_tax_business,
-    구간정보_JSON: JSON.stringify(f.segments ?? []),
+  if (includeSheets.has('flights')) addStyledSheet(wb, '항공(마스터)', [
+    { header: '행사명',       key: 'voyage_title',        type: 'text'   },
+    { header: '이름',         key: 'label',               type: 'text'   },
+    { header: '편명',         key: 'flight_no',           type: 'text'   },
+    { header: '출발지',       key: 'origin',              type: 'text'   },
+    { header: '도착지',       key: 'destination',         type: 'text'   },
+    { header: '출발일',       key: 'departure_date',      type: 'date'   },
+    { header: '도착일',       key: 'arrival_date',        type: 'date'   },
+    { header: '출발시간',     key: 'departure_time',      type: 'text'   },
+    { header: '도착시간',     key: 'arrival_time',        type: 'text'   },
+    { header: '소요시간',     key: 'duration',            type: 'text'   },
+    { header: '항공료',       key: 'fare',                type: 'number' },
+    { header: '그룹좌석',     key: 'seats_group',         type: 'number' },
+    { header: '인디비좌석',   key: 'seats_indivi',        type: 'number' },
+    { header: '비즈니스좌석', key: 'seats_business',      type: 'number' },
+    { header: '운임_그룹',    key: 'fare_base',           type: 'number' },
+    { header: '유류할증_그룹', key: 'fare_fuel',           type: 'number' },
+    { header: '발권피_그룹',  key: 'fare_tax',            type: 'number' },
+    { header: '운임_인디비',  key: 'fare_base_indivi',    type: 'number' },
+    { header: '유류할증_인디비', key: 'fare_fuel_indivi',  type: 'number' },
+    { header: '발권피_인디비', key: 'fare_tax_indivi',     type: 'number' },
+    { header: '운임_비즈니스', key: 'fare_base_business',  type: 'number' },
+    { header: '유류할증_비즈니스', key: 'fare_fuel_business', type: 'number' },
+    { header: '발권피_비즈니스', key: 'fare_tax_business',  type: 'number' },
+    { header: '구간정보_JSON', key: 'segments_json',      type: 'text'   },
+  ], flights.map(f => ({
+    voyage_title: title(f.voyages),
+    label: f.label,
+    flight_no: f.flight_no,
+    origin: f.origin,
+    destination: f.destination,
+    departure_date: parseDateOnly(f.departure_date),
+    arrival_date: parseDateOnly(f.arrival_date),
+    departure_time: f.departure_time,
+    arrival_time: f.arrival_time,
+    duration: f.duration,
+    fare: f.fare,
+    seats_group: f.seats_group,
+    seats_indivi: f.seats_indivi,
+    seats_business: f.seats_business,
+    fare_base: f.fare_base,
+    fare_fuel: f.fare_fuel,
+    fare_tax: f.fare_tax,
+    fare_base_indivi: f.fare_base_indivi,
+    fare_fuel_indivi: f.fare_fuel_indivi,
+    fare_tax_indivi: f.fare_tax_indivi,
+    fare_base_business: f.fare_base_business,
+    fare_fuel_business: f.fare_fuel_business,
+    fare_tax_business: f.fare_tax_business,
+    segments_json: JSON.stringify(f.segments ?? []),
   })))
 
-  if (includeSheets.has('voyageFlights')) addSheet(wb, '항공좌석(보유현황)', voyageFlights.map(vf => ({
-    행사명: title(vf.voyages),
-    편명: vf.flight_num,
-    PNR: vf.pnr,
-    출발공항: vf.dep_airport,
-    도착공항: vf.arr_airport,
-    출발일시_UTC: vf.dep_datetime,
-    도착일시_UTC: vf.arr_datetime,
-    소요시간: vf.flight_duration,
-    항공료: vf.flight_fare,
-    통화: vf.currency_code,
-    그룹좌석: vf.seats_group,
-    인디비좌석: vf.seats_indivi,
-    비즈니스좌석: vf.seats_business,
-    운임: vf.fare_base,
-    유류할증: vf.fare_fuel,
-    발권피: vf.fare_tax,
+  if (includeSheets.has('voyageFlights')) addStyledSheet(wb, '항공좌석(보유현황)', [
+    { header: '행사명',       key: 'voyage_title',    type: 'text'     },
+    { header: '편명',         key: 'flight_num',      type: 'text'     },
+    { header: 'PNR',          key: 'pnr',             type: 'text'     },
+    { header: '출발공항',     key: 'dep_airport',     type: 'text'     },
+    { header: '도착공항',     key: 'arr_airport',     type: 'text'     },
+    { header: '출발일시_UTC', key: 'dep_datetime',    type: 'datetime' },
+    { header: '도착일시_UTC', key: 'arr_datetime',    type: 'datetime' },
+    { header: '소요시간',     key: 'flight_duration', type: 'text'     },
+    { header: '항공료',       key: 'flight_fare',     type: 'number'   },
+    { header: '통화',         key: 'currency_code',   type: 'text'     },
+    { header: '그룹좌석',     key: 'seats_group',     type: 'number'   },
+    { header: '인디비좌석',   key: 'seats_indivi',    type: 'number'   },
+    { header: '비즈니스좌석', key: 'seats_business',  type: 'number'   },
+    { header: '운임',         key: 'fare_base',       type: 'number'   },
+    { header: '유류할증',     key: 'fare_fuel',       type: 'number'   },
+    { header: '발권피',       key: 'fare_tax',        type: 'number'   },
+  ], voyageFlights.map(vf => ({
+    voyage_title: title(vf.voyages),
+    flight_num: vf.flight_num,
+    pnr: vf.pnr,
+    dep_airport: vf.dep_airport,
+    arr_airport: vf.arr_airport,
+    dep_datetime: parseDateTime(vf.dep_datetime),
+    arr_datetime: parseDateTime(vf.arr_datetime),
+    flight_duration: vf.flight_duration,
+    flight_fare: vf.flight_fare,
+    currency_code: vf.currency_code,
+    seats_group: vf.seats_group,
+    seats_indivi: vf.seats_indivi,
+    seats_business: vf.seats_business,
+    fare_base: vf.fare_base,
+    fare_fuel: vf.fare_fuel,
+    fare_tax: vf.fare_tax,
   })))
 
-  if (includeSheets.has('itinerary')) addSheet(wb, '기항지', itinerary.map(d => ({
-    행사명: title(d.voyages),
-    날짜: d.date,
-    기항지: d.port,
-    입항: d.arrival_time,
-    출항: d.departure_time,
-    구분: d.category,
-    비용: d.cost,
-    비용통화: d.cost_currency,
-    비고: d.summary,
+  if (includeSheets.has('itinerary')) addStyledSheet(wb, '기항지', [
+    { header: '행사명',   key: 'voyage_title',    type: 'text'   },
+    { header: '날짜',     key: 'date',            type: 'date'   },
+    { header: '기항지',   key: 'port',            type: 'text'   },
+    { header: '입항',     key: 'arrival_time',    type: 'text'   },
+    { header: '출항',     key: 'departure_time',  type: 'text'   },
+    { header: '구분',     key: 'category',        type: 'text'   },
+    { header: '비용',     key: 'cost',            type: 'number' },
+    { header: '비용통화', key: 'cost_currency',   type: 'text'   },
+    { header: '비고',     key: 'summary',         type: 'text'   },
+  ], itinerary.map(d => ({
+    voyage_title: title(d.voyages),
+    date: parseDateOnly(d.date),
+    port: d.port,
+    arrival_time: d.arrival_time,
+    departure_time: d.departure_time,
+    category: d.category,
+    cost: d.cost,
+    cost_currency: d.cost_currency,
+    summary: d.summary,
   })))
 
-  if (includeSheets.has('cancellations')) addSheet(wb, '취소료', cancellations.map(c => ({
-    행사명: title(c.voyages),
-    구분: c.category,
-    기준일_시작: c.start_d_minus,
-    기준일_종료: c.end_d_minus,
-    시작일: c.start_date,
-    종료일: c.end_date,
-    기준일자: c.reference_date,
-    취소료_설명: c.fee_description,
-    취소료_유형: c.fee_type,
-    취소료_값: c.fee_value,
-    취소료_단위: c.fee_unit,
-    비고: c.note,
+  if (includeSheets.has('cancellations')) addStyledSheet(wb, '취소료', [
+    { header: '행사명',       key: 'voyage_title',      type: 'text'   },
+    { header: '구분',         key: 'category',          type: 'text'   },
+    { header: '기준일_시작', key: 'start_d_minus',      type: 'number' },
+    { header: '기준일_종료', key: 'end_d_minus',        type: 'number' },
+    { header: '시작일',       key: 'start_date',        type: 'date'   },
+    { header: '종료일',       key: 'end_date',          type: 'date'   },
+    { header: '기준일자',     key: 'reference_date',    type: 'date'   },
+    { header: '취소료_설명', key: 'fee_description',    type: 'text'   },
+    { header: '취소료_유형', key: 'fee_type',           type: 'text'   },
+    { header: '취소료_값',   key: 'fee_value',          type: 'number' },
+    { header: '취소료_단위', key: 'fee_unit',           type: 'text'   },
+    { header: '비고',         key: 'note',              type: 'text'   },
+  ], cancellations.map(c => ({
+    voyage_title: title(c.voyages),
+    category: c.category,
+    start_d_minus: c.start_d_minus,
+    end_d_minus: c.end_d_minus,
+    start_date: parseDateOnly(c.start_date),
+    end_date: parseDateOnly(c.end_date),
+    reference_date: parseDateOnly(c.reference_date),
+    fee_description: c.fee_description,
+    fee_type: c.fee_type,
+    fee_value: c.fee_value,
+    fee_unit: c.fee_unit,
+    note: c.note,
   })))
 
-  if (includeSheets.has('history')) addSheet(wb, '히스토리', history.map(h => ({
-    행사명: title(h.voyages),
-    일시: h.logged_at,
-    작성자: h.author,
-    내용: h.content,
+  if (includeSheets.has('history')) addStyledSheet(wb, '히스토리', [
+    { header: '행사명', key: 'voyage_title', type: 'text'     },
+    { header: '일시',   key: 'logged_at',    type: 'datetime' },
+    { header: '작성자', key: 'author',       type: 'text'     },
+    { header: '내용',   key: 'content',      type: 'text'     },
+  ], history.map(h => ({
+    voyage_title: title(h.voyages),
+    logged_at: parseDateTime(h.logged_at),
+    author: h.author,
+    content: h.content,
   })))
 
-  if (includeSheets.has('feedback')) addSheet(wb, '피드백', feedback.map(f => ({
-    행사명: title(f.voyages),
-    일시: f.logged_at,
-    작성자: f.author,
-    태그: f.tag,
-    내용: f.content,
+  if (includeSheets.has('feedback')) addStyledSheet(wb, '피드백', [
+    { header: '행사명', key: 'voyage_title', type: 'text'     },
+    { header: '일시',   key: 'logged_at',    type: 'datetime' },
+    { header: '작성자', key: 'author',       type: 'text'     },
+    { header: '태그',   key: 'tag',          type: 'text'     },
+    { header: '내용',   key: 'content',      type: 'text'     },
+  ], feedback.map(f => ({
+    voyage_title: title(f.voyages),
+    logged_at: parseDateTime(f.logged_at),
+    author: f.author,
+    tag: f.tag,
+    content: f.content,
   })))
 
-  if (includeSheets.has('hotels')) addSheet(wb, '호텔', hotels.map(h => ({
-    행사명: title(h.voyages),
-    투숙일: h.stay_date,
-    호텔명: h.hotel_name,
-    객실요금: h.room_rate,
-    통화: h.currency,
-    메모: h.memo,
+  if (includeSheets.has('hotels')) addStyledSheet(wb, '호텔', [
+    { header: '행사명',   key: 'voyage_title', type: 'text'   },
+    { header: '투숙일',   key: 'stay_date',    type: 'date'   },
+    { header: '호텔명',   key: 'hotel_name',   type: 'text'   },
+    { header: '객실요금', key: 'room_rate',    type: 'number' },
+    { header: '통화',     key: 'currency',     type: 'text'   },
+    { header: '메모',     key: 'memo',         type: 'text'   },
+  ], hotels.map(h => ({
+    voyage_title: title(h.voyages),
+    stay_date: parseDateOnly(h.stay_date),
+    hotel_name: h.hotel_name,
+    room_rate: h.room_rate,
+    currency: h.currency,
+    memo: h.memo,
   })))
 
-  if (includeSheets.has('cabinGrades')) addSheet(wb, '캐빈등급(보유현황)', cabinGrades.map(g => ({
-    행사명: voyageTitleMap.get(g.voyage_id) ?? '',
-    등급: g.grade,
-    인실: g.occupancy,
-    보유: g.total,
-    예약: g.reserved,
-    인당가격: g.price_per_person,
-    CCF: g.ccf,
-    NCCF: g.nccf,
-    TAX: g.tax,
-    TIP: g.tip,
-    통화: g.currency,
-    에이전트: g.agent,
+  if (includeSheets.has('cabinGrades')) addStyledSheet(wb, '캐빈등급(보유현황)', [
+    { header: '행사명',   key: 'voyage_title',      type: 'text'   },
+    { header: '등급',     key: 'grade',             type: 'text'   },
+    { header: '인실',     key: 'occupancy',         type: 'number' },
+    { header: '보유',     key: 'total',             type: 'number' },
+    { header: '예약',     key: 'reserved',          type: 'number' },
+    { header: '인당가격', key: 'price_per_person',  type: 'number' },
+    { header: 'CCF',      key: 'ccf',               type: 'number' },
+    { header: 'NCCF',     key: 'nccf',              type: 'number' },
+    { header: 'TAX',      key: 'tax',               type: 'number' },
+    { header: 'TIP',      key: 'tip',               type: 'number' },
+    { header: '통화',     key: 'currency',          type: 'text'   },
+    { header: '에이전트', key: 'agent',             type: 'text'   },
+  ], cabinGrades.map(g => ({
+    voyage_title: voyageTitleMap.get(g.voyage_id) ?? '',
+    grade: g.grade,
+    occupancy: g.occupancy,
+    total: g.total,
+    reserved: g.reserved,
+    price_per_person: g.price_per_person,
+    ccf: g.ccf,
+    nccf: g.nccf,
+    tax: g.tax,
+    tip: g.tip,
+    currency: g.currency,
+    agent: g.agent,
   })))
 
-  if (includeSheets.has('payments')) addSheet(wb, '결제스케줄', payments.map(p => ({
-    행사명: title(p.voyages),
-    구분: p.category,
-    결제유형: p.payment_type,
-    섹션: p.section,
-    에이전트ID: p.agent_id,
-    금액: p.amount,
-    통화: p.currency,
-    마감일: p.due_date,
-    완료여부: p.is_completed ? '완료' : '미완료',
-    메모: p.memo,
+  if (includeSheets.has('payments')) addStyledSheet(wb, '결제스케줄', [
+    { header: '행사명',     key: 'voyage_title',  type: 'text'   },
+    { header: '구분',       key: 'category',      type: 'text'   },
+    { header: '결제유형',   key: 'payment_type',  type: 'text'   },
+    { header: '섹션',       key: 'section',       type: 'text'   },
+    { header: '에이전트ID', key: 'agent_id',      type: 'text'   },
+    { header: '금액',       key: 'amount',        type: 'number' },
+    { header: '통화',       key: 'currency',      type: 'text'   },
+    { header: '마감일',     key: 'due_date',      type: 'date'   },
+    { header: '완료여부',   key: 'is_completed',  type: 'text'   },
+    { header: '메모',       key: 'memo',          type: 'text'   },
+  ], payments.map(p => ({
+    voyage_title: title(p.voyages),
+    category: p.category,
+    payment_type: p.payment_type,
+    section: p.section,
+    agent_id: p.agent_id,
+    amount: p.amount,
+    currency: p.currency,
+    due_date: parseDateOnly(p.due_date),
+    is_completed: p.is_completed ? '완료' : '미완료',
+    memo: p.memo,
   })))
 
   const today = new Date().toISOString().slice(0, 10)
   const filename = filterYears
     ? `이라이프투어_${[...filterYears].sort().join('_')}년_데이터_${today}.xlsx`
     : `이라이프투어_전체데이터_${today}.xlsx`
-  XLSX.writeFile(wb, filename)
+  await downloadWorkbook(wb, filename)
 
   return { filename, voyageCount: voyages.length }
 }
