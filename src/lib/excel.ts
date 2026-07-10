@@ -201,8 +201,13 @@ function addSheet(wb: XLSX.WorkBook, name: string, rows: Record<string, unknown>
   XLSX.utils.book_append_sheet(wb, ws, name)
 }
 
+export interface ExportResult {
+  filename: string
+  voyageCount: number
+}
+
 /** 항차 마스터 + 연결된 상세데이터 전체를 시트별로 나눠 하나의 엑셀 파일로 내보낸다 */
-export async function exportAllVoyageData(): Promise<void> {
+export async function exportAllVoyageData(): Promise<ExportResult> {
   const [
     voyages, flights, voyageFlights, itinerary, cancellations,
     history, feedback, hotels, cabinGrades, payments,
@@ -387,5 +392,8 @@ export async function exportAllVoyageData(): Promise<void> {
   })))
 
   const today = new Date().toISOString().slice(0, 10)
-  XLSX.writeFile(wb, `이라이프투어_전체데이터_${today}.xlsx`)
+  const filename = `이라이프투어_전체데이터_${today}.xlsx`
+  XLSX.writeFile(wb, filename)
+
+  return { filename, voyageCount: voyages.length }
 }

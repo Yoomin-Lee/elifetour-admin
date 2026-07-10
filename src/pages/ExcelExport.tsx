@@ -20,8 +20,10 @@ export default function ExcelExport() {
   async function handleExport() {
     setExporting(true)
     try {
-      await exportAllVoyageData()
-      toast.success('엑셀 파일이 다운로드되었습니다')
+      const { filename, voyageCount } = await exportAllVoyageData()
+      toast.success('엑셀 파일이 다운로드되었습니다', {
+        description: `행사 ${voyageCount}건 · ${filename}`,
+      })
     } catch {
       toast.error('내보내기에 실패했습니다')
     } finally {
