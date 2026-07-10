@@ -253,7 +253,6 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
   const wb = XLSX.utils.book_new()
 
   addSheet(wb, '항차', voyages.map(v => ({
-    ID: v.id,
     행사명: v.region,
     상태: v.status,
     출발일: v.departure_date,
@@ -270,12 +269,9 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
     캐빈보유: v.cabin_total,
     캐빈잔여: v.cabin_remaining,
     비고: v.hotel,
-    생성일: v.created_at,
-    수정일: v.updated_at,
   })))
 
   addSheet(wb, '항공(마스터)', flights.map(f => ({
-    ID: f.id,
     행사명: title(f.voyages),
     이름: f.label,
     편명: f.flight_no,
@@ -300,11 +296,9 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
     유류할증_비즈니스: f.fare_fuel_business,
     발권피_비즈니스: f.fare_tax_business,
     구간정보_JSON: JSON.stringify(f.segments ?? []),
-    생성일: f.created_at,
   })))
 
   addSheet(wb, '항공좌석(보유현황)', voyageFlights.map(vf => ({
-    ID: vf.id,
     행사명: title(vf.voyages),
     편명: vf.flight_num,
     PNR: vf.pnr,
@@ -321,11 +315,9 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
     운임: vf.fare_base,
     유류할증: vf.fare_fuel,
     발권피: vf.fare_tax,
-    생성일: vf.created_at,
   })))
 
   addSheet(wb, '기항지', itinerary.map(d => ({
-    ID: d.id,
     행사명: title(d.voyages),
     날짜: d.date,
     기항지: d.port,
@@ -338,7 +330,6 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
   })))
 
   addSheet(wb, '취소료', cancellations.map(c => ({
-    ID: c.id,
     행사명: title(c.voyages),
     구분: c.category,
     기준일_시작: c.start_d_minus,
@@ -354,7 +345,6 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
   })))
 
   addSheet(wb, '히스토리', history.map(h => ({
-    ID: h.id,
     행사명: title(h.voyages),
     일시: h.logged_at,
     작성자: h.author,
@@ -362,7 +352,6 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
   })))
 
   addSheet(wb, '피드백', feedback.map(f => ({
-    ID: f.id,
     행사명: title(f.voyages),
     일시: f.logged_at,
     작성자: f.author,
@@ -371,18 +360,15 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
   })))
 
   addSheet(wb, '호텔', hotels.map(h => ({
-    ID: h.id,
     행사명: title(h.voyages),
     투숙일: h.stay_date,
     호텔명: h.hotel_name,
     객실요금: h.room_rate,
     통화: h.currency,
     메모: h.memo,
-    생성일: h.created_at,
   })))
 
   addSheet(wb, '캐빈등급(보유현황)', cabinGrades.map(g => ({
-    ID: g.id,
     행사명: voyageTitleMap.get(g.voyage_id) ?? '',
     등급: g.grade,
     인실: g.occupancy,
@@ -395,11 +381,9 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
     TIP: g.tip,
     통화: g.currency,
     에이전트: g.agent,
-    생성일: g.created_at,
   })))
 
   addSheet(wb, '결제스케줄', payments.map(p => ({
-    ID: p.id,
     행사명: title(p.voyages),
     구분: p.category,
     결제유형: p.payment_type,
@@ -410,8 +394,6 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
     마감일: p.due_date,
     완료여부: p.is_completed ? '완료' : '미완료',
     메모: p.memo,
-    생성일: p.created_at,
-    수정일: p.updated_at,
   })))
 
   const today = new Date().toISOString().slice(0, 10)

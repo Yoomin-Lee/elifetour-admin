@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClickOutside } from '@/hooks/useClickOutside'
 
@@ -16,7 +16,7 @@ export function YearSelect({ value, years, onChange, className }: Props) {
   useClickOutside(rootRef, open, () => setOpen(false))
 
   return (
-    <div className="relative" ref={rootRef}>
+    <div className="relative inline-block" ref={rootRef}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -37,27 +37,30 @@ export function YearSelect({ value, years, onChange, className }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-20 mt-1 min-w-[104px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute left-0 top-full z-20 mt-1 min-w-full max-h-64 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
           <button
             type="button"
             onClick={() => { onChange('ALL'); setOpen(false) }}
             className={cn(
-              'w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50',
+              'flex w-full items-center gap-2 whitespace-nowrap px-3 py-1.5 text-left text-sm transition hover:bg-slate-50',
               value === 'ALL' ? 'font-semibold text-brand' : 'text-slate-700',
             )}
           >
+            <Check className={cn('h-3.5 w-3.5 shrink-0', value === 'ALL' ? 'opacity-100' : 'opacity-0')} />
             전체 연도
           </button>
+          <div className="my-1 border-t border-slate-100" />
           {years.map(y => (
             <button
               key={y}
               type="button"
               onClick={() => { onChange(y); setOpen(false) }}
               className={cn(
-                'w-full px-3 py-1.5 text-left text-sm transition hover:bg-slate-50',
+                'flex w-full items-center gap-2 whitespace-nowrap px-3 py-1.5 text-left text-sm transition hover:bg-slate-50',
                 value === y ? 'font-semibold text-brand' : 'text-slate-700',
               )}
             >
+              <Check className={cn('h-3.5 w-3.5 shrink-0', value === y ? 'opacity-100' : 'opacity-0')} />
               {y}년
             </button>
           ))}
