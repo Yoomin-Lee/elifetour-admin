@@ -6,11 +6,9 @@
   <script>
     // GitHub Pages SPA 지원: 알 수 없는 경로는 index.html로 리다이렉트
     // (경로+쿼리+해시를 sessionStorage에 저장 후 복원)
-    var base = '/elifetour-admin';
     var l = window.location;
-    // full path (including /elifetour-admin) must be preserved for replaceState
     sessionStorage.setItem('__spa_path', l.pathname + l.search + l.hash);
-    l.replace(l.origin + base + '/');
+    l.replace(l.origin + '/');
   </script>
 </head>
 </html>

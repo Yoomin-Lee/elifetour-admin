@@ -1,7 +1,7 @@
 export const site = {
   brand: '이라이프투어',
   brandEn: 'eLIFETOUR',
-  url: import.meta.env.VITE_SITE_URL || 'https://yoomin-lee.github.io/elifetour-admin',
+  url: import.meta.env.VITE_SITE_URL || 'https://elifeetis.com',
 }
 
 interface StatusOption {

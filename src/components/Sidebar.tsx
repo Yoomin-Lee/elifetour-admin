@@ -156,7 +156,7 @@ export default function Sidebar({
           <div className={`flex h-16 items-center justify-between px-5 ${!expanded ? 'lg:justify-center lg:px-0' : ''}`}>
             <div className={`flex flex-col gap-1.5 ${!expanded ? 'lg:hidden' : ''}`}>
               <img
-                src="/elifetour-admin/logo-full.png"
+                src="/logo-full.png"
                 alt="이라이프투어"
                 className="h-7 w-auto object-contain object-left brightness-0 invert"
               />
@@ -170,7 +170,7 @@ export default function Sidebar({
             </div>
             {!expanded && (
               <img
-                src="/elifetour-admin/favicon.png"
+                src="/favicon.png"
                 alt="이라이프투어"
                 className="hidden h-8 w-8 rounded-md object-contain lg:block"
               />

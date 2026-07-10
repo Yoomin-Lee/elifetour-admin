@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseReady) { alert('Supabase가 설정되지 않았습니다.'); return }
     return supabase.auth.signInWithOAuth({
       provider: provider as 'google',
-      options: { redirectTo: `${window.location.origin}/elifetour-admin/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     })
   }
 
