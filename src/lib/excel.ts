@@ -210,10 +210,12 @@ function parseDateTime(v: unknown): Date | null {
   return isNaN(d.getTime()) ? null : d
 }
 
-type ColType = 'text' | 'number' | 'date' | 'datetime'
+type ColType = 'text' | 'number' | 'krw' | 'date' | 'datetime'
 interface ColSpec { header: string; key: string; type: ColType }
 
+const FONT_NAME = '맑은 고딕'
 const NUMBER_FMT = '#,##0'
+const KRW_FMT = '"₩"#,##0'
 const DATE_FMT = 'yyyy-mm-dd'
 const DATETIME_FMT = 'yyyy-mm-dd hh:mm'
 
@@ -221,6 +223,15 @@ const HEADER_FILL = 'FF0F2849'   // 브랜드 네이비
 const HEADER_FONT = 'FFFFFFFF'
 const BORDER_COLOR = 'FFE2E8F0' // slate-200
 const BAND_FILL = 'FFF8FAFC'    // slate-50
+
+// 항차 시트 '상태' 컬럼 전용 — 앱 UI(STATUS_COLORS)와 동일한 팔레트
+const STATUS_COLORS: Record<string, { bg: string; fg: string }> = {
+  '미오픈':   { bg: 'FFF1F5F9', fg: 'FF475569' },
+  '판매중':   { bg: 'FFDBEAFE', fg: 'FF1D4ED8' },
+  '마감':     { bg: 'FFFEF3C7', fg: 'FFB45309' },
+  '출발완료': { bg: 'FFD1FAE5', fg: 'FF15803D' },
+  '취소':     { bg: 'FFFEE2E2', fg: 'FFDC2626' },
+}
 
 const THIN_BORDER: Partial<ExcelJS.Borders> = {
   top:    { style: 'thin', color: { argb: BORDER_COLOR } },
@@ -234,14 +245,14 @@ function displayWidth(v: unknown, type: ColType): number {
   return strWidth(v == null ? '' : String(v))
 }
 
-// 헤더·전체 데이터 값 중 가장 긴 폭 + 여유 2, 최소 8 / 최대 50으로 클램프
+// 헤더·전체 데이터 값 중 가장 긴 폭 + 여유 4, 최소 10 / 최대 55로 클램프
 function colWidth(col: ColSpec, rows: Record<string, unknown>[]): number {
   let max = strWidth(col.header)
   for (const row of rows) {
     const w = displayWidth(row[col.key], col.type)
     if (w > max) max = w
   }
-  return Math.min(50, Math.max(8, max + 2))
+  return Math.min(55, Math.max(10, max + 4))
 }
 
 function addStyledSheet(
@@ -249,6 +260,7 @@ function addStyledSheet(
   name: string,
   columns: ColSpec[],
   rows: Record<string, unknown>[],
+  statusColumnKey?: string,
 ) {
   const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', ySplit: 1 }] })
 
@@ -256,9 +268,9 @@ function addStyledSheet(
   if (rows.length > 0) ws.addRows(rows)
 
   const headerRow = ws.getRow(1)
-  headerRow.height = 22
+  headerRow.height = 24
   headerRow.eachCell(cell => {
-    cell.font = { bold: true, color: { argb: HEADER_FONT } }
+    cell.font = { name: FONT_NAME, bold: true, color: { argb: HEADER_FONT } }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HEADER_FILL } }
     cell.alignment = { vertical: 'middle', horizontal: 'center' }
     cell.border = THIN_BORDER
@@ -266,19 +278,30 @@ function addStyledSheet(
 
   for (let i = 0; i < rows.length; i++) {
     const row = ws.getRow(i + 2)
-    row.height = 18
+    row.height = 20
     const isBanded = i % 2 === 1
     columns.forEach((c, colIdx) => {
       const cell = row.getCell(colIdx + 1)
       cell.border = THIN_BORDER
+      cell.font = { name: FONT_NAME }
       cell.alignment = {
         vertical: 'middle',
-        horizontal: c.type === 'text' ? 'left' : c.type === 'number' ? 'right' : 'center',
+        horizontal: c.type === 'text' ? 'left' : c.type === 'date' || c.type === 'datetime' ? 'center' : 'right',
+        indent: c.type === 'text' ? 1 : 0,
       }
       if (c.type === 'number') cell.numFmt = NUMBER_FMT
+      else if (c.type === 'krw') cell.numFmt = KRW_FMT
       else if (c.type === 'date') cell.numFmt = DATE_FMT
       else if (c.type === 'datetime') cell.numFmt = DATETIME_FMT
       if (isBanded) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BAND_FILL } }
+
+      if (statusColumnKey && c.key === statusColumnKey) {
+        const colors = STATUS_COLORS[String(row.getCell(colIdx + 1).value ?? '')]
+        if (colors) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.bg } }
+          cell.font = { name: FONT_NAME, bold: true, color: { argb: colors.fg } }
+        }
+      }
     })
   }
 
@@ -380,7 +403,7 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
     { header: '항공사_귀국', key: 'airline_return', type: 'text'   },
     { header: '고객수',     key: 'customer_count', type: 'number' },
     { header: '인솔자',     key: 'tour_leader',    type: 'text'   },
-    { header: '상품가',     key: 'product_price',  type: 'number' },
+    { header: '상품가',     key: 'product_price',  type: 'krw'    },
     { header: '캐빈보유',   key: 'cabin_total',     type: 'number' },
     { header: '캐빈잔여',   key: 'cabin_remaining', type: 'number' },
     { header: '비고',       key: 'note',           type: 'text'   },
@@ -401,7 +424,7 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
     cabin_total: v.cabin_total,
     cabin_remaining: v.cabin_remaining,
     note: v.hotel,
-  })))
+  })), 'status')
 
   if (includeSheets.has('flights')) addStyledSheet(wb, '항공(마스터)', [
     { header: '행사명',       key: 'voyage_title',        type: 'text'   },
@@ -418,15 +441,15 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
     { header: '그룹좌석',     key: 'seats_group',         type: 'number' },
     { header: '인디비좌석',   key: 'seats_indivi',        type: 'number' },
     { header: '비즈니스좌석', key: 'seats_business',      type: 'number' },
-    { header: '운임_그룹',    key: 'fare_base',           type: 'number' },
-    { header: '유류할증_그룹', key: 'fare_fuel',           type: 'number' },
-    { header: '발권피_그룹',  key: 'fare_tax',            type: 'number' },
-    { header: '운임_인디비',  key: 'fare_base_indivi',    type: 'number' },
-    { header: '유류할증_인디비', key: 'fare_fuel_indivi',  type: 'number' },
-    { header: '발권피_인디비', key: 'fare_tax_indivi',     type: 'number' },
-    { header: '운임_비즈니스', key: 'fare_base_business',  type: 'number' },
-    { header: '유류할증_비즈니스', key: 'fare_fuel_business', type: 'number' },
-    { header: '발권피_비즈니스', key: 'fare_tax_business',  type: 'number' },
+    { header: '운임_그룹',    key: 'fare_base',           type: 'krw'    },
+    { header: '유류할증_그룹', key: 'fare_fuel',           type: 'krw'    },
+    { header: '발권피_그룹',  key: 'fare_tax',            type: 'krw'    },
+    { header: '운임_인디비',  key: 'fare_base_indivi',    type: 'krw'    },
+    { header: '유류할증_인디비', key: 'fare_fuel_indivi',  type: 'krw'    },
+    { header: '발권피_인디비', key: 'fare_tax_indivi',     type: 'krw'    },
+    { header: '운임_비즈니스', key: 'fare_base_business',  type: 'krw'    },
+    { header: '유류할증_비즈니스', key: 'fare_fuel_business', type: 'krw'    },
+    { header: '발권피_비즈니스', key: 'fare_tax_business',  type: 'krw'    },
     { header: '구간정보_JSON', key: 'segments_json',      type: 'text'   },
   ], flights.map(f => ({
     voyage_title: title(f.voyages),
@@ -469,9 +492,9 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
     { header: '그룹좌석',     key: 'seats_group',     type: 'number'   },
     { header: '인디비좌석',   key: 'seats_indivi',    type: 'number'   },
     { header: '비즈니스좌석', key: 'seats_business',  type: 'number'   },
-    { header: '운임',         key: 'fare_base',       type: 'number'   },
-    { header: '유류할증',     key: 'fare_fuel',       type: 'number'   },
-    { header: '발권피',       key: 'fare_tax',        type: 'number'   },
+    { header: '운임',         key: 'fare_base',       type: 'krw'      },
+    { header: '유류할증',     key: 'fare_fuel',       type: 'krw'      },
+    { header: '발권피',       key: 'fare_tax',        type: 'krw'      },
   ], voyageFlights.map(vf => ({
     voyage_title: title(vf.voyages),
     flight_num: vf.flight_num,
