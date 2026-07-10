@@ -241,6 +241,20 @@ const THIN_BORDER: Partial<ExcelJS.Borders> = {
   right:  { style: 'thin', color: { argb: BORDER_COLOR } },
 }
 
+const DATA_ROW_HEIGHT = 20
+const LINE_HEIGHT = 14
+const MAX_WRAP_LINES = 6          // 이보다 길면 셀 안에서 스크롤 없이도 열어서 확인 가능하니 높이만 제한
+const CHARS_PER_LINE = 18         // 한글 비중을 감안한 보수적인 줄당 글자 수(넉넉하게 잡아 덜 잘리게)
+
+// long 티어(자유서술형) 컬럼의 줄바꿈 후 예상 줄 수 — 개행 문자 + 폭 초과분을 함께 계산
+function estimateWrappedLines(value: unknown): number {
+  const s = value == null ? '' : String(value)
+  if (!s) return 1
+  let total = 0
+  for (const line of s.split('\n')) total += Math.max(1, Math.ceil(line.length / CHARS_PER_LINE))
+  return Math.min(MAX_WRAP_LINES, Math.max(1, total))
+}
+
 function addStyledSheet(
   wb: ExcelJS.Workbook,
   name: string,
@@ -264,22 +278,26 @@ function addStyledSheet(
 
   for (let i = 0; i < rows.length; i++) {
     const row = ws.getRow(i + 2)
-    row.height = 20
     const isBanded = i % 2 === 1
+    let maxLines = 1
     columns.forEach((c, colIdx) => {
       const cell = row.getCell(colIdx + 1)
+      const isWrapCol = c.type === 'text' && c.width === W.long
       cell.border = THIN_BORDER
       cell.font = { name: FONT_NAME }
       cell.alignment = {
         vertical: 'middle',
         horizontal: c.type === 'text' ? 'left' : c.type === 'date' || c.type === 'datetime' ? 'center' : 'right',
         indent: c.type === 'text' ? 1 : 0,
+        wrapText: isWrapCol,
       }
       if (c.type === 'number') cell.numFmt = NUMBER_FMT
       else if (c.type === 'krw') cell.numFmt = KRW_FMT
       else if (c.type === 'date') cell.numFmt = DATE_FMT
       else if (c.type === 'datetime') cell.numFmt = DATETIME_FMT
       if (isBanded) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BAND_FILL } }
+
+      if (isWrapCol) maxLines = Math.max(maxLines, estimateWrappedLines(cell.value))
 
       if (statusColumnKey && c.key === statusColumnKey) {
         const colors = STATUS_COLORS[String(row.getCell(colIdx + 1).value ?? '')]
@@ -289,6 +307,7 @@ function addStyledSheet(
         }
       }
     })
+    row.height = maxLines > 1 ? maxLines * LINE_HEIGHT + 6 : DATA_ROW_HEIGHT
   }
 
   if (columns.length > 0) ws.autoFilter = `A1:${colLetter(columns.length)}1`
@@ -385,8 +404,7 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
     { header: '기간',       key: 'duration',       type: 'text',   width: W.code  },
     { header: '선사',       key: 'cruise_line',    type: 'text',   width: W.label },
     { header: '크루즈',     key: 'ship_name',      type: 'text',   width: W.title },
-    { header: '항공사_출발', key: 'airline',        type: 'text',   width: W.label },
-    { header: '항공사_귀국', key: 'airline_return', type: 'text',   width: W.label },
+    { header: '항공사',     key: 'airline',        type: 'text',   width: W.label },
     { header: '고객수',     key: 'customer_count', type: 'number', width: W.num   },
     { header: '인솔자',     key: 'tour_leader',    type: 'text',   width: W.label },
     { header: '상품가',     key: 'product_price',  type: 'krw',    width: W.krw   },
@@ -402,8 +420,7 @@ export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey
     duration: v.duration,
     cruise_line: v.cruise_line,
     ship_name: v.ship_name,
-    airline: v.airline,
-    airline_return: v.airline_return,
+    airline: v.airline && v.airline_return ? `${v.airline}/${v.airline_return}` : (v.airline ?? v.airline_return),
     customer_count: v.customer_count,
     tour_leader: v.tour_leader,
     product_price: v.product_price,
