@@ -216,7 +216,9 @@ export default function OverviewCard({
             </ERow>
             <ERow label="승선일">
               <div className="flex items-center gap-1.5">
-                <DatePicker value={f.boarding_date} onChange={v => setF(p => ({ ...p, boarding_date: v }))} placeholder="크루즈 승선일" />
+                <div className="flex-1 min-w-0">
+                  <DatePicker value={f.boarding_date} onChange={v => setF(p => ({ ...p, boarding_date: v }))} placeholder="크루즈 승선일" />
+                </div>
                 {(() => {
                   const detected = detectBoardingDate(itinerary)
                   if (!detected) return null
