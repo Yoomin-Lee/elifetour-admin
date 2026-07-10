@@ -5,8 +5,7 @@ import { toast } from 'sonner'
 import { Trash2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import VoyageCombobox from '@/components/voyages/VoyageCombobox'
-import { YearSelect } from '@/components/ui/year-select'
-import { FieldSelect } from '@/components/ui/field-select'
+import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import OverviewCard from '@/components/voyages/OverviewCard'
 import CabinPriceCard from '@/components/voyages/CabinPriceCard'
 import FlightsCard from '@/components/voyages/FlightsCard'
@@ -70,8 +69,8 @@ function VoyageSearchInner() {
     user?.email ??
     '직원'
 
-  const [yearFilter, setYearFilter] = useState<string>('ALL')
-  const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [yearFilter, setYearFilter] = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
 
   const qc = useQueryClient()
   const deleteMutation = useMutation({
@@ -105,8 +104,8 @@ function VoyageSearchInner() {
   const filteredVoyages = useMemo(() => {
     const all = voyagesQuery.data ?? []
     return all.filter(v => {
-      if (yearFilter !== 'ALL' && !v.departure_date?.startsWith(yearFilter)) return false
-      if (statusFilter !== 'ALL' && v.status !== statusFilter) return false
+      if (yearFilter.length > 0 && !yearFilter.some(y => v.departure_date?.startsWith(y))) return false
+      if (statusFilter.length > 0 && !statusFilter.includes(v.status)) return false
       return true
     })
   }, [voyagesQuery.data, yearFilter, statusFilter])
@@ -161,29 +160,28 @@ function VoyageSearchInner() {
 
         {/* 연도 드롭다운 + 행사 선택 */}
         <div className="flex items-center gap-2">
-          <YearSelect
-            value={yearFilter}
-            years={years}
-            onChange={y => {
-              setYearFilter(y)
-              if (selectedVoyage && !selectedVoyage.departure_date?.startsWith(y) && y !== 'ALL') {
+          <MultiSelectDropdown
+            allLabel="전체 연도"
+            options={years}
+            selected={yearFilter}
+            onChange={vals => {
+              setYearFilter(vals)
+              if (selectedVoyage && vals.length > 0 && !vals.some(y => selectedVoyage.departure_date?.startsWith(y))) {
                 setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('voyage'); return next })
               }
             }}
+            formatOption={y => `${y}년`}
           />
-          <FieldSelect
-            value={statusFilter}
-            options={[
-              { value: 'ALL', label: '전체 상태' },
-              '미오픈', '판매중', '마감', '출발완료', '취소',
-            ]}
-            onChange={v => {
-              setStatusFilter(v)
-              if (selectedVoyage && v !== 'ALL' && selectedVoyage.status !== v) {
+          <MultiSelectDropdown
+            allLabel="전체 상태"
+            options={['미오픈', '판매중', '마감', '출발완료', '취소']}
+            selected={statusFilter}
+            onChange={vals => {
+              setStatusFilter(vals)
+              if (selectedVoyage && vals.length > 0 && !vals.includes(selectedVoyage.status)) {
                 setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('voyage'); return next })
               }
             }}
-            className="h-8 text-sm w-28"
           />
           <VoyageCombobox
             voyages={filteredVoyages}
