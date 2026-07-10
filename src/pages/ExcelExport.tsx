@@ -103,9 +103,11 @@ function ExcelExportInner() {
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           {exporting
             ? '내보내는 중…'
-            : yearFilter.length === 0
-              ? '전체 데이터 엑셀로 내보내기'
-              : `${[...yearFilter].sort().join(', ')}년 데이터 엑셀로 내보내기`}
+            : !allSheetsSelected
+              ? '선택 데이터 엑셀로 내보내기'
+              : yearFilter.length === 0
+                ? '전체 데이터 엑셀로 내보내기'
+                : `${[...yearFilter].sort().join(', ')}년 데이터 엑셀로 내보내기`}
         </button>
         {selectedSheets.size === 0 && (
           <p className="mt-2 text-xs text-red-500">시트를 1개 이상 선택하세요.</p>
