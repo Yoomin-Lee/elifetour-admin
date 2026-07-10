@@ -910,7 +910,7 @@ export default function InventoryTab() {
   function toggleExpand(id: string) { setExpandedId(prev => prev === id ? null : id) }
 
   return (
-    <div className="space-y-4">
+    <div className="w-fit max-w-full mx-auto space-y-4">
       {/* 헤더 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -949,7 +949,7 @@ export default function InventoryTab() {
 
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[920px] w-full text-xs table-fixed">
+        <table className="w-[848px] text-xs table-fixed">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-2 py-2.5 w-8" />

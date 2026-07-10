@@ -208,7 +208,7 @@ export default function ProductTab() {
   const ordered = [...active, ...cancelled]
 
   return (
-    <div className="space-y-4">
+    <div className="w-fit max-w-full mx-auto space-y-4">
       {/* 헤더 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -269,7 +269,7 @@ export default function ProductTab() {
 
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[1160px] w-full table-fixed text-xs">
+        <table className="w-[1160px] table-fixed text-xs">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500">행사명</th>

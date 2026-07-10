@@ -486,7 +486,7 @@ export default function CruiseTab() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-fit max-w-full mx-auto space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-bold text-slate-800">크루즈</h1>
@@ -507,7 +507,7 @@ export default function CruiseTab() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[920px] w-full text-xs table-fixed">
+        <table className="w-[944px] text-xs table-fixed">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-2 py-2.5 w-8" />

@@ -287,7 +287,7 @@ export default function ShoreTab() {
     })
 
   return (
-    <div className="space-y-4">
+    <div className="w-fit max-w-full mx-auto space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-bold text-slate-800">지상</h1>
@@ -349,7 +349,7 @@ export default function ShoreTab() {
       {/* 테이블 */}
       {(data.length > 0 || isLoading) && (
         <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="min-w-[960px] w-full text-xs">
+          <table className="w-[960px] table-fixed text-xs">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
@@ -388,24 +388,24 @@ export default function ShoreTab() {
                         ) : '—'}
                       </td>
                       <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{formatDate(r.date)}</td>
-                      <td className="px-3 py-2 text-slate-700 font-medium">{r.port}</td>
-                      <td className="px-3 py-2 font-mono text-slate-600">
+                      <td className="px-3 py-2 text-slate-700 font-medium whitespace-nowrap overflow-hidden text-ellipsis">{r.port}</td>
+                      <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
                         {r.arrival_time ? formatTime(r.arrival_time) : '—'}
                       </td>
-                      <td className="px-3 py-2 font-mono text-slate-600">
+                      <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
                         {r.departure_time ? formatTime(r.departure_time) : '—'}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         {r.category ? (
                           <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium ${CATEGORY_COLORS[r.category] ?? 'bg-slate-100 text-slate-600'}`}>
                             {r.category}
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="px-3 py-2 text-right text-slate-700">
+                      <td className="px-3 py-2 text-right text-slate-700 whitespace-nowrap">
                         {formatCost(r.cost, r.cost_currency)}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">{r.summary ?? ''}</td>
+                      <td className="px-3 py-2 text-slate-500 whitespace-nowrap overflow-hidden text-ellipsis">{r.summary ?? ''}</td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-1 justify-end">
                           {!isEdit && canWrite && (

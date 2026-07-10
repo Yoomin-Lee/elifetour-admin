@@ -516,7 +516,7 @@ export default function FlightsTab() {
   })
 
   return (
-    <div className="space-y-4">
+    <div className="w-fit max-w-full mx-auto space-y-4">
       {/* 헤더 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -570,7 +570,7 @@ export default function FlightsTab() {
 
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[1060px] w-full text-xs">
+        <table className="w-[840px] text-xs table-fixed">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-2 py-2.5 w-8" />
@@ -633,7 +633,7 @@ export default function FlightsTab() {
                         </button>
                       ) : '—'}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2 whitespace-nowrap">
                       <button
                         onClick={() => setExpandedId(prev => prev === r.id ? null : r.id)}
                         className="font-mono text-slate-700 hover:text-brand transition"
@@ -641,14 +641,14 @@ export default function FlightsTab() {
                         {r.flight_num}
                       </button>
                     </td>
-                    <td className="px-3 py-2 font-mono text-slate-600">{r.dep_airport}</td>
-                    <td className="px-3 py-2 font-mono text-slate-600">{r.arr_airport}</td>
+                    <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">{r.dep_airport}</td>
+                    <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">{r.arr_airport}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{dep.display.date}</td>
                     <td className="px-3 py-2 font-mono text-slate-700">{dep.display.time}</td>
                     <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{arr.display.date}</td>
                     <td className="px-3 py-2 font-mono text-slate-700">{arr.display.time}</td>
-                    <td className="px-3 py-2 text-slate-600">{r.flight_duration ?? '—'}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{r.flight_duration ?? '—'}</td>
+                    <td className="px-3 py-2 text-right text-slate-700 whitespace-nowrap">
                       {(r.fare_base || r.fare_fuel || r.fare_tax)
                         ? ((r.fare_base ?? 0) + (r.fare_fuel ?? 0) + (r.fare_tax ?? 0)).toLocaleString('ko-KR') + '원'
                         : formatFare(r.flight_fare, r.currency_code)

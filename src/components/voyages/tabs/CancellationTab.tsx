@@ -176,7 +176,7 @@ export default function CancellationTab() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-fit max-w-full mx-auto space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-bold text-slate-800">취소료</h1>
@@ -197,7 +197,7 @@ export default function CancellationTab() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-[900px] w-full text-xs">
+        <table className="w-[900px] table-fixed text-xs">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">행사명</th>
@@ -236,7 +236,7 @@ export default function CancellationTab() {
                         </button>
                       ) : '—'}
                     </td>
-                    <td className="px-3 py-2 text-slate-600">{r.category ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{r.category ?? '—'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">
                       {r.voyages ? (
                         <span className="text-slate-600">
@@ -259,8 +259,8 @@ export default function CancellationTab() {
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 font-medium text-slate-800">{feeText(r)}</td>
-                    <td className="px-3 py-2 text-slate-500">{r.note ?? ''}</td>
+                    <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">{feeText(r)}</td>
+                    <td className="px-3 py-2 text-slate-500 whitespace-nowrap overflow-hidden text-ellipsis">{r.note ?? ''}</td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1 justify-end">
                         {!isEdit && canWrite && (
