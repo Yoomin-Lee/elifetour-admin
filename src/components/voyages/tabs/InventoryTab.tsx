@@ -8,8 +8,8 @@ import {
   Pencil, Plus, Save, X, Loader2, Trash2, RefreshCw,
 } from 'lucide-react'
 import { Building2 } from 'lucide-react'
-import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
+import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { SelectOrInput } from '@/components/ui/select-or-input'
 import { DatePicker } from '@/components/ui/date-picker'
 import {
@@ -815,9 +815,9 @@ function InventoryPanel({
 export default function InventoryTab() {
   const navigate = useNavigate()
   const [filter, setFilter]             = useState('')
-  const [yearFilter, setYearFilter]     = useState<string>('ALL')
-  const [statusFilter, setStatusFilter] = useState<string>('ALL')
-  const [remainFilter, setRemainFilter] = useState<string>('ALL')
+  const [yearFilter, setYearFilter]     = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [remainFilter, setRemainFilter] = useState<string[]>([])
   const [sortCol, setSortCol]           = useState<SortCol | null>(null)
   const [sortDir, setSortDir]           = useState<'asc' | 'desc'>('asc')
   const [expandedId, setExpandedId]     = useState<string | null>(null)
@@ -873,12 +873,16 @@ export default function InventoryTab() {
 
   const filtered = useMemo(() => {
     let rows = voyageRows.filter(({ v, remainingCabin, totalCabin, hotels }) => {
-      if (yearFilter !== 'ALL' && !v.departure_date?.startsWith(yearFilter)) return false
-      if (statusFilter !== 'ALL' && v.status !== statusFilter) return false
-      if (remainFilter !== 'ALL') {
-        if (remainFilter === '마감'    && !(remainingCabin === 0 && totalCabin > 0))     return false
-        if (remainFilter === '마감임박' && !(remainingCabin >= 1 && remainingCabin <= 3)) return false
-        if (remainFilter === '여유있음' && remainingCabin < 4)                            return false
+      if (yearFilter.length > 0 && !yearFilter.some(y => v.departure_date?.startsWith(y))) return false
+      if (statusFilter.length > 0 && !statusFilter.includes(v.status)) return false
+      if (remainFilter.length > 0) {
+        const matchesAny = remainFilter.some(rf => {
+          if (rf === '마감')    return remainingCabin === 0 && totalCabin > 0
+          if (rf === '마감임박') return remainingCabin >= 1 && remainingCabin <= 3
+          if (rf === '여유있음') return remainingCabin >= 4
+          return false
+        })
+        if (!matchesAny) return false
       }
       if (!filter) return true
       const q = filter.toLowerCase()
@@ -918,23 +922,25 @@ export default function InventoryTab() {
           <p className="text-sm text-slate-400">행사별 크루즈·항공·호텔 보유 현황 — ▶ 클릭으로 상세 확인 및 편집</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
-          <FieldSelect
-            value={statusFilter}
-            options={[{ value: 'ALL', label: '전체 상태' }, '미오픈', '판매중', '마감', '출발완료', '취소']}
-            onChange={setStatusFilter}
-            className="h-8 text-sm w-28"
+          <MultiSelectDropdown
+            allLabel="전체 연도"
+            options={years}
+            selected={yearFilter}
+            onChange={setYearFilter}
+            formatOption={y => `${y}년`}
           />
-          <FieldSelect
-            value={remainFilter}
-            options={[
-              { value: 'ALL',    label: '전체 잔여'      },
-              { value: '여유있음', label: '여유있음 (4+)'  },
-              { value: '마감임박', label: '마감임박 (1-3)' },
-              { value: '마감',    label: '마감 (0개)'    },
-            ]}
+          <MultiSelectDropdown
+            allLabel="전체 상태"
+            options={['미오픈', '판매중', '마감', '출발완료', '취소']}
+            selected={statusFilter}
+            onChange={setStatusFilter}
+          />
+          <MultiSelectDropdown
+            allLabel="전체 잔여"
+            options={['여유있음', '마감임박', '마감']}
+            selected={remainFilter}
             onChange={setRemainFilter}
-            className="h-8 text-sm w-32"
+            formatOption={r => ({ '여유있음': '여유있음 (4+)', '마감임박': '마감임박 (1-3)', '마감': '마감 (0개)' })[r] ?? r}
           />
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
