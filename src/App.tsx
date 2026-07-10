@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -14,7 +15,9 @@ import Users from './pages/Users'
 import VoyageMaster from './pages/VoyageMaster'
 import VoyageNew from './pages/VoyageNew'
 import Partners from './pages/Partners'
-import ExcelExport from './pages/ExcelExport'
+
+// exceljs 의존성이 커서(gzip 600KB+) 이 페이지를 여는 admin만 받도록 분리
+const ExcelExport = lazy(() => import('./pages/ExcelExport'))
 
 function Spinner() {
   return (
@@ -65,7 +68,9 @@ export default function App() {
             <RoleRoute allow={['admin']}><Users /></RoleRoute>
           } />
           <Route path="export" element={
-            <RoleRoute allow={['admin']}><ExcelExport /></RoleRoute>
+            <RoleRoute allow={['admin']}>
+              <Suspense fallback={<Spinner />}><ExcelExport /></Suspense>
+            </RoleRoute>
           } />
         </Route>
       </Routes>
