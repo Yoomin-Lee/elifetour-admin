@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Download, Loader2 } from 'lucide-react'
 import { exportAllVoyageData } from '@/lib/excel'
+import { fetchVoyages } from '@/lib/queries/voyages'
+import { YearSelect } from '@/components/ui/year-select'
 
 const SHEETS = [
   '항차',
@@ -14,13 +17,22 @@ const SHEETS = [
   '결제스케줄',
 ]
 
-export default function ExcelExport() {
+function ExcelExportInner() {
   const [exporting, setExporting] = useState(false)
+  const [yearFilter, setYearFilter] = useState<string>('ALL')
+
+  const { data: voyages = [] } = useQuery({ queryKey: ['voyages'], queryFn: fetchVoyages })
+
+  const years = useMemo(() => {
+    const ys = new Set<string>()
+    voyages.forEach(v => { if (v.departure_date) ys.add(v.departure_date.slice(0, 4)) })
+    return Array.from(ys).sort().reverse()
+  }, [voyages])
 
   async function handleExport() {
     setExporting(true)
     try {
-      const { filename, voyageCount } = await exportAllVoyageData()
+      const { filename, voyageCount } = await exportAllVoyageData(yearFilter)
       toast.success('엑셀 파일이 다운로드되었습니다', {
         description: `행사 ${voyageCount}건 · ${filename}`,
       })
@@ -44,6 +56,12 @@ export default function ExcelExport() {
         <ul className="space-y-1 text-sm text-slate-600 list-disc list-inside">
           {SHEETS.map(s => <li key={s}>{s}</li>)}
         </ul>
+
+        <div className="mt-5">
+          <p className="mb-1.5 text-xs font-semibold text-slate-500 uppercase tracking-widest">내보낼 연도</p>
+          <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
+        </div>
+
         <button
           type="button"
           onClick={handleExport}
@@ -51,9 +69,21 @@ export default function ExcelExport() {
           className="mt-5 flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark transition disabled:opacity-50"
         >
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          {exporting ? '내보내는 중…' : '전체 데이터 엑셀로 내보내기'}
+          {exporting
+            ? '내보내는 중…'
+            : yearFilter === 'ALL' ? '전체 데이터 엑셀로 내보내기' : `${yearFilter}년 데이터 엑셀로 내보내기`}
         </button>
       </div>
     </div>
+  )
+}
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } })
+
+export default function ExcelExport() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ExcelExportInner />
+    </QueryClientProvider>
   )
 }
