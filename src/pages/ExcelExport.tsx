@@ -52,14 +52,16 @@ function ExcelExportInner() {
       </p>
 
       <div className="mt-5 rounded-xl border border-slate-200 bg-white p-5">
-        <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-widest">포함되는 시트</p>
-        <ul className="space-y-1 text-sm text-slate-600 list-disc list-inside">
-          {SHEETS.map(s => <li key={s}>{s}</li>)}
-        </ul>
-
-        <div className="mt-5">
-          <p className="mb-1.5 text-xs font-semibold text-slate-500 uppercase tracking-widest">내보낼 연도</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">내보낼 연도</p>
           <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
+        </div>
+
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-widest">포함되는 시트</p>
+          <ul className="space-y-1 text-sm text-slate-600 list-disc list-inside">
+            {SHEETS.map(s => <li key={s}>{s}</li>)}
+          </ul>
         </div>
 
         <button

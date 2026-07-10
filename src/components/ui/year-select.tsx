@@ -10,16 +10,29 @@ type Props = {
   className?: string
 }
 
+const PANEL_HEIGHT_ESTIMATE = 240 + 8 // max-h + margin
+
 export function YearSelect({ value, years, onChange, className }: Props) {
   const [open, setOpen] = useState(false)
+  const [openUp, setOpenUp] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   useClickOutside(rootRef, open, () => setOpen(false))
+
+  function handleToggle() {
+    if (!open && rootRef.current) {
+      const rect = rootRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+      setOpenUp(spaceBelow < PANEL_HEIGHT_ESTIMATE && spaceAbove > spaceBelow)
+    }
+    setOpen(v => !v)
+  }
 
   return (
     <div className="relative inline-block" ref={rootRef}>
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={handleToggle}
         className={cn(
           'flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:border-brand/50 hover:bg-brand/5 focus:outline-none focus:ring-1 focus:ring-brand',
           className,
@@ -37,7 +50,10 @@ export function YearSelect({ value, years, onChange, className }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-20 mt-1 min-w-full max-h-64 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <div className={cn(
+          'absolute left-0 z-20 min-w-full max-h-[240px] overflow-y-auto overflow-x-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg',
+          openUp ? 'bottom-full mb-1' : 'top-full mt-1',
+        )}>
           <button
             type="button"
             onClick={() => { onChange('ALL'); setOpen(false) }}
