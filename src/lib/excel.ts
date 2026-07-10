@@ -1,4 +1,17 @@
 import * as XLSX from 'xlsx'
+import {
+  fetchVoyages,
+  fetchAllFlights,
+  fetchAllItinerary,
+  fetchAllCancellationPolicies,
+  fetchAllHistoryLogs,
+  fetchAllFeedbackLogs,
+  fetchAllHotels,
+  fetchAllCabinGrades,
+} from '@/lib/queries/voyages'
+import { fetchAllVoyageFlights } from '@/lib/queries/voyageFlights'
+import { fetchAllPaymentSchedules } from '@/lib/queries/paymentSchedules'
+import { voyageTitle } from '@/types/database'
 
 // ── 날짜 변환 ─────────────────────────────────────────────────────────────
 // Date 객체, 엑셀 시리얼, "27/09/10(금)", "2027-09-10", "2027.09.10" 등 처리
@@ -146,4 +159,203 @@ export function downloadItineraryTemplate() {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, '기항지')
   XLSX.writeFile(wb, '기항지_입력양식.xlsx')
+}
+
+// ── 전체 데이터 백업 내보내기 ───────────────────────────────────────────────
+function title(v: { region: string; departure_date: string } | null | undefined): string {
+  return v ? voyageTitle(v) : ''
+}
+
+function addSheet(wb: XLSX.WorkBook, name: string, rows: Record<string, unknown>[]) {
+  const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{}])
+  XLSX.utils.book_append_sheet(wb, ws, name)
+}
+
+/** 항차 마스터 + 연결된 상세데이터 전체를 시트별로 나눠 하나의 엑셀 파일로 내보낸다 */
+export async function exportAllVoyageData(): Promise<void> {
+  const [
+    voyages, flights, voyageFlights, itinerary, cancellations,
+    history, feedback, hotels, cabinGrades, payments,
+  ] = await Promise.all([
+    fetchVoyages(),
+    fetchAllFlights(),
+    fetchAllVoyageFlights(),
+    fetchAllItinerary(),
+    fetchAllCancellationPolicies(),
+    fetchAllHistoryLogs(),
+    fetchAllFeedbackLogs(),
+    fetchAllHotels(),
+    fetchAllCabinGrades(),
+    fetchAllPaymentSchedules(),
+  ])
+
+  const voyageTitleMap = new Map<string, string>()
+  voyages.forEach(v => voyageTitleMap.set(v.id, voyageTitle(v)))
+
+  const wb = XLSX.utils.book_new()
+
+  addSheet(wb, '항차', voyages.map(v => ({
+    ID: v.id,
+    행사명: v.region,
+    상태: v.status,
+    출발일: v.departure_date,
+    귀국일: v.return_date,
+    승선일: v.boarding_date,
+    기간: v.duration,
+    선사: v.cruise_line,
+    크루즈: v.ship_name,
+    항공사_출발: v.airline,
+    항공사_귀국: v.airline_return,
+    고객수: v.customer_count,
+    인솔자: v.tour_leader,
+    상품가: v.product_price,
+    캐빈보유: v.cabin_total,
+    캐빈잔여: v.cabin_remaining,
+    비고: v.hotel,
+    생성일: v.created_at,
+    수정일: v.updated_at,
+  })))
+
+  addSheet(wb, '항공(마스터)', flights.map(f => ({
+    ID: f.id,
+    행사명: title(f.voyages),
+    이름: f.label,
+    편명: f.flight_no,
+    출발지: f.origin,
+    도착지: f.destination,
+    출발일: f.departure_date,
+    도착일: f.arrival_date,
+    출발시간: f.departure_time,
+    도착시간: f.arrival_time,
+    소요시간: f.duration,
+    항공료: f.fare,
+    그룹좌석: f.seats_group,
+    인디비좌석: f.seats_indivi,
+    비즈니스좌석: f.seats_business,
+    운임_그룹: f.fare_base,
+    유류할증_그룹: f.fare_fuel,
+    발권피_그룹: f.fare_tax,
+    운임_인디비: f.fare_base_indivi,
+    유류할증_인디비: f.fare_fuel_indivi,
+    발권피_인디비: f.fare_tax_indivi,
+    운임_비즈니스: f.fare_base_business,
+    유류할증_비즈니스: f.fare_fuel_business,
+    발권피_비즈니스: f.fare_tax_business,
+    구간정보_JSON: JSON.stringify(f.segments ?? []),
+    생성일: f.created_at,
+  })))
+
+  addSheet(wb, '항공좌석(보유현황)', voyageFlights.map(vf => ({
+    ID: vf.id,
+    행사명: title(vf.voyages),
+    편명: vf.flight_num,
+    PNR: vf.pnr,
+    출발공항: vf.dep_airport,
+    도착공항: vf.arr_airport,
+    출발일시_UTC: vf.dep_datetime,
+    도착일시_UTC: vf.arr_datetime,
+    소요시간: vf.flight_duration,
+    항공료: vf.flight_fare,
+    통화: vf.currency_code,
+    그룹좌석: vf.seats_group,
+    인디비좌석: vf.seats_indivi,
+    비즈니스좌석: vf.seats_business,
+    운임: vf.fare_base,
+    유류할증: vf.fare_fuel,
+    발권피: vf.fare_tax,
+    생성일: vf.created_at,
+  })))
+
+  addSheet(wb, '기항지', itinerary.map(d => ({
+    ID: d.id,
+    행사명: title(d.voyages),
+    날짜: d.date,
+    기항지: d.port,
+    입항: d.arrival_time,
+    출항: d.departure_time,
+    구분: d.category,
+    비용: d.cost,
+    비용통화: d.cost_currency,
+    비고: d.summary,
+  })))
+
+  addSheet(wb, '취소료', cancellations.map(c => ({
+    ID: c.id,
+    행사명: title(c.voyages),
+    구분: c.category,
+    기준일_시작: c.start_d_minus,
+    기준일_종료: c.end_d_minus,
+    시작일: c.start_date,
+    종료일: c.end_date,
+    기준일자: c.reference_date,
+    취소료_설명: c.fee_description,
+    취소료_유형: c.fee_type,
+    취소료_값: c.fee_value,
+    취소료_단위: c.fee_unit,
+    비고: c.note,
+  })))
+
+  addSheet(wb, '히스토리', history.map(h => ({
+    ID: h.id,
+    행사명: title(h.voyages),
+    일시: h.logged_at,
+    작성자: h.author,
+    내용: h.content,
+  })))
+
+  addSheet(wb, '피드백', feedback.map(f => ({
+    ID: f.id,
+    행사명: title(f.voyages),
+    일시: f.logged_at,
+    작성자: f.author,
+    태그: f.tag,
+    내용: f.content,
+  })))
+
+  addSheet(wb, '호텔', hotels.map(h => ({
+    ID: h.id,
+    행사명: title(h.voyages),
+    투숙일: h.stay_date,
+    호텔명: h.hotel_name,
+    객실요금: h.room_rate,
+    통화: h.currency,
+    메모: h.memo,
+    생성일: h.created_at,
+  })))
+
+  addSheet(wb, '캐빈등급(보유현황)', cabinGrades.map(g => ({
+    ID: g.id,
+    행사명: voyageTitleMap.get(g.voyage_id) ?? '',
+    등급: g.grade,
+    인실: g.occupancy,
+    보유: g.total,
+    예약: g.reserved,
+    인당가격: g.price_per_person,
+    CCF: g.ccf,
+    NCCF: g.nccf,
+    TAX: g.tax,
+    TIP: g.tip,
+    통화: g.currency,
+    에이전트: g.agent,
+    생성일: g.created_at,
+  })))
+
+  addSheet(wb, '결제스케줄', payments.map(p => ({
+    ID: p.id,
+    행사명: title(p.voyages),
+    구분: p.category,
+    결제유형: p.payment_type,
+    섹션: p.section,
+    에이전트ID: p.agent_id,
+    금액: p.amount,
+    통화: p.currency,
+    마감일: p.due_date,
+    완료여부: p.is_completed ? '완료' : '미완료',
+    메모: p.memo,
+    생성일: p.created_at,
+    수정일: p.updated_at,
+  })))
+
+  const today = new Date().toISOString().slice(0, 10)
+  XLSX.writeFile(wb, `이라이프투어_전체데이터_${today}.xlsx`)
 }

@@ -14,6 +14,7 @@ import Users from './pages/Users'
 import VoyageMaster from './pages/VoyageMaster'
 import VoyageNew from './pages/VoyageNew'
 import Partners from './pages/Partners'
+import ExcelExport from './pages/ExcelExport'
 
 function Spinner() {
   return (
@@ -62,6 +63,9 @@ export default function App() {
           <Route path="partners" element={<Partners />} />
           <Route path="users" element={
             <RoleRoute allow={['admin']}><Users /></RoleRoute>
+          } />
+          <Route path="export" element={
+            <RoleRoute allow={['admin']}><ExcelExport /></RoleRoute>
           } />
         </Route>
       </Routes>
