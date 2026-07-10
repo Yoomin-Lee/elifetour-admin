@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
-import { Search, Plus, Eye, Copy, Pencil, Check, X, ExternalLink, Trash2 } from 'lucide-react'
+import { Search, Plus, Eye, Copy, Pencil, Check, X, ExternalLink, Trash2, ListChecks } from 'lucide-react'
 import { fetchVoyages, duplicateVoyage, updateVoyage, deleteVoyage } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import type { Voyage, VoyageStatus } from '@/types/database'
@@ -65,6 +65,7 @@ export default function ProductTab() {
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ status: '미오픈', customer_count: '', tour_leader: '' })
+  const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
@@ -116,6 +117,11 @@ export default function ProductTab() {
     },
     onError: () => toast.error('삭제 중 오류가 발생했습니다'),
   })
+
+  function toggleSelectionMode() {
+    setSelectionMode(prev => !prev)
+    setSelectedIds(new Set())
+  }
 
   function toggleSelect(id: string) {
     setSelectedIds(prev => {
@@ -220,6 +226,22 @@ export default function ProductTab() {
               className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg w-52 focus:outline-none focus:ring-1 focus:ring-brand"
             />
           </div>
+          {isAdmin && selectionMode && (
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={selectedIds.size === 0}
+              onClick={() => setBulkDeleteOpen(true)}
+            >
+              <Trash2 className="h-4 w-4" /> 삭제{selectedIds.size > 0 && ` (${selectedIds.size})`}
+            </Button>
+          )}
+          {isAdmin && (
+            <Button size="sm" variant="outline" onClick={toggleSelectionMode}>
+              {selectionMode ? <X className="h-4 w-4" /> : <ListChecks className="h-4 w-4" />}
+              {selectionMode ? '취소' : '선택'}
+            </Button>
+          )}
           {canWrite && (
             <Button size="sm" onClick={() => navigate('/voyages/new')}>
               <Plus className="h-4 w-4" /> 새 행사 등록
@@ -228,33 +250,15 @@ export default function ProductTab() {
         </div>
       </div>
 
-      {/* 선택 삭제 바 */}
-      {isAdmin && selectedIds.size > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-          <span className="text-sm font-medium text-red-700">{selectedIds.size}개 선택됨</span>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSelectedIds(new Set())}
-              className="text-xs text-slate-500 hover:text-slate-700 transition"
-            >
-              선택 해제
-            </button>
-            <button
-              onClick={() => setBulkDeleteOpen(true)}
-              className="flex items-center gap-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 transition"
-            >
-              <Trash2 className="h-3.5 w-3.5" /> 선택 삭제
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className={isAdmin ? 'w-[1192px] table-fixed text-xs' : 'w-[1160px] table-fixed text-xs'}>
+        <table className={[
+          'table-fixed text-xs transition-[width] duration-200 ease-out',
+          selectionMode ? 'w-[1192px]' : 'w-[1160px]',
+        ].join(' ')}>
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              {isAdmin && (
+              {selectionMode && (
                 <th className="px-2 py-2.5 w-8">
                   <input
                     type="checkbox"
@@ -281,12 +285,12 @@ export default function ProductTab() {
           <tbody className="divide-y divide-slate-100">
             {isLoading && (
               <tr>
-                <td colSpan={isAdmin ? 13 : 12} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td>
+                <td colSpan={selectionMode ? 13 : 12} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td>
               </tr>
             )}
             {!isLoading && ordered.length === 0 && (
               <tr>
-                <td colSpan={isAdmin ? 13 : 12} className="px-3 py-8 text-center text-slate-400">등록된 행사가 없습니다</td>
+                <td colSpan={selectionMode ? 13 : 12} className="px-3 py-8 text-center text-slate-400">등록된 행사가 없습니다</td>
               </tr>
             )}
             {ordered.map(v => {
@@ -301,7 +305,7 @@ export default function ProductTab() {
                       isCancelled ? 'opacity-50' : '',
                     ].join(' ')}
                   >
-                    {isAdmin && (
+                    {selectionMode && (
                       <td className="px-2 py-2">
                         <input
                           type="checkbox"
@@ -389,7 +393,7 @@ export default function ProductTab() {
 
                   {isEdit && (
                     <tr key={`${v.id}-edit`}>
-                      <td colSpan={isAdmin ? 13 : 12} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
+                      <td colSpan={selectionMode ? 13 : 12} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
                         {saveMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
