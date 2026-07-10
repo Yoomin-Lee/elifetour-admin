@@ -34,8 +34,8 @@ import {
 import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { AutoTextarea } from '@/components/ui/auto-textarea'
-import { YearSelect } from '@/components/ui/year-select'
 import { FieldSelect } from '@/components/ui/field-select'
+import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { voyageTitle } from '@/types/database'
 import type { PaymentCategory, PaymentColumn } from '@/types/database'
 import type { PaymentSchedule } from '@/types/database'
@@ -229,7 +229,7 @@ export default function PaymentTab() {
   const urlVoyageId   = searchParams.get('voyage') ?? ''
   const urlFilter     = searchParams.get('filter')
   const [voyageId, setVoyageId]           = useState(urlVoyageId)
-  const [yearFilter, setYearFilter]       = useState<string>('ALL')
+  const [yearFilter, setYearFilter]       = useState<string[]>([])
   const [thisMonthMode, setThisMonthMode] = useState(urlFilter === 'this-month')
   const now = new Date()
   const didAutoSelectRef = useRef(false)
@@ -291,8 +291,8 @@ export default function PaymentTab() {
   const filteredVoyages = useMemo(() => {
     const sorted = [...voyages].sort((a, b) => (b.departure_date ?? '').localeCompare(a.departure_date ?? ''))
     if (thisMonthVoyageIds) return sorted.filter(v => thisMonthVoyageIds.has(v.id))
-    if (yearFilter === 'ALL') return sorted
-    return sorted.filter(v => v.departure_date?.startsWith(yearFilter))
+    if (yearFilter.length === 0) return sorted
+    return sorted.filter(v => yearFilter.some(y => v.departure_date?.startsWith(y)))
   }, [voyages, yearFilter, thisMonthVoyageIds])
 
   useEffect(() => {
@@ -761,15 +761,17 @@ export default function PaymentTab() {
       <div>
         <label className="label">행사 선택</label>
         <div className="flex items-center gap-2 flex-wrap">
-          <YearSelect
-            value={thisMonthMode ? 'ALL' : yearFilter}
-            years={years}
-            onChange={y => {
-              setYearFilter(y)
+          <MultiSelectDropdown
+            allLabel="전체 연도"
+            options={years}
+            selected={thisMonthMode ? [] : yearFilter}
+            onChange={vals => {
+              setYearFilter(vals)
               setThisMonthMode(false)
               const sel = voyages.find(v => v.id === voyageId)
-              if (sel && y !== 'ALL' && !sel.departure_date?.startsWith(y)) setVoyageId('')
+              if (sel && vals.length > 0 && !vals.some(y => sel.departure_date?.startsWith(y))) setVoyageId('')
             }}
+            formatOption={y => `${y}년`}
           />
           <FieldSelect
             value={voyageId}
