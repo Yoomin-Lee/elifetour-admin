@@ -1058,7 +1058,7 @@ export default function InventoryTab() {
                         )
                       })()}
                     </td>
-                    <td className="px-3 py-2 text-slate-600">{hotelDisplay ?? '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 truncate">{hotelDisplay ?? '—'}</td>
                     <td className="px-2 py-2 text-right text-slate-700">{totalCabin || '—'}</td>
 
                     {/* 잔여캐빈 + 프로그레스바 */}
