@@ -949,7 +949,7 @@ export default function InventoryTab() {
 
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="w-[848px] text-xs table-fixed">
+        <table className="w-[880px] text-xs table-fixed">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-2 py-2.5 w-8" />
@@ -963,7 +963,7 @@ export default function InventoryTab() {
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">
                 <div className="flex items-center gap-1"><Ship className="h-3 w-3 text-blue-400" />크루즈</div>
               </th>
-              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-28">
+              <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">
                 <div className="flex items-center gap-1"><Plane className="h-3 w-3 text-sky-400" />항공</div>
               </th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-36">
