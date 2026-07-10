@@ -206,11 +206,30 @@ export interface ExportResult {
   voyageCount: number
 }
 
+export const SHEET_DEFS = [
+  { key: 'voyages',       label: '항차' },
+  { key: 'flights',       label: '항공(마스터)' },
+  { key: 'voyageFlights', label: '항공좌석(보유현황)' },
+  { key: 'itinerary',     label: '기항지' },
+  { key: 'cancellations', label: '취소료' },
+  { key: 'history',       label: '히스토리' },
+  { key: 'feedback',      label: '피드백' },
+  { key: 'hotels',        label: '호텔' },
+  { key: 'cabinGrades',   label: '캐빈등급(보유현황)' },
+  { key: 'payments',      label: '결제스케줄' },
+] as const
+
+export type SheetKey = typeof SHEET_DEFS[number]['key']
+
+const ALL_SHEET_KEYS: SheetKey[] = SHEET_DEFS.map(s => s.key)
+
 /**
  * 항차 마스터 + 연결된 상세데이터 전체를 시트별로 나눠 하나의 엑셀 파일로 내보낸다.
  * years를 지정하면(예: ['2026', '2027']) 해당 연도들에 출발하는 항차만 걸러서 내보낸다.
+ * sheetKeys를 지정하면 그 시트만 포함한다(생략 시 전체 시트).
  */
-export async function exportAllVoyageData(years?: string[]): Promise<ExportResult> {
+export async function exportAllVoyageData(years?: string[], sheetKeys?: SheetKey[]): Promise<ExportResult> {
+  const includeSheets = new Set(sheetKeys && sheetKeys.length > 0 ? sheetKeys : ALL_SHEET_KEYS)
   const [
     allVoyages, allFlights, allVoyageFlights, allItinerary, allCancellations,
     allHistory, allFeedback, allHotels, allCabinGrades, allPayments,
@@ -252,7 +271,7 @@ export async function exportAllVoyageData(years?: string[]): Promise<ExportResul
 
   const wb = XLSX.utils.book_new()
 
-  addSheet(wb, '항차', voyages.map(v => ({
+  if (includeSheets.has('voyages')) addSheet(wb, '항차', voyages.map(v => ({
     행사명: v.region,
     상태: v.status,
     출발일: v.departure_date,
@@ -271,7 +290,7 @@ export async function exportAllVoyageData(years?: string[]): Promise<ExportResul
     비고: v.hotel,
   })))
 
-  addSheet(wb, '항공(마스터)', flights.map(f => ({
+  if (includeSheets.has('flights')) addSheet(wb, '항공(마스터)', flights.map(f => ({
     행사명: title(f.voyages),
     이름: f.label,
     편명: f.flight_no,
@@ -298,7 +317,7 @@ export async function exportAllVoyageData(years?: string[]): Promise<ExportResul
     구간정보_JSON: JSON.stringify(f.segments ?? []),
   })))
 
-  addSheet(wb, '항공좌석(보유현황)', voyageFlights.map(vf => ({
+  if (includeSheets.has('voyageFlights')) addSheet(wb, '항공좌석(보유현황)', voyageFlights.map(vf => ({
     행사명: title(vf.voyages),
     편명: vf.flight_num,
     PNR: vf.pnr,
@@ -317,7 +336,7 @@ export async function exportAllVoyageData(years?: string[]): Promise<ExportResul
     발권피: vf.fare_tax,
   })))
 
-  addSheet(wb, '기항지', itinerary.map(d => ({
+  if (includeSheets.has('itinerary')) addSheet(wb, '기항지', itinerary.map(d => ({
     행사명: title(d.voyages),
     날짜: d.date,
     기항지: d.port,
@@ -329,7 +348,7 @@ export async function exportAllVoyageData(years?: string[]): Promise<ExportResul
     비고: d.summary,
   })))
 
-  addSheet(wb, '취소료', cancellations.map(c => ({
+  if (includeSheets.has('cancellations')) addSheet(wb, '취소료', cancellations.map(c => ({
     행사명: title(c.voyages),
     구분: c.category,
     기준일_시작: c.start_d_minus,
@@ -344,14 +363,14 @@ export async function exportAllVoyageData(years?: string[]): Promise<ExportResul
     비고: c.note,
   })))
 
-  addSheet(wb, '히스토리', history.map(h => ({
+  if (includeSheets.has('history')) addSheet(wb, '히스토리', history.map(h => ({
     행사명: title(h.voyages),
     일시: h.logged_at,
     작성자: h.author,
     내용: h.content,
   })))
 
-  addSheet(wb, '피드백', feedback.map(f => ({
+  if (includeSheets.has('feedback')) addSheet(wb, '피드백', feedback.map(f => ({
     행사명: title(f.voyages),
     일시: f.logged_at,
     작성자: f.author,
@@ -359,7 +378,7 @@ export async function exportAllVoyageData(years?: string[]): Promise<ExportResul
     내용: f.content,
   })))
 
-  addSheet(wb, '호텔', hotels.map(h => ({
+  if (includeSheets.has('hotels')) addSheet(wb, '호텔', hotels.map(h => ({
     행사명: title(h.voyages),
     투숙일: h.stay_date,
     호텔명: h.hotel_name,
@@ -368,7 +387,7 @@ export async function exportAllVoyageData(years?: string[]): Promise<ExportResul
     메모: h.memo,
   })))
 
-  addSheet(wb, '캐빈등급(보유현황)', cabinGrades.map(g => ({
+  if (includeSheets.has('cabinGrades')) addSheet(wb, '캐빈등급(보유현황)', cabinGrades.map(g => ({
     행사명: voyageTitleMap.get(g.voyage_id) ?? '',
     등급: g.grade,
     인실: g.occupancy,
@@ -383,7 +402,7 @@ export async function exportAllVoyageData(years?: string[]): Promise<ExportResul
     에이전트: g.agent,
   })))
 
-  addSheet(wb, '결제스케줄', payments.map(p => ({
+  if (includeSheets.has('payments')) addSheet(wb, '결제스케줄', payments.map(p => ({
     행사명: title(p.voyages),
     구분: p.category,
     결제유형: p.payment_type,

@@ -2,24 +2,17 @@ import { useMemo, useState } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Download, Loader2 } from 'lucide-react'
-import { exportAllVoyageData } from '@/lib/excel'
+import { exportAllVoyageData, SHEET_DEFS, type SheetKey } from '@/lib/excel'
 import { fetchVoyages } from '@/lib/queries/voyages'
 import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
+import { Checkbox } from '@/components/ui/checkbox'
 
-const SHEETS = [
-  '항차',
-  '항공(마스터) · 항공좌석(보유현황)',
-  '기항지',
-  '취소료',
-  '히스토리 · 피드백',
-  '호텔',
-  '캐빈등급(보유현황)',
-  '결제스케줄',
-]
+const ALL_SHEET_KEYS = SHEET_DEFS.map(s => s.key)
 
 function ExcelExportInner() {
   const [exporting, setExporting] = useState(false)
   const [yearFilter, setYearFilter] = useState<string[]>([])
+  const [selectedSheets, setSelectedSheets] = useState<Set<SheetKey>>(new Set(ALL_SHEET_KEYS))
 
   const { data: voyages = [] } = useQuery({ queryKey: ['voyages'], queryFn: fetchVoyages })
 
@@ -29,10 +22,25 @@ function ExcelExportInner() {
     return Array.from(ys).sort().reverse()
   }, [voyages])
 
+  const allSheetsSelected = selectedSheets.size === ALL_SHEET_KEYS.length
+
+  function toggleSheet(key: SheetKey) {
+    setSelectedSheets(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function toggleAllSheets() {
+    setSelectedSheets(allSheetsSelected ? new Set() : new Set(ALL_SHEET_KEYS))
+  }
+
   async function handleExport() {
     setExporting(true)
     try {
-      const { filename, voyageCount } = await exportAllVoyageData(yearFilter)
+      const { filename, voyageCount } = await exportAllVoyageData(yearFilter, Array.from(selectedSheets))
       toast.success('엑셀 파일이 다운로드되었습니다', {
         description: `행사 ${voyageCount}건 · ${filename}`,
       })
@@ -64,16 +72,32 @@ function ExcelExportInner() {
         </div>
 
         <div className="mt-5 border-t border-slate-100 pt-4">
-          <p className="mb-2 text-xs font-semibold text-slate-500 uppercase tracking-widest">포함되는 시트</p>
-          <ul className="space-y-1 text-sm text-slate-600 list-disc list-inside">
-            {SHEETS.map(s => <li key={s}>{s}</li>)}
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">포함되는 시트</p>
+            <button
+              type="button"
+              onClick={toggleAllSheets}
+              className="text-xs font-medium text-brand hover:underline"
+            >
+              {allSheetsSelected ? '전체 해제' : '전체 선택'}
+            </button>
+          </div>
+          <ul className="space-y-0.5">
+            {SHEET_DEFS.map(s => (
+              <li key={s.key}>
+                <label className="flex items-center gap-2 rounded-md px-1.5 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50 cursor-pointer">
+                  <Checkbox checked={selectedSheets.has(s.key)} onChange={() => toggleSheet(s.key)} />
+                  {s.label}
+                </label>
+              </li>
+            ))}
           </ul>
         </div>
 
         <button
           type="button"
           onClick={handleExport}
-          disabled={exporting}
+          disabled={exporting || selectedSheets.size === 0}
           className="mt-5 flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark transition disabled:opacity-50"
         >
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -83,6 +107,9 @@ function ExcelExportInner() {
               ? '전체 데이터 엑셀로 내보내기'
               : `${[...yearFilter].sort().join(', ')}년 데이터 엑셀로 내보내기`}
         </button>
+        {selectedSheets.size === 0 && (
+          <p className="mt-2 text-xs text-red-500">시트를 1개 이상 선택하세요.</p>
+        )}
       </div>
     </div>
   )
