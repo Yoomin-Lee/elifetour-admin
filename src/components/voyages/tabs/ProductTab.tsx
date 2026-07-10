@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAuth } from '@/context/AuthContext'
-import { Search, Plus, Eye, Copy, Pencil, Check, X, ExternalLink } from 'lucide-react'
-import { fetchVoyages, duplicateVoyage, updateVoyage } from '@/lib/queries/voyages'
+import { Search, Plus, Eye, Copy, Pencil, Check, X, ExternalLink, Trash2 } from 'lucide-react'
+import { fetchVoyages, duplicateVoyage, updateVoyage, deleteVoyage } from '@/lib/queries/voyages'
 import { voyageTitle } from '@/types/database'
 import type { Voyage, VoyageStatus } from '@/types/database'
 import { formatDate } from '@/lib/utils'
@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { FieldSelect } from '@/components/ui/field-select'
 import { CruiseLineBadge } from '@/components/ui/cruise-line-badge'
 import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
+import { ConfirmDeleteModal } from '@/components/ui/confirm-delete-modal'
 
 const STATUS_COLORS: Record<string, string> = {
   '미오픈':   'bg-slate-100 text-slate-600',
@@ -50,7 +51,7 @@ function toForm(v: Voyage): EditForm {
 export default function ProductTab() {
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const { canWrite } = useAuth() as { canWrite: boolean }
+  const { canWrite, isAdmin } = useAuth() as { canWrite: boolean; isAdmin: boolean }
   const [searchParams] = useSearchParams()
 
   // 대시보드 카드 클릭 시 URL 파라미터로 초기 필터 세팅
@@ -64,6 +65,8 @@ export default function ProductTab() {
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ status: '미오픈', customer_count: '', tour_leader: '' })
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   const { data: voyages = [], isLoading } = useQuery({
     queryKey: ['voyages'],
@@ -102,6 +105,34 @@ export default function ProductTab() {
     },
     onError: () => toast.error('저장에 실패했습니다'),
   })
+
+  const bulkDeleteMut = useMutation({
+    mutationFn: (ids: string[]) => Promise.all(ids.map(id => deleteVoyage(id))),
+    onSuccess: (_r, ids) => {
+      qc.invalidateQueries({ queryKey: ['voyages'] })
+      setSelectedIds(new Set())
+      setBulkDeleteOpen(false)
+      toast.success(`${ids.length}개 행사가 삭제되었습니다`)
+    },
+    onError: () => toast.error('삭제 중 오류가 발생했습니다'),
+  })
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds(prev =>
+      ordered.length > 0 && ordered.every(v => prev.has(v.id))
+        ? new Set()
+        : new Set(ordered.map(v => v.id))
+    )
+  }
 
   function startEdit(v: Voyage) {
     setEditForm(toForm(v))
@@ -197,11 +228,42 @@ export default function ProductTab() {
         </div>
       </div>
 
+      {/* 선택 삭제 바 */}
+      {isAdmin && selectedIds.size > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+          <span className="text-sm font-medium text-red-700">{selectedIds.size}개 선택됨</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-xs text-slate-500 hover:text-slate-700 transition"
+            >
+              선택 해제
+            </button>
+            <button
+              onClick={() => setBulkDeleteOpen(true)}
+              className="flex items-center gap-1 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 transition"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> 선택 삭제
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 테이블 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="w-[1160px] table-fixed text-xs">
+        <table className={isAdmin ? 'w-[1192px] table-fixed text-xs' : 'w-[1160px] table-fixed text-xs'}>
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
+              {isAdmin && (
+                <th className="px-2 py-2.5 w-8">
+                  <input
+                    type="checkbox"
+                    checked={ordered.length > 0 && ordered.every(v => selectedIds.has(v.id))}
+                    onChange={toggleSelectAll}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"
+                  />
+                </th>
+              )}
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500">행사명</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">출발일</th>
               <th className="px-3 py-2.5 text-left font-semibold text-slate-500 w-24">귀국일</th>
@@ -219,12 +281,12 @@ export default function ProductTab() {
           <tbody className="divide-y divide-slate-100">
             {isLoading && (
               <tr>
-                <td colSpan={12} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td>
+                <td colSpan={isAdmin ? 13 : 12} className="px-3 py-8 text-center text-slate-400">불러오는 중…</td>
               </tr>
             )}
             {!isLoading && ordered.length === 0 && (
               <tr>
-                <td colSpan={12} className="px-3 py-8 text-center text-slate-400">등록된 행사가 없습니다</td>
+                <td colSpan={isAdmin ? 13 : 12} className="px-3 py-8 text-center text-slate-400">등록된 행사가 없습니다</td>
               </tr>
             )}
             {ordered.map(v => {
@@ -239,6 +301,16 @@ export default function ProductTab() {
                       isCancelled ? 'opacity-50' : '',
                     ].join(' ')}
                   >
+                    {isAdmin && (
+                      <td className="px-2 py-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(v.id)}
+                          onChange={() => toggleSelect(v.id)}
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"
+                        />
+                      </td>
+                    )}
                     <td className="px-3 py-2 whitespace-nowrap">
                       <button
                         onClick={() => navigate(`/voyages?tab=항차검색&voyage=${v.id}`)}
@@ -317,7 +389,7 @@ export default function ProductTab() {
 
                   {isEdit && (
                     <tr key={`${v.id}-edit`}>
-                      <td colSpan={12} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
+                      <td colSpan={isAdmin ? 13 : 12} className="px-3 py-3 bg-brand/5 border-t border-brand/10">
                         {saveMut.isError && (
                           <p className="mb-2 text-xs text-red-500">저장에 실패했습니다. 다시 시도하세요.</p>
                         )}
@@ -376,6 +448,15 @@ export default function ProductTab() {
           </tbody>
         </table>
       </div>
+
+      {bulkDeleteOpen && (
+        <ConfirmDeleteModal
+          message={`선택한 ${selectedIds.size}개 행사를 삭제합니다. 항공, 기항지, 취소료 등 모든 관련 데이터가 함께 삭제됩니다.`}
+          onConfirm={() => bulkDeleteMut.mutate(Array.from(selectedIds))}
+          onCancel={() => setBulkDeleteOpen(false)}
+          pending={bulkDeleteMut.isPending}
+        />
+      )}
     </div>
   )
 }
