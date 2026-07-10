@@ -208,9 +208,9 @@ export interface ExportResult {
 
 /**
  * 항차 마스터 + 연결된 상세데이터 전체를 시트별로 나눠 하나의 엑셀 파일로 내보낸다.
- * year를 지정하면(예: '2026') 해당 연도에 출발하는 항차만 걸러서 내보낸다.
+ * years를 지정하면(예: ['2026', '2027']) 해당 연도들에 출발하는 항차만 걸러서 내보낸다.
  */
-export async function exportAllVoyageData(year?: string): Promise<ExportResult> {
+export async function exportAllVoyageData(years?: string[]): Promise<ExportResult> {
   const [
     allVoyages, allFlights, allVoyageFlights, allItinerary, allCancellations,
     allHistory, allFeedback, allHotels, allCabinGrades, allPayments,
@@ -227,16 +227,16 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
     fetchAllPaymentSchedules(),
   ])
 
-  const filterYear = year && year !== 'ALL' ? year : null
-  const voyageIds = filterYear
-    ? new Set(allVoyages.filter(v => v.departure_date?.startsWith(filterYear)).map(v => v.id))
+  const filterYears = years && years.length > 0 ? years : null
+  const voyageIds = filterYears
+    ? new Set(allVoyages.filter(v => filterYears.some(y => v.departure_date?.startsWith(y))).map(v => v.id))
     : null
 
   function byYear<T extends { voyage_id: string }>(rows: T[]): T[] {
     return voyageIds ? rows.filter(r => voyageIds.has(r.voyage_id)) : rows
   }
 
-  const voyages       = filterYear ? allVoyages.filter(v => v.departure_date?.startsWith(filterYear)) : allVoyages
+  const voyages       = filterYears ? allVoyages.filter(v => filterYears.some(y => v.departure_date?.startsWith(y))) : allVoyages
   const flights       = byYear(allFlights)
   const voyageFlights = byYear(allVoyageFlights)
   const itinerary     = byYear(allItinerary)
@@ -397,8 +397,8 @@ export async function exportAllVoyageData(year?: string): Promise<ExportResult> 
   })))
 
   const today = new Date().toISOString().slice(0, 10)
-  const filename = filterYear
-    ? `이라이프투어_${filterYear}년_데이터_${today}.xlsx`
+  const filename = filterYears
+    ? `이라이프투어_${[...filterYears].sort().join('_')}년_데이터_${today}.xlsx`
     : `이라이프투어_전체데이터_${today}.xlsx`
   XLSX.writeFile(wb, filename)
 

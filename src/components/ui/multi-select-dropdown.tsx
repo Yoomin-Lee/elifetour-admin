@@ -39,7 +39,7 @@ export function MultiSelectDropdown({
           <ChevronDown className={cn('h-3.5 w-3.5 text-slate-400 transition-transform', open && 'rotate-180')} />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-40 py-1">
+      <PopoverContent align="end" className="w-40 max-h-[240px] overflow-y-auto py-1">
         <button
           type="button"
           onClick={() => onChange([])}

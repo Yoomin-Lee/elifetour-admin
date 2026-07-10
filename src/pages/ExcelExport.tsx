@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Download, Loader2 } from 'lucide-react'
 import { exportAllVoyageData } from '@/lib/excel'
 import { fetchVoyages } from '@/lib/queries/voyages'
-import { YearSelect } from '@/components/ui/year-select'
+import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 
 const SHEETS = [
   '항차',
@@ -19,7 +19,7 @@ const SHEETS = [
 
 function ExcelExportInner() {
   const [exporting, setExporting] = useState(false)
-  const [yearFilter, setYearFilter] = useState<string>('ALL')
+  const [yearFilter, setYearFilter] = useState<string[]>([])
 
   const { data: voyages = [] } = useQuery({ queryKey: ['voyages'], queryFn: fetchVoyages })
 
@@ -54,7 +54,13 @@ function ExcelExportInner() {
       <div className="mt-5 rounded-xl border border-slate-200 bg-white p-5">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">내보낼 연도</p>
-          <YearSelect value={yearFilter} years={years} onChange={setYearFilter} />
+          <MultiSelectDropdown
+            allLabel="전체 연도"
+            options={years}
+            selected={yearFilter}
+            onChange={setYearFilter}
+            formatOption={y => `${y}년`}
+          />
         </div>
 
         <div className="mt-5 border-t border-slate-100 pt-4">
@@ -73,7 +79,9 @@ function ExcelExportInner() {
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           {exporting
             ? '내보내는 중…'
-            : yearFilter === 'ALL' ? '전체 데이터 엑셀로 내보내기' : `${yearFilter}년 데이터 엑셀로 내보내기`}
+            : yearFilter.length === 0
+              ? '전체 데이터 엑셀로 내보내기'
+              : `${[...yearFilter].sort().join(', ')}년 데이터 엑셀로 내보내기`}
         </button>
       </div>
     </div>
