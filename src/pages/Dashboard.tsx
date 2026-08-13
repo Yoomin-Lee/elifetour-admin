@@ -104,18 +104,18 @@ function StatCard({ label, value, icon: Icon, color, sub, link }: StatCardProps)
     emerald: 'bg-emerald-50 text-emerald-600',
   }
   const inner = (
-    <div className="card flex items-center gap-4 p-5">
+    <div className="stat-card">
       <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${colors[color]}`}>
         <Icon className="h-6 w-6" />
       </div>
-      <div>
+      <div className="flex min-w-0 flex-1 flex-col justify-center">
         <p className="text-xs font-medium text-slate-500">{label}</p>
         <p className="text-2xl font-bold text-slate-800">{value}</p>
-        {sub && <p className="text-xs text-amber-600 mt-0.5">{sub}</p>}
+        <p className={`mt-0.5 h-4 text-xs leading-4 text-amber-600 ${sub ? '' : 'invisible'}`}>{sub || ' '}</p>
       </div>
     </div>
   )
-  return link ? <Link to={link} style={{ cursor: NAVY_CURSOR }} className="block hover:opacity-90 transition">{inner}</Link> : inner
+  return link ? <Link to={link} style={{ cursor: NAVY_CURSOR }} className="block h-full hover:opacity-90 transition">{inner}</Link> : inner
 }
 
 function SectionHeader({ title, badge, link, linkLabel }: { title: string; badge?: React.ReactNode; link?: string; linkLabel?: string }) {
@@ -286,7 +286,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 items-stretch gap-3 md:grid-cols-4">
           {activeIds.map(id => {
             const def = CARD_DEFS.find(d => d.id === id)
             if (!def) return null
@@ -297,7 +297,7 @@ export default function Dashboard() {
               <div
                 key={id}
                 className={[
-                  'relative transition-all',
+                  'relative h-full transition-all',
                   isDragging ? 'opacity-30 scale-95' : '',
                   isOver
                     ? 'ring-2 ring-brand/50 rounded-xl'
@@ -354,10 +354,10 @@ export default function Dashboard() {
           })}
 
           {editMode && inactiveIds.length > 0 && (
-            <div className="relative" ref={addMenuRef}>
+            <div className="relative h-full" ref={addMenuRef}>
               <button
                 onClick={() => setShowAddMenu(v => !v)}
-                className="flex h-full min-h-[80px] w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-sm text-slate-400 hover:border-brand/40 hover:text-brand transition"
+                className="flex h-full min-h-[var(--stat-card-min-h)] w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-sm text-slate-400 hover:border-brand/40 hover:text-brand transition"
               >
                 <Plus className="h-4 w-4" />
                 카드 추가

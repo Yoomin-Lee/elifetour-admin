@@ -24,6 +24,9 @@
   --input: 214 32% 91%;
   --ring: 213 80% 29%;
   --radius: 0.5rem;
+
+  /* 대시보드 통계 요약 카드: 보조 텍스트가 있는 카드 기준으로 고정 높이 */
+  --stat-card-min-h: 6.75rem;
 }
 
 @layer base {
@@ -81,6 +84,7 @@
     @apply inline-flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-600 active:scale-95;
   }
   .card { @apply rounded-xl bg-white shadow-sm border border-slate-100; }
+  .stat-card { @apply card flex h-full min-h-[var(--stat-card-min-h)] items-center gap-4 p-5; }
   .input {
     @apply block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 transition;
   }
