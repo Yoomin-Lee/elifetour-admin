@@ -211,7 +211,7 @@ function FlightFormFields({
       <div className="flex flex-wrap gap-2 items-end border-t border-slate-100 pt-3">
         {([
           ['fare_base', '운임'],
-          ['fare_fuel', '유류세료'],
+          ['fare_fuel', '유류세'],
           ['fare_tax',  '발권피'],
         ] as [keyof FlightForm, string][]).map(([field, label], idx) => (
           <Fragment key={field}>
@@ -323,7 +323,7 @@ function SeatsPanel({ flight, canWrite }: { flight: VoyageFlight; canWrite: bool
             {(['fare_base', 'fare_fuel', 'fare_tax'] as const).map((f, idx) => (
               <Fragment key={f}>
                 <span className="text-slate-400">
-                  {f === 'fare_base' ? '운임' : f === 'fare_fuel' ? '유류세료' : '발권피'}
+                  {f === 'fare_base' ? '운임' : f === 'fare_fuel' ? '유류세' : '발권피'}
                   {' '}<span className="font-semibold text-slate-700">{(flight[f] ?? 0).toLocaleString('ko-KR')}원</span>
                 </span>
                 {idx < 2 && <span className="text-slate-300">+</span>}
@@ -357,7 +357,7 @@ function SeatsPanel({ flight, canWrite }: { flight: VoyageFlight; canWrite: bool
           </div>
           {/* 항공료 편집 */}
           <div className="flex flex-wrap gap-2 items-end border-t border-slate-100 pt-2">
-            {([['fare_base', '운임'], ['fare_fuel', '유류세료'], ['fare_tax', '발권피']] as [keyof typeof form, string][]).map(([field, label], idx) => (
+            {([['fare_base', '운임'], ['fare_fuel', '유류세'], ['fare_tax', '발권피']] as [keyof typeof form, string][]).map(([field, label], idx) => (
               <Fragment key={field}>
                 <div>
                   <p className="text-[10px] text-slate-400 mb-0.5">{label} (원)</p>
