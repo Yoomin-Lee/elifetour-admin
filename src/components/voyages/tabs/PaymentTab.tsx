@@ -643,15 +643,13 @@ export default function PaymentTab() {
                 </div>
               )}
             </div>
-            {pt !== 'TOTAL' && (
-              <div>
-                <label className="label">메모</label>
-                <div className="overflow-x-auto scrollbar-none">
-                  <AutoTextarea value={cell.memo} onChange={e => updateCell(key, { memo: e.target.value })}
-                    placeholder="메모 (선택)" />
-                </div>
+            <div>
+              <label className="label">메모</label>
+              <div className="overflow-x-auto scrollbar-none">
+                <AutoTextarea value={cell.memo} onChange={e => updateCell(key, { memo: e.target.value })}
+                  placeholder="메모 (선택)" />
               </div>
-            )}
+            </div>
             <div className="flex gap-1.5 pt-1">
               <button type="button"
                 disabled={(pt !== 'TOTAL' && !cell.due_date) || !cell.amount || upsertMut.isPending}
