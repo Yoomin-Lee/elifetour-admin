@@ -192,7 +192,7 @@ function FareTierBlock({ index, suffix, title }: { index: number; suffix: '' | '
         </div>
         <span className="text-slate-400 text-sm pb-2 shrink-0">+</span>
         <div className="shrink-0">
-          <label className="label whitespace-nowrap">유류할증 (원)</label>
+          <label className="label whitespace-nowrap">유류세 (원)</label>
           <Input {...register(`${base}.fare_fuel${suffix}` as any, { valueAsNumber: true })}
             type="number" min={0} placeholder="0" className="w-24 text-right" />
         </div>

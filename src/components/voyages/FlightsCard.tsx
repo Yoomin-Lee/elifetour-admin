@@ -288,7 +288,7 @@ function FareTierRow({
       <div className="flex flex-nowrap items-end gap-1.5 overflow-x-auto scrollbar-none">
         {([
           [baseField, '운임'],
-          [fuelField, '유류할증'],
+          [fuelField, '유류세'],
           [taxField,  '발권피'],
         ] as [keyof DraftFlight, string][]).map(([field, label], idx) => (
           <Fragment key={field}>
@@ -743,7 +743,7 @@ export default function FlightsCard({
                           <div className="flex flex-nowrap items-center gap-2.5 overflow-x-auto scrollbar-none whitespace-nowrap text-base">
                             <span className="text-slate-400 shrink-0">운임 <span className="font-semibold text-slate-700">{(Number(f[baseF]) || 0).toLocaleString('ko-KR')}</span></span>
                             <span className="text-slate-300 shrink-0">+</span>
-                            <span className="text-slate-400 shrink-0">유류할증 <span className="font-semibold text-slate-700">{(Number(f[fuelF]) || 0).toLocaleString('ko-KR')}</span></span>
+                            <span className="text-slate-400 shrink-0">유류세 <span className="font-semibold text-slate-700">{(Number(f[fuelF]) || 0).toLocaleString('ko-KR')}</span></span>
                             <span className="text-slate-300 shrink-0">+</span>
                             <span className="text-slate-400 shrink-0">발권피 <span className="font-semibold text-slate-700">{(Number(f[taxF]) || 0).toLocaleString('ko-KR')}</span></span>
                             <span className="text-slate-300 shrink-0">=</span>

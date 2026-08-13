@@ -628,7 +628,7 @@ function InventoryPanel({
                   <th className="text-right pb-1.5 w-16 font-medium">비즈니스</th>
                   <th className="text-right pb-1.5 w-16 font-medium text-slate-500">총 좌석</th>
                   <th className="text-right pb-1.5 w-24 font-medium">운임</th>
-                  <th className="text-right pb-1.5 w-24 font-medium">유류할증</th>
+                  <th className="text-right pb-1.5 w-24 font-medium">유류세</th>
                   <th className="text-right pb-1.5 w-20 font-medium">발권피</th>
                   <th className="text-right pb-1.5 w-24 font-medium text-slate-500">항공료</th>
                   {editMode && <th className="pb-1.5 w-8" />}
