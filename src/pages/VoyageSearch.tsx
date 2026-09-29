@@ -158,8 +158,8 @@ function VoyageSearchInner() {
           <p className="text-sm text-slate-400">행사를 선택하면 전체 정보를 확인할 수 있습니다</p>
         </div>
 
-        {/* 연도 드롭다운 + 행사 선택 */}
-        <div className="flex items-center gap-2">
+        {/* 모바일에서 폭이 모자라면 줄바꿈 — 행사 선택은 한 줄 전체 사용 */}
+        <div className="flex flex-wrap items-center gap-2">
           <MultiSelectDropdown
             allLabel="전체 연도"
             options={years}

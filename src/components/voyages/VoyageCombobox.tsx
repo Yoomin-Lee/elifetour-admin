@@ -36,7 +36,7 @@ export default function VoyageCombobox({ voyages, selectedId, onSelect, loading 
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-72 justify-between font-normal"
+          className="w-full sm:w-72 justify-between font-normal"
           disabled={loading}
         >
           <span className={cn('truncate', !selected && 'text-slate-400')}>
@@ -46,7 +46,7 @@ export default function VoyageCombobox({ voyages, selectedId, onSelect, loading 
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-80">
+      <PopoverContent className="w-[min(20rem,calc(100vw-2rem))]">
         {/* 검색창 */}
         <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
           <Search className="h-4 w-4 shrink-0 text-slate-400" />
