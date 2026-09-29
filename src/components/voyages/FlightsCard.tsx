@@ -772,12 +772,14 @@ export default function FlightsCard({
                       </button>
 
                       {expandedSet.has(f.id) && (
-                        <div className="mt-2 space-y-1">
+                        // 모바일에서 구간 줄이 화면보다 길어지면 목록 전체를 가로 스와이프로 스크롤한다
+                        <div className="mt-2 overflow-x-auto overscroll-x-contain scrollbar-none [-webkit-overflow-scrolling:touch]">
+                          <div className="w-max min-w-full space-y-1">
                           {segs.map((s, si) => {
                             const hasInfo = s.flight_no || s.origin || s.destination || s.departure_date
                             if (!hasInfo) return null
                             return (
-                              <div key={si} className="flex items-center gap-x-1.5 text-sm text-slate-400 whitespace-nowrap overflow-hidden">
+                              <div key={si} className="flex items-center gap-x-1.5 text-sm text-slate-400 whitespace-nowrap">
                                 {segs.length > 1 && <span className="shrink-0 text-slate-300">{si + 1}구간</span>}
                                 {s.flight_no && <span className="shrink-0 font-mono font-medium text-slate-600">{s.flight_no}</span>}
                                 {(s.origin || s.destination) && (
@@ -800,6 +802,7 @@ export default function FlightsCard({
                               </div>
                             )
                           })}
+                          </div>
                         </div>
                       )}
                     </div>
